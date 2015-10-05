@@ -6,6 +6,8 @@
 # originally written by Markus Schade
 # (c) 2014-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 IMAGE_PUBKEY=$SCRIPTPATH"/gpg/coreos-pubkey.asc"
 

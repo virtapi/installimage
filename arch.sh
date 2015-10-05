@@ -6,6 +6,8 @@
 # originally written by Markus Schade
 # (c) 2013-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
@@ -15,11 +17,11 @@ setup_network_config() {
     CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-hetzner.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
 
-    echo -e "### Hetzner Online GmbH - installimage" > $UDEVFILE
+    echo -e "### $COMPANY - installimage" > $UDEVFILE
     echo -e "# device: $1" >> $UDEVFILE
     echo -e "SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"$2\", ATTR{dev_id}==\"0x0\", ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"$1\"" >> $UDEVFILE
 
-    echo -e "### Hetzner Online GmbH - installimage" > $CONFIGFILE
+    echo -e "### $COMPANY - installimage" > $CONFIGFILE
     echo -e "# device: $1" >> $CONFIGFILE
     echo -e "[Match]" >> $CONFIGFILE
     echo -e "MACAddress=$2" >> $CONFIGFILE
@@ -68,7 +70,7 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ "$1" ]; then
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-    echo -e "### Hetzner Online GmbH - installimage" > $blacklist_conf
+    echo -e "### $COMPANY - installimage" > $blacklist_conf
     echo -e "### silence any onboard speaker" >> $blacklist_conf
     echo -e "blacklist pcspkr" >> $blacklist_conf
     echo -e "blacklist snd_pcsp" >> $blacklist_conf

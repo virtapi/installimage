@@ -6,6 +6,8 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 STATUS_POSITION="\033[60G"
 
@@ -68,7 +70,7 @@ status_donefailed() {
 }
 
 echo
-echo_bold "                Hetzner Online GmbH - installimage\n"
+echo_bold "                $COMPANY - installimage\n"
 echo_bold "  Your server will be installed now, this will take some minutes"
 echo_bold "             You can abort at any time with CTRL+C ...\n"
 
@@ -504,7 +506,7 @@ report_debuglog $report_id
 #
 (
   echo "#"
-  echo "# Hetzner Online GmbH - installimage"
+  echo "# $COMPANY - installimage"
   echo "#"
   echo "# This file contains the configuration used to install this"
   echo "# system via installimage script. Comments have been removed."
