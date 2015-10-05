@@ -6,6 +6,8 @@
 # originally written by David Mayr
 # (c) 2009-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 
 

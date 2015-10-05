@@ -6,6 +6,8 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 
 DEBUGFILE=/root/debug.txt
@@ -54,7 +56,7 @@ DEFAULTGOVERNOR="powersave"
 V6ONLY="0"
 
 # dialog settings
-DIATITLE='Hetzner Online GmbH'
+DIATITLE='$COMPANY'
 OSMENULIST='Debian (official) '
 OSMENULIST=$OSMENULIST'Ubuntu (official) '
 OSMENULIST=$OSMENULIST'CentOS (official) '

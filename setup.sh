@@ -6,6 +6,8 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
 
 # read global variables and functions
