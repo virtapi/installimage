@@ -61,7 +61,7 @@ rm -rf "$FOLD" >> /dev/null 2>&1
 mkdir -p "$FOLD/nfs" >> /dev/null 2>&1
 mkdir -p "$FOLD/hdd" >> /dev/null 2>&1
 cd "$FOLD"
-myip=$(ifconfig eth0 | grep "inet addr" | cut -d: -f2 | cut -d ' ' -f1)
+myip=$(ifdata -pa eth0)
 debug "# starting installimage on  [ $myip ]"
 
 
