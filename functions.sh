@@ -2241,26 +2241,24 @@ gather_network_information_old() {
   NETWORK="`route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1`"
 }
 
-# gather_network_information "$ETH"
+# gather_network_information "$ETHDEV"
 gather_network_information() {
   # requires ipcalc from centos/rhel
-  HWADDR=$(ip link show dev $ETHDEV | grep 'link/ether' |  awk '{print $2}' | tr [:upper:] [:lower:])
-  INETADDR=$(ip addr show dev $ETHDEV | grep "inet\ " | awk '{print $2}' )
-#  IPADDR=$(ip addr show dev $ETHDEV | grep "inet\ " | awk '{print $2}' | cut -d"/" -f1)
+  # removed INETADDR which was ip.ip.ip.ip/CIDR - only used in arch.sh
+  # removed CIDR- only used in arch.sh
+  HWADDR=$(ifdata -ph $ETHDEV | tr [:upper:] [:lower:])
+  IPADDR=$(ifdata -pa $ETHDEV)
   # check for a RFC6598 address, and don't set the v4 vars if we have one
-  local FIRST=$(echo $INETADDR | cut -d "/" -f 1 | cut -d "." -f 1)
+  local FIRST=$(echo $IPADDR | cut -d. -f1)
   if [ $FIRST = "100" ]; then
     debug "not configuring RFC6598 address"
     V6ONLY=1
   else
-    IPADDR=$(echo $INETADDR | cut -d "/" -f1)
-    CIDR=$(echo $INETADDR | cut -d "/" -f2)
     # subnetmask calculation for rhel ipcalc
-    SUBNETMASK=$(ipcalc -m $INETADDR | cut -d "=" -f 2)
-#    BROADCAST=$(ip addr show dev $ETHDEV | grep "inet\ " | awk '{print $4}')
-    BROADCAST=$(ipcalc -b $INETADDR | cut -d "=" -f 2)
-    GATEWAY=$(ip route | grep "default\ via" |  awk '{print $3}')
-    NETWORK=$(ipcalc -n $INETADDR | cut -d"=" -f2)
+    SUBNETMASK=$(ifdata -pn $ETHDEV)
+    BROADCAST=$(ifdata -pb $ETHDEV)
+    GATEWAY=$(ip -4 route show default | awk '{print $3}')
+    NETWORK=$(ifdata -pN $ETHDEV)
   fi
 
   # ipv6
@@ -3534,8 +3532,7 @@ function hdinfo() {
 # function to check if we got autonegotiated speed with NIC or if the rescue system set speed to fix 100MBit FD
 # returns 0 if we are auto negotiated and 1 if not
 function isNegotiated() {
-# search for first NIC which has an IP
-#for i in $(ifconfig -a | grep eth | cut -d " " -f 1); do
+  # search for first NIC which has an IP
   for interface in $(find /sys/class/net/* -type l -name 'eth*' -printf '%f\n'); do
     if [ -n "$(ip a show $i | grep "inet [1-9]")" ]; then
     #check if we got autonegotiated
@@ -3712,46 +3709,46 @@ function check_dos_partitions() {
 # Set udev rules
 #
 set_udev_rules() {
- # at this point we have configured networking for one and only one
- # active interface and written a udev rule for this device.
- # Normally, we could just rename that single interface.
- # But when the system boots, the other interface are found and numbered.
- # The system then tries to rename the interface to match the udev rules.
- # Under certain situations with more than two NICs, this may not end as
- # expected leaving some interfaces half-renamed (e.g. eth3-eth0)
- # So we copy the already generated udev rules from the rescue system in order
- # to have rules for all devices, no matter in which order they are found
- # during boot.
- UDEVPFAD="/etc/udev/rules.d"
-
- ETHCOUNT="$(ifconfig -a | grep -c eth)"
- if [ "$ETHCOUNT" -gt "1" ]; then
+  # at this point we have configured networking for one and only one
+  # active interface and written a udev rule for this device.
+  # Normally, we could just rename that single interface.
+  # But when the system boots, the other interface are found and numbered.
+  # The system then tries to rename the interface to match the udev rules.
+  # Under certain situations with more than two NICs, this may not end as
+  # expected leaving some interfaces half-renamed (e.g. eth3-eth0)
+  # So we copy the already generated udev rules from the rescue system in order
+  # to have rules for all devices, no matter in which order they are found
+  # during boot.
+  UDEVPFAD="/etc/udev/rules.d"
+  # this will probably fail if we ever have predictable networknames 
+  ETHCOUNT="$(find /sys/class/net/* -type l -name 'eth*' | wc -l)"
+  if [ "$ETHCOUNT" -gt "1" ]; then
     cp $UDEVPFAD/70-persistent-net.rules $FOLD/hdd$UDEVPFAD/
     #Testeinbau
-   if [ "$IAM" = "centos" ]; then
-     # need to remove these parts of the rule for centos, 
-     # otherwise we get new rules with the old interface name again
-     # plus a new  ifcfg- for the new rule, which duplicates
-     # the config but does not match the MAC of the interface
-     # after renaming. Terrible mess.
-     sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-   fi
-   for NIC in /sys/class/net/*; do
-     INTERFACE=${NIC##*/}
-     #test if the interface has a ipv4 adress
-     iptest=$(ip addr show dev "$INTERFACE" | grep "$INTERFACE"$ | awk '{print $2}' | cut -d "." -f 1,2)
-     #iptest=$(ifconfig $INTERFACE | grep "inet addr" | cut -d ":" -f2 | cut -d " " -f1 | cut -d "." -f1,2)
-     #Separate udev-rules for openSUSE 12.3 in function "suse_fix" below !!!
-     if [ -n "$iptest"  ] && [ "iptest" != "192.168" ] && [ "$INTERFACE" != "eth0" ] && [ "$INTERFACE" != "lo" ]; then
-       debug "# renaming active $INTERFACE to eth0 via udev in installed system"
-       sed -i  "s/$INTERFACE/dummy/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       sed -i  "s/eth0/$INTERFACE/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       sed -i  "s/dummy/eth0/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       fix_eth_naming "$INTERFACE" 
-     fi
-   done
-   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
-   [ "$suse_version" == "123" ] && suse_netdev_fix
+    if [ "$IAM" = "centos" ]; then
+      # need to remove these parts of the rule for centos, 
+      # otherwise we get new rules with the old interface name again
+      # plus a new  ifcfg- for the new rule, which duplicates
+      # the config but does not match the MAC of the interface
+      # after renaming. Terrible mess.
+      sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
+    fi
+    for NIC in /sys/class/net/*; do
+      INTERFACE=${NIC##*/}
+      #test if the interface has a ipv4 adress
+      iptest=$(ip addr show dev "$INTERFACE" | grep "$INTERFACE"$ | awk '{print $2}' | cut -d "." -f 1,2)
+      #iptest=$(ifconfig $INTERFACE | grep "inet addr" | cut -d ":" -f2 | cut -d " " -f1 | cut -d "." -f1,2)
+      #Separate udev-rules for openSUSE 12.3 in function "suse_fix" below !!!
+      if [ -n "$iptest"  ] && [ "iptest" != "192.168" ] && [ "$INTERFACE" != "eth0" ] && [ "$INTERFACE" != "lo" ]; then
+        debug "# renaming active $INTERFACE to eth0 via udev in installed system"
+        sed -i  "s/$INTERFACE/dummy/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
+        sed -i  "s/eth0/$INTERFACE/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
+        sed -i  "s/dummy/eth0/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
+        fix_eth_naming "$INTERFACE" 
+      fi
+    done
+    [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
+    [ "$suse_version" == "123" ] && suse_netdev_fix
  fi
 }
 
