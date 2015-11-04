@@ -48,7 +48,7 @@ case $1 in
         echo -e "Nach beenden der Sub-Shell wird installimage erneut ausgefuehrt.\n"
         /bin/bash
       fi
-    
+
     done
   ;;
 

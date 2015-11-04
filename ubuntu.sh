@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Ubuntu specific functions 
+# Ubuntu specific functions
 #
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
@@ -33,7 +33,7 @@ setup_network_config() {
       echo -e "  address   $3" >> $CONFIGFILE
       echo -e "  netmask   $5" >> $CONFIGFILE
       echo -e "  gateway   $6" >> $CONFIGFILE
-      if ! is_private_ip "$3"; then 
+      if ! is_private_ip "$3"; then
         echo -e "  # default route to access subnet" >> $CONFIGFILE
         echo -e "  up route add -net $7 netmask $5 gw $6 $1" >> $CONFIGFILE
       fi
@@ -45,7 +45,7 @@ setup_network_config() {
       echo -e "iface $1 inet6 static" >> $CONFIGFILE
       echo -e "  address $8" >> $CONFIGFILE
       echo -e "  netmask $9" >> $CONFIGFILE
-      echo -e "  gateway ${10}" >> $CONFIGFILE	
+      echo -e "  gateway ${10}" >> $CONFIGFILE
     fi
 
     # set duplex speed
@@ -105,7 +105,7 @@ generate_new_ramdisk() {
       echo -e "blacklist mei" >> $blacklist_conf
       echo -e "blacklist mei_me" >> $blacklist_conf
     fi
- 
+
     sed -i "s/do_bootloader = yes/do_bootloader = no/" $FOLD/hdd/etc/kernel-img.conf
     execute_chroot_command "update-initramfs -u -k $VERSION"; EXITCODE=$?
     sed -i "s/do_bootloader = no/do_bootloader = yes/" $FOLD/hdd/etc/kernel-img.conf
@@ -181,7 +181,7 @@ generate_config_grub() {
 
   # create /run/lock if it didn't exist because it is needed by grub-mkconfig
   execute_chroot_command "mkdir -p /run/lock"
-	
+
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
   # only install grub2 in mbr of all other drives if we use swraid
@@ -194,7 +194,7 @@ generate_config_grub() {
   done
 
   uuid_bugfix
-	
+
   PARTNUM=`echo "$SYSTEMBOOTDEVICE" | rev | cut -c1`
   if [ "$SWRAID" = "0" ]; then
     PARTNUM="$[$PARTNUM - 1]"

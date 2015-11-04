@@ -14,7 +14,7 @@
 # check if the script is temporary disabled due some maintenance or something
 debug "# checking if the script is disabled"
 if [ -f $DISABLEDFILE ]; then
- debug "=> script is DISABLED" 
+ debug "=> script is DISABLED"
  echo_red "Due to maintenance the installimage-script is temporarily unavailable.\nWe are sorry for the inconvenience."
  exit 1
 fi
@@ -23,7 +23,7 @@ fi
 if [ "$OPT_AUTOMODE" ] ; then
 
   ### automatic mode ------------------------------------------------
-  
+
   debug "# AUTOMATIC MODE: start"
 
   # create config
@@ -34,7 +34,7 @@ if [ "$OPT_AUTOMODE" ] ; then
     cleanup
     exit 1
   fi
-    
+
 
   # validate config
   VALIDATED="false"
@@ -114,7 +114,7 @@ else
     fi
 
     debug "# chosen image: [ $IMAGENAME ]"
-    
+
     debug "# copy & create config..."
     create_config $IMAGENAME; EXITCODE=$?
     if [ $EXITCODE != 0 ] ; then
@@ -158,13 +158,10 @@ else
     done
 
     if [ "$LVM" = "1" ]; then
-        graph_notice "Please note that ALL existing LVs and VGs will be removed during the installation!"       
+        graph_notice "Please note that ALL existing LVs and VGs will be removed during the installation!"
     fi
- 
 
-
-    
-    if [ "$CANCELLED" = "false" ]; then 
+    if [ "$CANCELLED" = "false" ]; then
       debug "# asking for confirmation..."
       for i in $(seq 1 $COUNT_DRIVES) ; do
         ask_format="$(eval echo \$FORMAT_DRIVE$i)"

@@ -131,7 +131,7 @@ done
 
 status_done
 
-# 
+#
 # Test partition size
 #
 inc_step
@@ -236,7 +236,7 @@ if [ "$IMAGE_PATH_TYPE" = "http" ] ; then
   status_busy "Downloading image ($IMAGE_PATH_TYPE)"
   get_image_url "$IMAGE_PATH" "$IMAGE_FILE"
   status_donefailed $?
-fi 
+fi
 
 #
 # Import public key for image validation
@@ -368,10 +368,10 @@ fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" -a -z "$FORCE_PASSWORD" ]; then
   status_busy_nostep "  Disabling root password"
-  set_rootpassword "$FOLD/hdd/etc/shadow" "*" 
+  set_rootpassword "$FOLD/hdd/etc/shadow" "*"
   status_donefailed $?
   status_busy_nostep "  Disabling SSH root login without password"
-  set_ssh_rootlogin "without-password" 
+  set_ssh_rootlogin "without-password"
   status_donefailed $?
 else
   status_busy_nostep "  Setting root password"
@@ -379,14 +379,14 @@ else
   set_rootpassword "$FOLD/hdd/etc/shadow" "$ROOTHASH"
   status_donefailed $?
   status_busy_nostep "  Enabling SSH root login with password"
-  set_ssh_rootlogin "yes" 
+  set_ssh_rootlogin "yes"
   status_donefailed $?
 fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" ] ; then
     status_busy_nostep "  Copying SSH keys"
     debug "# Adding public SSH keys"
-    copy_ssh_keys 
+    copy_ssh_keys
     status_donefailed $?
 fi
 
@@ -426,13 +426,13 @@ if [ "$OPT_INSTALL" ]; then
       plesk*)
         status_busy_nostep "  Installing PLESK Control Panel"
         debug "# installing PLESK"
-        install_plesk "$opt_item" 
+        install_plesk "$opt_item"
 	status_donefailed $?
         ;;
       omsa)
         status_busy_nostep "  Installing Open Manage"
         debug "# installing OMSA"
-        install_omsa 
+        install_omsa
 	status_donefailed $?
         ;;
     esac

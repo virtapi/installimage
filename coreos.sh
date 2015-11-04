@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# CoreOS specific functions 
+# CoreOS specific functions
 #
 # originally written by Markus Schade
 # (c) 2014-2015, Hetzner Online GmbH
@@ -205,27 +205,27 @@ EOF
   fi
 }
 
-# copy_ssh_keys $OPT_SSHKEYS_URL 
+# copy_ssh_keys $OPT_SSHKEYS_URL
 copy_ssh_keys() {
-   if [ "$1" ]; then
-     local key_url="$1"
-     echo -e "ssh_authorized_keys:" >> $CLOUDINIT
-     case $key_url in
-       https:*|http:*|ftp:*)
-         wget $key_url -O "$FOLD/authorized_keys"
-     	 while read line; do
-	   echo -e "  - $line" >> $CLOUDINIT
-         done < "$FOLD/authorized_keys"
-       ;;
-       *)
-     	 while read line; do
-	   echo -e "  - $line" >> $CLOUDINIT
-         done < $key_url 
-       ;;
-     esac
-   else
-     return 1
-   fi
+  if [ "$1" ]; then
+    local key_url="$1"
+    echo -e "ssh_authorized_keys:" >> $CLOUDINIT
+    case $key_url in
+      https:*|http:*|ftp:*)
+        wget $key_url -O "$FOLD/authorized_keys"
+        while read line; do
+          echo -e "  - $line" >> $CLOUDINIT
+        done < "$FOLD/authorized_keys"
+      ;;
+      *)
+        while read line; do
+          echo -e "  - $line" >> $CLOUDINIT
+        done < $key_url
+      ;;
+    esac
+  else
+    return 1
+  fi
 }
 
 
@@ -241,7 +241,7 @@ write_grub() {
 add_coreos_oem_scripts() {
   if [ "$1" ]; then
     local mntpath=$1
-  
+
     # add netname simplify script (use eth names)
     local scriptpath="$mntpath/bin"
     local scriptfile="$scriptpath/netname.sh"
@@ -350,7 +350,7 @@ run_os_specific_functions() {
     mkdir -p "$FOLD/hdd/var/lib/coreos-install"
     cat $CLOUDINIT | debugoutput
     cp "${CLOUDINIT}" "$FOLD/hdd/var/lib/coreos-install/user_data"
-    
+
   return 0
 }
 

@@ -110,7 +110,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     a) OPT_AUTOMODE=1 ;;
 
     # hostname  (host.domain.tld)
-    n) 
+    n)
       OPT_HOSTNAME=$OPTARG
       if [ -e /autosetup ]; then
 	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
@@ -201,15 +201,15 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
         on|true|yes|1)  export OPT_FORMATDRIVE2=1 ;;
       esac
     ;;
-    
+
 	s)
-	  export OPT_LANGUAGE="$OPTARG"
-	  ;;
-	  
+    export OPT_LANGUAGE="$OPTARG"
+  ;;
+
 	z)
-	  export OPT_INSTALL="$OPTARG"
-	  ;;
-	
+    export OPT_INSTALL="$OPTARG"
+  ;;
+
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
     R)
