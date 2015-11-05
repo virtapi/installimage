@@ -15,7 +15,7 @@
 # check if the script is temporary disabled due some maintenance or something
 debug "# checking if the script is disabled"
 if [ -f $DISABLEDFILE ]; then
- debug "=> script is DISABLED" 
+ debug "=> script is DISABLED"
  echo_red "Due to maintenance the installimage-script is temporarily unavailable.\nWe are sorry for the inconvenience."
  exit 1
 fi

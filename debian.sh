@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Debian specific functions 
+# Debian specific functions
 #
 # originally written by Florian Wicke and David Mayr
 # (c) 2008-2015, Hetzner Online GmbH
@@ -35,7 +35,7 @@ setup_network_config() {
       echo -e "  address   $3" >> $CONFIGFILE
       echo -e "  netmask   $5" >> $CONFIGFILE
       echo -e "  gateway   $6" >> $CONFIGFILE
-      if ! is_private_ip "$3"; then 
+      if ! is_private_ip "$3"; then
         echo -e "  # default route to access subnet" >> $CONFIGFILE
         echo -e "  up route add -net $7 netmask $5 gw $6 $1" >> $CONFIGFILE
       fi
@@ -47,7 +47,7 @@ setup_network_config() {
       echo -e "iface $1 inet6 static" >> $CONFIGFILE
       echo -e "  address $8" >> $CONFIGFILE
       echo -e "  netmask $9" >> $CONFIGFILE
-      echo -e "  gateway ${10}" >> $CONFIGFILE	
+      echo -e "  gateway ${10}" >> $CONFIGFILE
     fi
 
     # set duplex speed
@@ -170,9 +170,9 @@ generate_config_grub() {
   if [ "$SWRAID" = "0" ]; then
     PARTNUM="$[$PARTNUM - 1]"
   fi
-  
+
   delete_grub_device_map
- 
+
   return $EXITCODE
 }
 
@@ -239,8 +239,8 @@ randomize_maint_mysql_pass() {
   execute_chroot_command "/etc/init.d/mysql start >>/dev/null 2>&1"
   execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; EXITCODE=$?
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"
-  sed -i s/password.*/"password = $DEBIANPASS"/g "$SQLCONFIG" 
-  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$PMAPASS'"/g "$PMA_DBC_CNF" 
+  sed -i s/password.*/"password = $DEBIANPASS"/g "$SQLCONFIG"
+  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$PMAPASS'"/g "$PMA_DBC_CNF"
   execute_chroot_command "DEBIAN_FRONTEND=noninteractive dpkg-reconfigure phpmyadmin"
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# CentOS specific functions 
+# CentOS specific functions
 #
 # originally written by Florian Wicke and David Mayr
 # (c) 2008-2015, Hetzner Online GmbH
@@ -32,7 +32,7 @@ setup_network_config() {
 
     echo -e "### Hetzner Online GmbH - installimage" > $CONFIGFILE 2>>$DEBUGFILE
     echo -e "#" >> $CONFIGFILE 2>>$DEBUGFILE
-    if ! is_private_ip "$3"; then 
+    if ! is_private_ip "$3"; then
       echo -e "# Note for customers who want to create bridged networking for virtualisation:" >> $CONFIGFILE 2>>$DEBUGFILE
       echo -e "# Gateway is set in separate file" >> $CONFIGFILE 2>>$DEBUGFILE
       echo -e "# Do not forget to change interface in file route-$1 and rename this file" >> $CONFIGFILE 2>>$DEBUGFILE
@@ -46,7 +46,7 @@ setup_network_config() {
     if [ "$3" -a "$4" -a "$5" -a "$6" -a "$7" ]; then
       echo -e "HWADDR=$upper_mac" >> $CONFIGFILE 2>>$DEBUGFILE
       echo -e "IPADDR=$3" >> $CONFIGFILE 2>>$DEBUGFILE
-      if is_private_ip "$3"; then 
+      if is_private_ip "$3"; then
         echo -e "NETMASK=$5" >> $CONFIGFILE 2>>$DEBUGFILE
         echo -e "GATEWAY=$6" >> $CONFIGFILE 2>>$DEBUGFILE
       else
@@ -68,7 +68,7 @@ setup_network_config() {
       echo -e "IPV6ADDR=$8/$9" >> $CONFIGFILE 2>>$DEBUGFILE
       echo -e "IPV6_DEFAULTGW=${10}" >> $CONFIGFILE 2>>$DEBUGFILE
       echo -e "IPV6_DEFAULTDEV=$1" >> $CONFIGFILE 2>>$DEBUGFILE
-    fi 
+    fi
 
     # set duplex/speed
     if ! isNegotiated && ! isVServer; then
@@ -102,7 +102,7 @@ generate_new_ramdisk() {
     # pick the latest kernel
     VERSION="$(ls -r -1 $FOLD/hdd/boot/vmlinuz-* | head -n1 |cut -d '-' -f 2-)"
 
-    if [ $IMG_VERSION -lt 60 ] ; then 
+    if [ $IMG_VERSION -lt 60 ] ; then
       MODULESFILE="$FOLD/hdd/etc/modprobe.conf"
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
@@ -120,7 +120,7 @@ generate_new_ramdisk() {
         fi
       done
       echo -e "" >> $MODULESFILE 2>>$DEBUGFILE
-    elif [ $IMG_VERSION -ge 60 ] ; then 
+    elif [ $IMG_VERSION -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
       local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
       echo -e "### Hetzner Online GmbH - installimage" > $blacklist_conf
@@ -141,12 +141,12 @@ generate_new_ramdisk() {
       echo "early_microcode=\"no\"" >> $DRACUTFILE
     fi
 
-    if [ $IMG_VERSION -ge 70 ] ; then 
+    if [ $IMG_VERSION -ge 70 ] ; then
       execute_chroot_command "/sbin/dracut -f --kver $VERSION"; EXITCODE=$?
     else
-      if [ $IMG_VERSION -ge 60 ] ; then 
+      if [ $IMG_VERSION -ge 60 ] ; then
         execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"; EXITCODE=$?
-      else 
+      else
         execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"; EXITCODE=$?
       fi
     fi
@@ -159,13 +159,13 @@ setup_cpufreq() {
   if [ "$1" ]; then
     if isVServer; then
       debug "no powersaving on virtual machines"
-    	return 0
-    fi 
+      return 0
+    fi
     if [ $IMG_VERSION -ge 70 ] ; then
       #https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/sec-Persistent_Module_Loading.html
       #local CPUFREQCONF="$FOLD/hdd/etc/modules-load.d/cpufreq.conf"
       debug "no cpufreq configuration necessary"
-    else 
+    else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
       local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
       echo -e "" > $CPUFREQCONF 2>>$DEBUGFILE
@@ -198,7 +198,7 @@ generate_config_grub() {
   [ "$1" ] || return
   # we should not need to do anything, as grubby (new-kernel-pkg) should have
   # already generated a grub.conf
-  if [ $IMG_VERSION -lt 70 ] ; then 
+  if [ $IMG_VERSION -lt 70 ] ; then
     DMAPFILE="$FOLD/hdd/boot/grub/device.map"
   else
     # even though grub2-mkconfig will generate a device.map on the fly, the
@@ -220,7 +220,7 @@ generate_config_grub() {
     elevator='elevator=noop'
   fi
 
-  if [ $IMG_VERSION -lt 70 ] ; then 
+  if [ $IMG_VERSION -lt 70 ] ; then
     execute_chroot_command "cd /boot; rm -rf boot; ln -s . boot >> /dev/null 2>&1"
     execute_chroot_command "mkdir -p /boot/grub/"
     #execute_chroot_command "grub-install --no-floppy $DRIVE1 2>&1"; EXITCODE=$?
@@ -250,7 +250,7 @@ generate_config_grub() {
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
     [ "$(lspci -n | grep '8086:10d3')" ] && ASPM='pcie_aspm=off' || ASPM=''
 
-    if [ $IMG_VERSION -ge 60 ]; then 
+    if [ $IMG_VERSION -ge 60 ]; then
       echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $ASPM" >> $BFILE 2>> $DEBUGFILE
     else
       echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE nomodeset" >> $BFILE 2>> $DEBUGFILE
@@ -267,12 +267,12 @@ generate_config_grub() {
     fi
 
     echo >> $BFILE 2>> $DEBUGFILE
-  
+
     uuid_bugfix
   # TODO: let grubby add its own stuff (SYSFONT, LANG, KEYTABLE)
-#  if [ $IMG_VERSION -lt 60 ] ; then 
+#  if [ $IMG_VERSION -lt 60 ] ; then
 #   execute_chroot_command "/sbin/new-kernel-pkg --package kernel --install $VERSION"; EXITCODE=$?
-#  else 
+#  else
 #   execute_chroot_command "/sbin/new-kernel-pkg --install $VERSION"; EXITCODE=$?
 #  fi
   else
@@ -290,7 +290,7 @@ generate_config_grub() {
 }
 
 write_grub() {
-  if [ $IMG_VERSION -ge 70 ] ; then 
+  if [ $IMG_VERSION -ge 70 ] ; then
      # only install grub2 in mbr of all other drives if we use swraid
     local i=0
     for i in $(seq 1 $COUNT_DRIVES) ; do
@@ -299,7 +299,7 @@ write_grub() {
         execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" EXITCODE=$?
       fi
     done
-  else 
+  else
     local i=0
 
     for i in $(seq 1 $COUNT_DRIVES) ; do
@@ -318,7 +318,7 @@ disabled_set_hostname() {
 
   hostname $SETHOSTNAME
   execute_chroot_command "hostname $SETHOSTNAME"
- 
+
   if [ -z "$SETHOSTNAME" ]; then
     SETHOSTNAME="$IMAGENAME"
   fi
@@ -332,7 +332,7 @@ disabled_set_hostname() {
     NETWORKFILE="$FOLD/hdd/etc/sysconfig/network"
     echo -e "HOSTNAME=$SETHOSTNAME" >> $NETWORKFILE 2>>$DEBUGFILE
   fi
-  
+
 }
 
 #
@@ -342,7 +342,7 @@ disabled_set_hostname() {
 run_os_specific_functions() {
 
   execute_chroot_command "chkconfig iptables off"
- 
+
   #
   # setup env in cpanel image
   #
@@ -350,8 +350,8 @@ run_os_specific_functions() {
   if [ -f "$FOLD/hdd/etc/wwwacct.conf" ] && [ -f "$FOLD/hdd/etc/cpupdate.conf" ] ; then
     echo $IMAGENAME | grep -q -i cpanel && ( setup_cpanel || return 1 )
   fi
- 
-  # selinux autorelabel if enabled 
+
+  # selinux autorelabel if enabled
   if [ "$(egrep "SELINUX=enforcing" $FOLD/hdd/etc/sysconfig/selinux)" ] ; then
     touch $FOLD/hdd/.autorelabel
   fi
@@ -385,7 +385,7 @@ randomize_cpanel_mysql_passwords() {
   rm "$FOLD/hdd/tmp/pwchange.sql"
   rm "$CPHULKDCONF.old"
 
-  # write password file 
+  # write password file
   echo -e "[client]\nuser=root\npass=$ROOTPASS" > $FOLD/hdd/root/.my.cnf
 
   return $EXITCODE

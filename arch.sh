@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# Archlinux specific functions 
+# Archlinux specific functions
 #
-# originally written by Markus Schade 
+# originally written by Markus Schade
 # (c) 2013-2015, Hetzner Online GmbH
 #
 
@@ -29,7 +29,7 @@ setup_network_config() {
     if [ "$8" -a "$9" -a "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
       echo -e "Address=$8/$9" >> $CONFIGFILE
-      echo -e "Gateway=${10}" >> $CONFIGFILE	
+      echo -e "Gateway=${10}" >> $CONFIGFILE
       echo -e "" >> $CONFIGFILE
     fi
 
@@ -39,7 +39,7 @@ setup_network_config() {
       echo -e "Gateway=$6" >> $CONFIGFILE
       echo -e "" >> $CONFIGFILE
 
-      if ! is_private_ip "$3"; then 
+      if ! is_private_ip "$3"; then
         echo -e "[Route]" >> $CONFIGFILE
         echo -e "Destination=$7/$CIDR" >> $CONFIGFILE
         echo -e "Gateway=$6" >> $CONFIGFILE
@@ -171,8 +171,8 @@ extract_image() {
     echo "KEYMAP=de" >> $FOLD/hdd/etc/vconsole.conf
     echo "FONT=LatArCyrHeb-16" >> $FOLD/hdd/etc/vconsole.conf
 
-    
-    return 0 
+
+    return 0
   else
     return 1
   fi

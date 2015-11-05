@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# OpenSUSE specific functions 
+# OpenSUSE specific functions
 #
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
@@ -63,7 +63,7 @@ setup_network_config() {
         echo -e "IPADDR='$8/$9'" >> $CONFIGFILE 2>>$DEBUGFILE
       fi
       echo -e "default ${10} - $1" >> $ROUTEFILE 2>>$DEBUGFILE
-    fi 
+    fi
 
     if ! isNegotiated && ! isVServer; then
       echo -e "ETHTOOL_OPTIONS=\"speed 100 duplex full autoneg off\"" >> $CONFIGFILE 2>>$DEBUGFILE
@@ -108,7 +108,7 @@ generate_new_ramdisk() {
 #      echo "lvmconf=\"yes\"" >> $DRACUTFILE
 #      echo "hostonly=\"no\"" >> $DRACUTFILE
 #      echo "early_microcode=\"no\"" >> $DRACUTFILE
-#    
+#
       # dracut fix for auto-assembling raid
 #      local mdraid_rule="$FOLD/hdd/usr/lib/udev/rules.d/64-md-raid-assembly.rules"
 #      local dracut_rulesd="$FOLD/hdd/usr/lib/dracut/rules.d"
@@ -116,10 +116,10 @@ generate_new_ramdisk() {
 #      cp $mdraid_rule $dracut_rulesd
     else
       KERNELCONF="$FOLD/hdd/etc/sysconfig/kernel"
-  
+
       sed -i "$KERNELCONF" -e 's/INITRD_MODULES=.*/INITRD_MODULES=""/'
-     
-      #do not load kms and nouveau modules during boot 
+
+      #do not load kms and nouveau modules during boot
       if [ "$SUSEVERSION" -ge 113 ]; then
         sed -i "$KERNELCONF" -e 's/^NO_KMS_IN_INITRD=.*/NO_KMS_IN_INIRD="yes"/'
       fi
@@ -140,7 +140,7 @@ generate_new_ramdisk() {
     [ "$LVM" = "1" ] && dracut_feature="$dracut_feature lvm"
 
 
-    # change the if contruct to test 
+    # change the if contruct to test
     if [ "$SUSEVERSION" -ge 112 ]; then
       # mkinitrd doesn't have the switch -t anymore as of 11.2 and uses /dev/shm if it is writeable
       if [ "$SUSEVERSION" -ge 121 ]; then
@@ -171,7 +171,7 @@ setup_cpufreq() {
      # openSuSE defaults to the ondemand governor, so we don't need to set this at all
      # http://doc.opensuse.org/documentation/html/openSUSE/opensuse-tuning/cha.tuning.power.html
      # check release notes of furture releases carefully, if this has changed!
-     
+
 #    CPUFREQCONF="$FOLD/hdd/etc/init.d/boot.local"
 #    echo -e "### Hetzner Online GmbH - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
 #    echo -e "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
@@ -255,7 +255,7 @@ generate_config_grub() {
     execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/#GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/#GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
     execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
 
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"' 
+    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"'
 
     [ -e $FOLD/hdd/boot/grub2/grub.cfg ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
     execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"

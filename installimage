@@ -29,7 +29,7 @@ export LC_ALL="en_US.UTF-8"
 export EXITCODE=0
 
 # invalidate all caches, so we get the latest version from nfs
-echo 3 >/proc/sys/vm/drop_caches 
+echo 3 >/proc/sys/vm/drop_caches
 
 
 # realconfig
