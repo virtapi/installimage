@@ -3535,29 +3535,27 @@ function isNegotiated() {
   # search for first NIC which has an IP
   for interface in $(find /sys/class/net/* -type l -name 'eth*' -printf '%f\n'); do
     if [ -n "$(ip a show $i | grep "inet [1-9]")" ]; then
-    #check if we got autonegotiated
-    if [ -n "$(mii-tool 2>/dev/null | grep "negotiated")" ]; then
-      return 0
-    else
-      return 1
+      #check if we got autonegotiated
+      if [ -n "$(mii-tool 2>/dev/null | grep "negotiated")" ]; then
+        return 0
+      else
+        return 1
+      fi
     fi
-  fi
-done
+  done
 }
 
 # function to check if we are in a kvm-qemu vServer environment
 # returns 0 if we are in a vServer env otherwise 1
 function isVServer() {
-#  local model="$(cat /proc/cpuinfo | grep "^model name" | cut -d ":" -f2 | tr -d ' ')"
-#  if [ -n "$(echo "$model" | grep -i "QEMUVirtualCPU")" ] || [ -n "$(echo "$model" | grep -i "PentiumII(Klamath)")" ]; then
-   case "$SYSTYPE" in
+  case "$SYSTYPE" in
     vServer|Bochs|Xen|KVM|VirtualBox|'VMware,Inc.')
       debug "# Systype: $SYSTYPE"
       return 0;;
     *) 
       debug "# Systype: $SYSTYPE"
       case "$SYSMFC" in
-      	QEMU)
+        QEMU)
           debug "# Manufacturer: $SYSMFC"
           return 0;;
         *)
@@ -3565,7 +3563,7 @@ function isVServer() {
           return 1;;
       esac
       return 1;;
-    esac
+  esac
 }
 
 # function to check if we have to use GPT or MS-DOS partition tables
