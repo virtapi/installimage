@@ -2254,7 +2254,7 @@ gather_network_information() {
     # subnetmask calculation for rhel ipcalc
     SUBNETMASK=$(ifdata -pn $ETHDEV)
     BROADCAST=$(ifdata -pb $ETHDEV)
-    GATEWAY=$(ip -4 route show default | awk '{print $3}')
+    GATEWAY=$(ip -4 route show default | awk '{print $3; exit}')
     NETWORK=$(ifdata -pN $ETHDEV)
   fi
 
