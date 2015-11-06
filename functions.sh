@@ -2886,7 +2886,7 @@ EOF
 # get_rootpassword "/etc/shadow"
 get_rootpassword() {
   if [ "$1" ]; then
-    ROOTHASH="`cat "$1" |grep "^root" | cut -d ":" -f2`"
+    ROOTHASH="$(awk -F: '/^root/ {print $2}' $1)"
     if [ "$ROOTHASH" ]; then
       return 0
     else
@@ -2898,9 +2898,8 @@ get_rootpassword() {
 # set_rootpassword "$FOLD/hdd/etc/shadow" "ROOTHASH"
 set_rootpassword() {
   if [ "$1" -a "$2" ]; then
-    LINE="`cat "$1" |grep "^root"`"
-    cat "$1" | grep -v "^root" > /tmp/shadow.tmp
-    GECOS="`echo $LINE |cut -d ":" -f3-`"
+    grep -v "^root" "${1}" > /tmp/shadow.tmp
+    local GECOS="$(awk -F: '/^root/ {print $3":"$4":"$5":"$6":"$7":"$8":"}' ${1})"
     echo "root:$2:$GECOS" > $1
     cat /tmp/shadow.tmp >> $1
     return 0
