@@ -14,7 +14,7 @@ DEBUGFILE=/root/debug.txt
 
 
 # set up standard env
-SCRIPTPATH=`dirname $0`
+SCRIPTPATH=$(dirname $0)
 DISABLEDFILE=$SCRIPTPATH"/disabled"
 SETUPFILE=$SCRIPTPATH"/setup.sh"
 AUTOSETUPFILE=$SCRIPTPATH"/autosetup.sh"
@@ -81,16 +81,16 @@ NOCOL="\033[00m"
 # write log entries in debugfile - single line as second argument
 debug() {
   line="$@"
-  echo -e "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
+  echo -e "[$(date '+%H:%M:%S')] $line" >> "$DEBUGFILE";
 }
 
 
 # write log entries in debugfile - multiple lines at once
 debugoutput() {
   while read line ; do
-    echo -e "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
+    echo -e "[$(date '+%H:%M:%S')] :   $line" >> "$DEBUGFILE";
   done
 }
 
-. $FUNCTIONSFILE
+. "$FUNCTIONSFILE"
 
