@@ -7,9 +7,7 @@
 # (c) 2009-2015, Hetzner Online GmbH
 #
 # changed and extended by Thore Bödecker, 2015-10-05
-#
-
-
+# changed and extended by Tim Meusel
 
 # check command line params / options
 while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
