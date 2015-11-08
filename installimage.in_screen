@@ -24,7 +24,7 @@ case $1 in
     shift
     until false ; do
 
-      $INSTALLIMAGE $@ ; EXITCODE=$?
+      "$INSTALLIMAGE $@" ; EXITCODE=$?
 
       if [ $EXITCODE -eq 0 ] ; then
         echo -e "\n\n\n===>  Erfolgreich beendet.\n"
@@ -58,7 +58,7 @@ case $1 in
     echo -e "\n\nHINWEIS:\n-------" >>/etc/motd
     echo -e "installimage wurde nach dem booten in einer screen-session gestartet." >>/etc/motd
     echo -e "Um sich mit der screen-session zu verbinden, 'screen -x' eingeben ...\n" >>/etc/motd
-    screen -AS installimage $0 start $@
+    screen -AS installimage "$0 start $@"
   ;;
 
 esac
