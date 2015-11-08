@@ -678,7 +678,7 @@ if [ "$1" ]; then
 
 
   IMAGE="`grep -m1 -e ^IMAGE $1 | awk '{print \$2}'`"
-  [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
+  [ -e "$WD/$IMAGE" ] && IMAGE="$WD/$IMAGE"
   IMAGE_PATH="$(dirname $IMAGE)/"
   IMAGE_FILE="$(basename $IMAGE)"
   case $IMAGE_PATH in
