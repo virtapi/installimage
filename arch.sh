@@ -9,7 +9,6 @@
 # changed and extended by Thore Bödecker, 2015-10-05
 # changed and extended by Tim Meusel
 
-
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then

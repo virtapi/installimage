@@ -6,13 +6,10 @@
 #
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online AG
-#
-
-
+# changed and extended by Tim Meusel
 
 TIMEOUT=20
-INSTALLIMAGE="/root/.oldroot/nfs/install/installimage"
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+INSTALLIMAGE="/root/.installimage/installimage"
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
