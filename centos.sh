@@ -213,9 +213,9 @@ generate_config_grub() {
   for i in $(seq 1 "$COUNT_DRIVES") ; do
     local j="$[$i-1]"
     local disk="$(eval echo "\$DRIVE"$i)"
-    echo "(hd$j) $disk" >> W$DMAPFILEW
+    echo "(hd$j) $disk" >> "$DMAPFILE"
   done
-  cat W$DMAPFILEW >> W$DEBUGFILEW
+  cat "$DMAPFILE" >> "$DEBUGFILE"
 
   local elevator=''
   if isVServer; then
