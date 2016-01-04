@@ -2652,7 +2652,7 @@ generate_new_sshkeys() {
 #       [ "$IAM" = "debian"  -a  "$IMG_VERSION" -ge 80 ] ||
 #       [ "$IAM" = "ubuntu"  -a  "$IMG_VERSION" -ge 1404 ] ||
 #       [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 132 ]; then
-    if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25515_key" ]; then
+    if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25519_key" ]; then
       rm -f $FOLD/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
