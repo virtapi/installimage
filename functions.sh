@@ -6,7 +6,11 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+#
 
+# global vars
+COMPANY="Example Company Ltd."
 
 # nil settings parsed out of the config
 PART_COUNT=""
@@ -170,7 +174,7 @@ create_config() {
    fi
 
    echo -e "## ===================================================" > $CNF
-   echo -e "##  Hetzner Online GmbH - installimage - standardconfig " >> $CNF
+   echo -e "##  $COMPANY - installimage - standardconfig " >> $CNF
    echo -e "## ===================================================" >> $CNF
    echo -e "" >> $CNF
 
@@ -674,7 +678,7 @@ if [ "$1" ]; then
 
 
   IMAGE="`grep -m1 -e ^IMAGE $1 | awk '{print \$2}'`"
-  [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
+  [ -e "$WD/$IMAGE" ] && IMAGE="$WD/$IMAGE"
   IMAGE_PATH="$(dirname $IMAGE)/"
   IMAGE_FILE="$(basename $IMAGE)"
   case $IMAGE_PATH in
@@ -2431,7 +2435,7 @@ generate_resolvconf() {
   fi
 #  else
     NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
-    echo -e "### Hetzner Online GmbH installimage" > $NAMESERVERFILE
+    echo -e "### $COMPANY installimage" > $NAMESERVERFILE
     echo -e "# nameserver config" >> $NAMESERVERFILE
 
     # IPV4
@@ -2499,7 +2503,7 @@ set_hostname() {
     local fqdn_name="$sethostname"
     [ "$sethostname" = "$shortname" ] && fqdn_name=''
 
-    echo "### Hetzner Online GmbH installimage" > $hostsfile
+    echo "### $COMPANY installimage" > $hostsfile
     echo "# nameserver config" >> $hostsfile
     echo "# IPv4" >> $hostsfile
     echo "127.0.0.1 localhost.localdomain localhost" >> $hostsfile
@@ -2543,7 +2547,7 @@ generate_hosts() {
       HOSTNAME="`cat $HOSTNAMEFILE | cut -d. -f1`";
       [ "$FULLHOSTNAME" = "$HOSTNAME" ] && FULLHOSTNAME=""
     fi
-    echo "### Hetzner Online GmbH installimage" > $HOSTSFILE
+    echo "### $COMPANY installimage" > $HOSTSFILE
     echo "# nameserver config" >> $HOSTSFILE
     echo "# IPv4" >> $HOSTSFILE
     echo "127.0.0.1 localhost.localdomain localhost" >> $HOSTSFILE
@@ -2849,7 +2853,7 @@ generate_sysctlconf() {
    sysctl_conf="$FOLD/hdd/etc/sysctl.d/99-hetzner.conf"
   fi
     cat << EOF > $sysctl_conf
-### Hetzner Online GmbH installimage
+### $COMPANY installimage
 # sysctl config
 #net.ipv4.ip_forward=1
 net.ipv4.conf.all.rp_filter=1
@@ -3003,7 +3007,7 @@ generate_config_lilo() {
   if [ "$1" ]; then
   BFILE="$FOLD/hdd/etc/lilo.conf"
   rm -rf "$FOLD/hdd/boot/grub/menu.lst" >>/dev/null 2>&1
-  echo -e "### Hetzner Online GmbH installimage" > $BFILE
+  echo -e "### $COMPANY installimage" > $BFILE
   echo -e "# bootloader config" >> $BFILE
   if [ "$LILOEXTRABOOT" ]; then
     echo -e "$LILOEXTRABOOT" >> $BFILE

@@ -6,13 +6,14 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2015, Hetzner Online GmbH
 #
-
+# changed and extended by Thore Bödecker, 2015-10-05
+# changed and extended by Tim Meusel
 
 DEBUGFILE=/root/debug.txt
 
 
 # set up standard env
-SCRIPTPATH=`dirname $0`
+SCRIPTPATH=$(dirname $0)
 DISABLEDFILE=$SCRIPTPATH"/disabled"
 SETUPFILE=$SCRIPTPATH"/setup.sh"
 AUTOSETUPFILE=$SCRIPTPATH"/autosetup.sh"
@@ -21,7 +22,7 @@ INSTALLFILE=$SCRIPTPATH"/install.sh"
 FUNCTIONSFILE=$SCRIPTPATH"/functions.sh"
 GETOPTIONSFILE=$SCRIPTPATH"/get_options.sh"
 STANDARDCONFIG=$SCRIPTPATH"/standard.conf"
-CONFIGSPATH=$SCRIPTPATH"/configs"
+CONFIGSPATH='/root/'
 POSTINSTALLPATH=$SCRIPTPATH"/post-install"
 IMAGESPATH=$SCRIPTPATH"/../images/"
 OLDIMAGESPATH=$SCRIPTPATH"/../images.old/"
@@ -54,7 +55,7 @@ DEFAULTGOVERNOR="powersave"
 V6ONLY="0"
 
 # dialog settings
-DIATITLE='Hetzner Online GmbH'
+DIATITLE='$COMPANY'
 OSMENULIST='Debian (official) '
 OSMENULIST=$OSMENULIST'Ubuntu (official) '
 OSMENULIST=$OSMENULIST'CentOS (official) '
@@ -79,16 +80,16 @@ NOCOL="\033[00m"
 # write log entries in debugfile - single line as second argument
 debug() {
   line="$@"
-  echo -e "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
+  echo -e "[$(date '+%H:%M:%S')] $line" >> "$DEBUGFILE";
 }
 
 
 # write log entries in debugfile - multiple lines at once
 debugoutput() {
   while read line ; do
-    echo -e "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
+    echo -e "[$(date '+%H:%M:%S')] :   $line" >> "$DEBUGFILE";
   done
 }
 
-. $FUNCTIONSFILE
+. "$FUNCTIONSFILE"
 
