@@ -20,41 +20,41 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
-    echo -e "### $COMPANY - installimage" > "$UDEVFILE"
-    echo -e "# device: $1" >> $UDEVFILE
+    echo "### $COMPANY - installimage" > "$UDEVFILE"
+    echo "# device: $1" >> $UDEVFILE
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
-    echo -e "### $COMPANY - installimage" > "$CONFIGFILE"
-    echo -e "# Loopback device:" >> "$CONFIGFILE"
-    echo -e "auto lo" >> "$CONFIGFILE"
-    echo -e "iface lo inet loopback" >> "$CONFIGFILE"
-    echo -e "" >> "$CONFIGFILE"
+    echo "### $COMPANY - installimage" > "$CONFIGFILE"
+    echo "# Loopback device:" >> "$CONFIGFILE"
+    echo "auto lo" >> "$CONFIGFILE"
+    echo "iface lo inet loopback" >> "$CONFIGFILE"
+    echo "" >> "$CONFIGFILE"
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo -e "# device: $1" >> "$CONFIGFILE"
-      echo -e "auto  $1" >> "$CONFIGFILE"
-      echo -e "iface $1 inet static" >> "$CONFIGFILE"
-      echo -e "  address   $3" >> "$CONFIGFILE"
-      echo -e "  netmask   $5" >> "$CONFIGFILE"
-      echo -e "  gateway   $6" >> "$CONFIGFILE"
+      echo "# device: $1" >> "$CONFIGFILE"
+      echo "auto  $1" >> "$CONFIGFILE"
+      echo "iface $1 inet static" >> "$CONFIGFILE"
+      echo "  address   $3" >> "$CONFIGFILE"
+      echo "  netmask   $5" >> "$CONFIGFILE"
+      echo "  gateway   $6" >> "$CONFIGFILE"
       if ! is_private_ip "$3"; then
-        echo -e "  # default route to access subnet" >> "$CONFIGFILE"
-        echo -e "  up route add -net $7 netmask $5 gw $6 $1" >> "$CONFIGFILE"
+        echo "  # default route to access subnet" >> "$CONFIGFILE"
+        echo "  up route add -net $7 netmask $5 gw $6 $1" >> "$CONFIGFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo -e "" >> "$CONFIGFILE"
-      echo -e "iface $1 inet6 static" >> "$CONFIGFILE"
-      echo -e "  address $8" >> "$CONFIGFILE"
-      echo -e "  netmask $9" >> "$CONFIGFILE"
-      echo -e "  gateway ${10}" >> "$CONFIGFILE"
+      echo "" >> "$CONFIGFILE"
+      echo "iface $1 inet6 static" >> "$CONFIGFILE"
+      echo "  address $8" >> "$CONFIGFILE"
+      echo "  netmask $9" >> "$CONFIGFILE"
+      echo "  gateway ${10}" >> "$CONFIGFILE"
     fi
 
     # set duplex speed
     if ! isNegotiated && ! isVServer; then
-      echo -e "  # force full-duplex for ports without auto-neg" >> "$CONFIGFILE"
-      echo -e "  post-up mii-tool -F 100baseTx-FD $1" >> "$CONFIGFILE"
+      echo "  # force full-duplex for ports without auto-neg" >> "$CONFIGFILE"
+      echo "  post-up mii-tool -F 100baseTx-FD $1" >> "$CONFIGFILE"
     fi
 
     return 0
@@ -93,16 +93,16 @@ generate_new_ramdisk() {
     if [ "$IMG_VERSION" -ge 60 ]; then
       # blacklist i915 driver due to many bugs and stability issues
       local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-      echo -e "### $COMPANY - installimage" > "$blacklist_conf"
-      echo -e "### silence any onboard speaker" >> "$blacklist_conf"
-      echo -e "blacklist pcspkr" >> "$blacklist_conf"
-      echo -e "blacklist snd_pcsp" >> "$blacklist_conf"
-      echo -e "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
-      echo -e "### especially in combination with nomodeset" >> "$blacklist_conf"
-      echo -e "blacklist i915" >> "$blacklist_conf"
-      echo -e "### mei driver blacklisted due to serious bugs" >> "$blacklist_conf"
-      echo -e "blacklist mei" >> "$blacklist_conf"
-      echo -e "blacklist mei-me" >> "$blacklist_conf"
+      echo "### $COMPANY - installimage" > "$blacklist_conf"
+      echo '### silence any onboard speaker' >> "$blacklist_conf"
+      echo 'blacklist pcspkr' >> "$blacklist_conf"
+      echo 'blacklist snd_pcsp' >> "$blacklist_conf"
+      echo '### i915 driver blacklisted due to various bugs' >> "$blacklist_conf"
+      echo '### especially in combination with nomodeset' >> "$blacklist_conf"
+      echo 'blacklist i915' >> "$blacklist_conf"
+      echo '### mei driver blacklisted due to serious bugs' >> "$blacklist_conf"
+      echo 'blacklist mei' >> "$blacklist_conf"
+      echo 'blacklist mei-me' >> "$blacklist_conf"
     fi
 
     # just make sure that we do not accidentally try to install a bootloader
@@ -121,7 +121,7 @@ setup_cpufreq() {
     LOADCPUFREQCONF="$FOLD/hdd/etc/default/loadcpufreq"
     CPUFREQCONF="$FOLD/hdd/etc/default/cpufrequtils"
     echo "### $COMPANY - installimage" > "$CPUFREQCONF"
-    echo "# cpu frequency scaling" >> "$CPUFREQCONF"
+    echo '# cpu frequency scaling' >> "$CPUFREQCONF"
     if isVServer; then
       echo 'ENABLE="false"' > "$LOADCPUFREQCONF"
       echo 'ENABLE="false"' >> "$CPUFREQCONF"
@@ -248,8 +248,8 @@ randomize_maint_mysql_pass() {
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 
   # generate correct ~/.my.cnf
-  echo "[client]" > "$MYCNF"
-  echo "user=root" >> "$MYCNF"
+  echo '[client]' > "$MYCNF"
+  echo 'user=root' >> "$MYCNF"
   echo "password=$ROOTPASS" >> "$MYCNF"
 
   # write password file and erase script
