@@ -63,7 +63,7 @@ setup_network_config() {
 
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     MDADMCONF="/etc/mdadm/mdadm.conf"
 #    echo "DEVICES /dev/[hs]d*" > $FOLD/hdd$MDADMCONF
 #    execute_chroot_command "mdadm --detail --scan | sed -e 's/metadata=00.90/metadata=0.90/g' >> $MDADMCONF"; declare -i EXITCODE=$?
@@ -85,7 +85,7 @@ generate_config_mdadm() {
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     OUTFILE=`ls -1r $FOLD/hdd/boot/initrd.img-* | grep -v ".bak$\|.gz$" | awk -F "/" '{print $NF}' | grep -m1 "initrd"`
     VERSION=`echo $OUTFILE |cut -d "-" -f2-`
     echo "Kernel Version found: $VERSION" | debugoutput
@@ -143,7 +143,7 @@ setup_cpufreq() {
 #
 generate_config_grub() {
   declare -i EXITCODE=0
-  [ "$1" ] || return
+  [ -n "$1" ] || return
 
   execute_chroot_command "mkdir -p /boot/grub/; cp -r /usr/lib/grub/* /boot/grub >> /dev/null 2>&1"
   execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
@@ -153,8 +153,7 @@ generate_config_grub() {
      execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset\"/"'
   fi
   # only install grub2 in mbr of all other drives if we use swraid
-  local i=0
-  for i in $(seq 1 "$COUNT_DRIVES") ; do
+  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
