@@ -147,18 +147,18 @@ generate_new_ramdisk() {
       execute_chroot_command "/sbin/dracut -f --kver $VERSION"; declare -i EXITCODE=$?
     else
       if [ "$IMG_VERSION" -ge 60 ] ; then
-        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"; declare -i EXITCODE=$?
+        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"; declare -i EXITCODE="$?"
       else
-        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"; declare -i EXITCODE=$?
+        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"; declare -i EXITCODE="$?"
       fi
     fi
-    return $?
+    return "$EXITCODE"
   fi
 }
 
 
 setup_cpufreq() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     if isVServer; then
       debug "no powersaving on virtual machines"
       return 0
@@ -197,7 +197,7 @@ setup_cpufreq() {
 # Generate the GRUB bootloader configuration.
 #
 generate_config_grub() {
-  [ "$1" ] || return
+  [ -n "$1" ] || return
   # we should not need to do anything, as grubby (new-kernel-pkg) should have
   # already generated a grub.conf
   if [ "$IMG_VERSION" -lt 70 ] ; then
@@ -208,8 +208,7 @@ generate_config_grub() {
     DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
-
-  local i=0
+  local -i i=0
   for ((i=1; i<="$COUNT_DRIVES"; i++)); do
     local j="$((i - 1))"
     local disk="$(eval echo "\$DRIVE"$i)"
