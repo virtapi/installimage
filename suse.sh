@@ -61,11 +61,11 @@ setup_network_config() {
       debug "setting up ipv6 networking $8/$9 via ${10}"
       if [ -n "$3" ]; then
       # add v6 addr as an alias, if we have a v4 addr
-        echo -e "IPADDR_0='$8/$9'" >> "$CONFIGFILE"
+        echo "IPADDR_0='$8/$9'" >> "$CONFIGFILE"
       else
-        echo -e "IPADDR='$8/$9'" >> "$CONFIGFILE"
+        echo "IPADDR='$8/$9'" >> "$CONFIGFILE"
       fi
-      echo -e "default ${10} - $1" >> "$ROUTEFILE"
+      echo "default ${10} - $1" >> "$ROUTEFILE"
     fi
 
     if ! isNegotiated && ! isVServer; then
@@ -116,15 +116,15 @@ generate_new_ramdisk() {
 
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/99-local.conf"
     echo "### $COMPANY - installimage" > "$blacklist_conf"
-    echo -e "### silence any onboard speaker" >> "$blacklist_conf"
-    echo -e "blacklist pcspkr" >> "$blacklist_conf"
-    echo -e "blacklist snd_pcsp" >> "$blacklist_conf"
+    echo '### silence any onboard speaker' >> "$blacklist_conf"
+    echo 'blacklist pcspkr' >> "$blacklist_conf"
+    echo 'blacklist snd_pcsp' >> "$blacklist_conf"
     echo '### i915 driver blacklisted due to various bugs' >> "$blacklist_conf"
     echo '### especially in combination with nomodeset' >> "$blacklist_conf"
-    echo "blacklist i915" >> "$blacklist_conf"
-    echo -e "### mei driver blacklisted due to serious bugs" >> "$blacklist_conf"
-    echo -e "blacklist mei" >> "$blacklist_conf" >> "$blacklist_conf"
-    echo -e "blacklist mei-me" >> "$blacklist_conf">> "$blacklist_conf"
+    echo 'blacklist i915' >> "$blacklist_conf"
+    echo '### mei driver blacklisted due to serious bugs' >> "$blacklist_conf"
+    echo 'blacklist mei' >> "$blacklist_conf" >> "$blacklist_conf"
+    echo 'blacklist mei-me' >> "$blacklist_conf">> "$blacklist_conf"
 
     local dracut_feature=''
     local dracut_modules=''
@@ -195,7 +195,7 @@ generate_config_grub() {
     DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
-
+  local -i i=0
   for ((i=1; i<="$COUNT_DRIVES"; i++)); do
     local j="$((i - 1))"
     local disk="$(eval echo "\$DRIVE"$i)"
