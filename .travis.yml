@@ -1,3 +1,5 @@
+---
+sudo: false
 language: bash
 install:
   - ./build/install.sh
@@ -10,4 +12,3 @@ notifications:
     on_failure: always
     channels:
       - "irc.freenode.org#virtapi"
-sudo: required
