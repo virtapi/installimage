@@ -192,9 +192,9 @@ run_os_specific_functions() {
   #
   debug "# Testing if mysql is installed and if this is a LAMP image and setting new debian-sys-maint password"
   if [ -f "$FOLD/hdd/etc/mysql/debian.cnf" ] ; then
-    grep -q -i lamp <<< "$IMAGENAME" && {
+    if [[ "$IMAGENAME" =~ lamp ]]; then
       randomize_maint_mysql_pass || return 1
-    }
+    fi
   fi
 
   return 0
@@ -255,7 +255,7 @@ randomize_maint_mysql_pass() {
   cp "$SCRIPTPATH/password.txt" "$FOLD/hdd/"
   sed -i -e "s#<password>#$ROOTPASS#" "$FOLD/hdd/password.txt"
   chmod 600 "$FOLD/hdd/password.txt"
-  echo -e "\nNote: Your MySQL password is in /password.txt (delete this with \"erase_password_note\")\n" >> "$FOLD/hdd/etc/motd.tail"
+  printf '\nNote: Your MySQL password is in /password.txt (delete this with "erase_password_note")\n' >> "$FOLD/hdd/etc/motd.tail"
   cp "$SCRIPTPATH/erase_password_note" "$FOLD/hdd/usr/local/bin/"
   chmod +x "$FOLD/hdd/usr/local/bin/erase_password_note"
 
