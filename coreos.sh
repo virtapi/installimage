@@ -107,10 +107,18 @@ generate_new_sshkeys() {
 
 generate_ntp_config() {
   if [ -f "$CLOUDINIT" ]; then
-    echo "write_files:" >> "$CLOUDINIT"
-    echo -e "  - path: /etc/ntp.conf\n    content: |" >> "$CLOUDINIT"
-    echo -e "      # hetzner ntp servers \n      server ntp1.hetzner.de iburst\n      server ntp2.hetzner.com iburst\n      server ntp3.hetzner.net iburst" >> "$CLOUDINIT" | debugoutput
-    echo -e "      # - Allow only time queries, at a limited rate.\n      # - Allow all local queries (IPv4, IPv6)\n      restrict default nomodify nopeer noquery limited kod\n      restrict 127.0.0.1\n      restrict [::1]" >> "$CLOUDINIT"
+printf 'write_files:
+  - path: /etc/ntp.conf
+  content: |
+      # hetzner ntp servers
+      server ntp1.hetzner.de iburst
+      server ntp2.hetzner.com iburst
+      server ntp3.hetzner.net iburst
+      # - Allow only time queries, at a limited rate.
+      # - Allow all local queries (IPv4, IPv6)
+      restrict default nomodify nopeer noquery limited kod
+      restrict 127.0.0.1
+      restrict [::1]\n' >> "$CLOUDINIT"
     return 0
   else
     return 1
@@ -250,8 +258,8 @@ add_coreos_oem_scripts() {
     cat << EOF >> "$scriptfile"
 #! /bin/bash
 
-IFINDEX=\$1
-echo "ID_NET_NAME_SIMPLE=eth\$((\${IFINDEX} - 2))"
+IFINDEX='$1'
+echo "ID_NET_NAME_SIMPLE=eth'$(('${IFINDEX}' - 2))'"
 EOF
     chmod a+x "$scriptfile"
     scriptfile="$scriptpath/rename-interfaces.sh"
@@ -347,7 +355,7 @@ run_os_specific_functions() {
     add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
 
     mkdir -p "$FOLD/hdd/var/lib/coreos-install"
-    cat "$CLOUDINIT" | debugoutput
+    debugoutput <  "$CLOUDINIT"
     cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
 
   return 0
