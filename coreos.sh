@@ -6,20 +6,24 @@
 # originally written by Markus Schade
 # (c) 2014-2015, Hetzner Online GmbH
 #
+# changed and extended by Thore Bödecker, 2015-10-05
+# changed and extended by Tim Meusel
+#
+# This file isn't ready for production!
+#
 
-IMAGE_PUBKEY=$SCRIPTPATH"/gpg/coreos-pubkey.asc"
+IMAGE_PUBKEY="$SCRIPTPATH/gpg/coreos-pubkey.asc"
 
 # create partitons on the given drive
 # create_partitions "DRIVE"
 create_partitions() {
-  touch $FOLD/fstab
+  touch "$FOLD/fstab"
   return 0
 }
 
 make_swraid() {
   return 0
 }
-
 
 mount_partitions() {
   return 0
@@ -33,7 +37,6 @@ format_partitions() {
   return 0
 }
 
-
 # validate image with detached signature
 #validate_image() {
 #  # no detached sign found
@@ -43,7 +46,7 @@ format_partitions() {
 # extract image file to hdd
 extract_image() {
   local COMPRESSION=""
-  if [ "$1" -a "$2" ]; then
+  if [ -n "$1" ] && [ -n "$2" ]; then
     case "$2" in
       bin)
         COMPRESSION=""
@@ -59,9 +62,9 @@ extract_image() {
        ;;
       *)return 1;;
     esac
-
+    #TODO: what happens if COMPRESSION is empty because $2 is "bin"?
     # extract image with given compression
-    $COMPRESSION -d --stdout $EXTRACTFROM > ${DRIVE1}; EXITCODE=$?
+    "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"; EXITCODE=$?
 
     if [ "$EXITCODE" -eq "0" ]; then
       echo "sucess " | debugoutput
@@ -79,18 +82,15 @@ setup_network_config() {
   return 0
 }
 
-
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
   return 0
 }
 
-
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   return 0
 }
-
 
 set_udev_rules() {
   return 0
@@ -107,10 +107,18 @@ generate_new_sshkeys() {
 
 generate_ntp_config() {
   if [ -f "$CLOUDINIT" ]; then
-    echo -e "write_files:" >>$CLOUDINIT
-    echo -e "  - path: /etc/ntp.conf\n    content: |" >>$CLOUDINIT
-    echo -e "      # hetzner ntp servers \n      server ntp1.hetzner.de iburst\n      server ntp2.hetzner.com iburst\n      server ntp3.hetzner.net iburst" >>$CLOUDINIT | debugoutput
-    echo -e "      # - Allow only time queries, at a limited rate.\n      # - Allow all local queries (IPv4, IPv6)\n      restrict default nomodify nopeer noquery limited kod\n      restrict 127.0.0.1\n      restrict [::1]" >>$CLOUDINIT
+printf 'write_files:
+  - path: /etc/ntp.conf
+  content: |
+      # hetzner ntp servers
+      server ntp1.hetzner.de iburst
+      server ntp2.hetzner.com iburst
+      server ntp3.hetzner.net iburst
+      # - Allow only time queries, at a limited rate.
+      # - Allow all local queries (IPv4, IPv6)
+      restrict default nomodify nopeer noquery limited kod
+      restrict 127.0.0.1
+      restrict [::1]\n' >> "$CLOUDINIT"
     return 0
   else
     return 1
@@ -119,7 +127,7 @@ generate_ntp_config() {
 
 set_hostname() {
   if [ -f "$CLOUDINIT" ]; then
-    echo -e "hostname: $1\n" >>$CLOUDINIT
+    echo -e "hostname: $1\n" >> "$CLOUDINIT"
     return 0
   else
     return 1
@@ -131,22 +139,22 @@ setup_cpufreq() {
 }
 
 generate_resolvconf() {
-    echo -e "write_files:" >> $CLOUDINIT
-    echo -e "  - path: /etc/resolv.conf\n    permissions: 0644\n    owner: root\n    content: |" >> $CLOUDINIT
+    echo -e "write_files:" >> "$CLOUDINIT"
+    echo -e "  - path: /etc/resolv.conf\n    permissions: 0644\n    owner: root\n    content: |" >> "$CLOUDINIT"
 
     # IPV4
     if [ "$V6ONLY" -eq 1 ]; then
       debug "# skipping IPv4 DNS resolvers"
     else
       for index in $(shuf --input-range=0-$(( ${#NAMESERVER[*]} - 1 )) | tr '\n' ' ') ; do
-        echo "      nameserver ${NAMESERVER[$index]}" >> $CLOUDINIT
+        echo "      nameserver ${NAMESERVER[$index]}" >> "$CLOUDINIT"
       done
     fi
 
     # IPv6
     if [ -n "$DOIPV6" ]; then
       for index in $(shuf --input-range=0-$(( ${#DNSRESOLVER_V6[*]} - 1 )) | tr '\n' ' ') ; do
-        echo "      nameserver ${DNSRESOLVER_V6[$index]}" >> $CLOUDINIT
+        echo "      nameserver ${DNSRESOLVER_V6[$index]}" >> "$CLOUDINIT"
       done
     fi
   return 0
@@ -161,13 +169,13 @@ generate_sysctlconf() {
 }
 
 set_rootpassword() {
-  if [ "$1" -a "$2" ]; then
+  if [ -n "$1" ] && [ -n "$2" ]; then
     if [ "$2" != '*' ]; then
-      echo -e "users:" >> $CLOUDINIT
-      echo -e "  - name: core" >> $CLOUDINIT
-      echo -e "    passwd: $2" >> $CLOUDINIT
-      echo -e "  - name: root" >> $CLOUDINIT
-      echo -e "    passwd: $2" >> $CLOUDINIT
+      echo -e "users:" >> "$CLOUDINIT"
+      echo -e "  - name: core" >> "$CLOUDINIT"
+      echo -e "    passwd: $2" >> "$CLOUDINIT"
+      echo -e "  - name: root" >> "$CLOUDINIT"
+      echo -e "    passwd: $2" >> "$CLOUDINIT"
     fi
     return 0
   else
@@ -209,25 +217,24 @@ EOF
 copy_ssh_keys() {
   if [ "$1" ]; then
     local key_url="$1"
-    echo -e "ssh_authorized_keys:" >> $CLOUDINIT
+    echo -e "ssh_authorized_keys:" >> "$CLOUDINIT"
     case $key_url in
       https:*|http:*|ftp:*)
-        wget $key_url -O "$FOLD/authorized_keys"
+        wget "$key_url" -O "$FOLD/authorized_keys"
         while read line; do
-          echo -e "  - $line" >> $CLOUDINIT
+          echo -e "  - $line" >> "$CLOUDINIT"
         done < "$FOLD/authorized_keys"
       ;;
       *)
         while read line; do
-          echo -e "  - $line" >> $CLOUDINIT
-        done < $key_url
+          echo -e "  - $line" >> "$CLOUDINIT"
+        done < "$key_url"
       ;;
     esac
   else
     return 1
   fi
 }
-
 
 # generate_config_grub <version>
 generate_config_grub() {
@@ -246,15 +253,15 @@ add_coreos_oem_scripts() {
     local scriptpath="$mntpath/bin"
     local scriptfile="$scriptpath/netname.sh"
     if [ ! -d "$scriptpath" ]; then
-      mkdir -p $scriptpath
+      mkdir -p "$scriptpath"
     fi
-    cat << EOF >> $scriptfile
+    cat << EOF >> "$scriptfile"
 #! /bin/bash
 
-IFINDEX=\$1
-echo "ID_NET_NAME_SIMPLE=eth\$((\${IFINDEX} - 2))"
+IFINDEX='$1'
+echo "ID_NET_NAME_SIMPLE=eth'$(('${IFINDEX}' - 2))'"
 EOF
-    chmod a+x $scriptfile
+    chmod a+x "$scriptfile"
     scriptfile="$scriptpath/rename-interfaces.sh"
     cat << EOF >> $scriptfile
 #! /bin/bash
@@ -265,7 +272,7 @@ for iface in \${INTERFACES}; do
 	udevadm test /sys/class/net/\${iface}
 done
 EOF
-    chmod a+x $scriptfile
+    chmod a+x "$scriptfile"
   fi
 }
 
@@ -273,7 +280,7 @@ add_coreos_oem_cloudconfig() {
   if [ "$1" ]; then
     local mntpath=$1
     local cloudconfig="$mntpath/cloud-config.yml"
-    echo -e "#cloud-config" > $cloudconfig
+    echo -e "#cloud-config" > "$cloudconfig"
     if ! isVServer; then
       cat << EOF >> $cloudconfig
 write_files:
@@ -348,8 +355,8 @@ run_os_specific_functions() {
     add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
 
     mkdir -p "$FOLD/hdd/var/lib/coreos-install"
-    cat $CLOUDINIT | debugoutput
-    cp "${CLOUDINIT}" "$FOLD/hdd/var/lib/coreos-install/user_data"
+    debugoutput <  "$CLOUDINIT"
+    cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
 
   return 0
 }
