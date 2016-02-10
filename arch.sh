@@ -21,30 +21,30 @@ setup_network_config() {
     echo -e "# device: $1" >> "$UDEVFILE"
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
-    echo -e "### $COMPANY - installimage" > "$CONFIGFILE"
-    echo -e "# device: $1" >> "$CONFIGFILE"
-    echo -e "[Match]" >> "$CONFIGFILE"
-    echo -e "MACAddress=$2" >> "$CONFIGFILE"
-    echo -e "" >> "$CONFIGFILE"
+    { echo -e "### $COMPANY - installimage" 
+    echo -e "# device: $1"
+    echo -e "[Match]"
+    echo -e "MACAddress=$2"
+    echo -e ""; } > "$CONFIGFILE"
 
     echo -e "[Network]" >> "$CONFIGFILE"
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo -e "Address=$8/$9" >> "$CONFIGFILE"
-      echo -e "Gateway=${10}" >> "$CONFIGFILE"
-      echo -e "" >> "$CONFIGFILE"
+      { echo -e "Address=$8/$9"
+      echo -e "Gateway=${10}"
+      echo -e ""; } >> "$CONFIGFILE"
     fi
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
       debug "setting up ipv4 networking $3/$5 via $6"
-      echo -e "Address=$3/$CIDR" >> "$CONFIGFILE"
-      echo -e "Gateway=$6" >> "$CONFIGFILE"
-      echo -e "" >> "$CONFIGFILE"
+      { echo -e "Address=$3/$CIDR"
+      echo -e "Gateway=$6"
+      echo -e ""; } >> "$CONFIGFILE"
 
       if ! is_private_ip "$3"; then
-        echo -e "[Route]" >> "$CONFIGFILE"
-        echo -e "Destination=$7/$CIDR" >> "$CONFIGFILE"
-        echo -e "Gateway=$6" >> "$CONFIGFILE"
+        { echo -e "[Route]"
+        echo -e "Destination=$7/$CIDR"
+        echo -e "Gateway=$6"; } >> "$CONFIGFILE"
       fi
     fi
 
@@ -70,16 +70,16 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ "$1" ]; then
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-    echo -e "### $COMPANY - installimage" > "$blacklist_conf"
-    echo -e "### silence any onboard speaker" >> "$blacklist_conf"
-    echo -e "blacklist pcspkr" >> "$blacklist_conf"
-    echo -e "blacklist snd_pcsp" >> "$blacklist_conf"
-    echo -e "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
-    echo -e "### especially in combination with nomodeset" >> "$blacklist_conf"
-    echo -e "blacklist i915" >> "$blacklist_conf"
-    echo -e "### mei driver blacklisted due to serious bugs" >> "$blacklist_conf"
-    echo -e "blacklist mei" >> "$blacklist_conf"
-    echo -e "blacklist mei-me" >> "$blacklist_conf"
+    { echo -e "### $COMPANY - installimage"
+    echo -e "### silence any onboard speaker"
+    echo -e "blacklist pcspkr"
+    echo -e "blacklist snd_pcsp"
+    echo -e "### i915 driver blacklisted due to various bugs"
+    echo -e "### especially in combination with nomodeset"
+    echo -e "blacklist i915"
+    echo -e "### mei driver blacklisted due to serious bugs"
+    echo -e "blacklist mei"
+    echo -e "blacklist mei-me"; } > "$blacklist_conf"
 
     execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base udev autodetect modconf block mdadm lvm2 filesystems keyboard fsck\"/"'
     execute_chroot_command "mkinitcpio -p linux"; EXITCODE=$?
@@ -118,8 +118,9 @@ generate_config_grub() {
   # only install grub2 in mbr of all other drives if we use swraid
   if [ "$SWRAID" = "1" ] ;  then
     local i=2
-    while [ `eval echo \\$DRIVE${i}` ]; do
-      local TARGETDRIVE=`eval echo \\$DRIVE${i}`
+    while [ "$(eval echo "\$DRIVE"$i)" ]; do
+      local TARGETDRIVE=''
+      TARGETDRIVE="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $TARGETDRIVE 2>&1"
       let i=i+1
     done
