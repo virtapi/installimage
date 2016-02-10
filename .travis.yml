@@ -1,9 +1,9 @@
 ---
-sudo: required
-dist: trusty
+sudo: false
 language: bash
-install:
-  - ./build/install.sh
+addons:
+  apt:
+    packages: shellcheck
 script:
   - ./build/build.sh
 notifications:
