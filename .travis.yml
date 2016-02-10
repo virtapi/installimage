@@ -4,6 +4,8 @@ dist: trusty
 language: bash
 addons:
   apt:
+    sources:
+      - debian-sid
     packages: shellcheck
 script:
   - ./build/build.sh
