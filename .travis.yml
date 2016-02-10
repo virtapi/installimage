@@ -1,5 +1,6 @@
 ---
 sudo: required
+dist: trusty
 language: bash
 install:
   - ./build/install.sh
@@ -10,5 +11,6 @@ notifications:
   irc:
     on_success: change
     on_failure: always
+    skip_join: true
     channels:
       - "irc.freenode.org#virtapi"
