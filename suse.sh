@@ -8,6 +8,7 @@
 #
 # changed and extended by Thore Bödecker, 2015-10-05
 # changed and extended by Tim Meusel
+# changed and extended by Silvio Knizek
 #
 
 
@@ -99,8 +100,6 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    OUTFILE=`ls -1r $FOLD/hdd/boot/initrd-* |grep -v ".bak$\|.gz$" |awk -F "/" '{print $NF}' |grep -m1 "initrd"`
-    VERSION=`echo $OUTFILE |cut -d "-" -f2-`
 
     # opensuse 13.2 uses dracut for generating initrd
     if [ "$SUSEVERSION" -lt 132 ] ; then
