@@ -185,7 +185,7 @@ generate_config_grub() {
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
   # only install grub2 in mbr of all other drives if we use swraid
-  for i in $(seq 1 "$COUNT_DRIVES") ; do
+  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
@@ -211,10 +211,11 @@ run_os_specific_functions() {
 }
 
 randomize_mdadm_checkarray_cronjob_time() {
-  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" -a "$(grep checkarray "$FOLD/hdd/etc/cron.d/mdadm")" ]; then
-    hour=$(((RANDOM % 4) + 1))
-    minute=$(((RANDOM % 59) + 1))
-    day=$(((RANDOM % 28) + 1))
+  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && [ -a "$(grep checkarray "$FOLD/hdd/etc/cron.d/mdadm")" ]; then
+    declare -i hour minute day
+    hour="$(((RANDOM % 4) + 1))"
+    minute="$(((RANDOM % 59) + 1))"
+    day="$(((RANDOM % 28) + 1))"
     debug "# Randomizing cronjob run time for mdadm checkarray: day $day @ $hour:$minute"
 
     sed -i \
