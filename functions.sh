@@ -2954,7 +2954,7 @@ set_ssh_rootlogin() {
      local permit="$1"
      case $permit in
        yes|no|without-password|forced-commands-only)
-         sed -i "$FOLD/hdd/etc/ssh/sshd_config" -e "s/^PermitRootLogin.*/PermitRootLogin $1/"
+         sed -i "$FOLD/hdd/etc/ssh/sshd_config" -e "s/^\(#\)\?PermitRootLogin.*/PermitRootLogin $1/"
        ;;
        *)
          debug "invalid option for PermitRootLogin"
