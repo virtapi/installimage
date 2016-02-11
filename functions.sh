@@ -3494,7 +3494,10 @@ uuid_bugfix() {
 
 # param 1: /dev/sda (e.g)
 function hdinfo() {
-  local withoutdev= vendor= name= logical_nr=
+  local withoutdev
+  local vendor
+  local name; name=
+  local logical_nr; logical_nr=
   withoutdev=${1##*/}
   vendor="$(cat /sys/block/$withoutdev/device/vendor | tr -d ' ')"
 
