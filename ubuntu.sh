@@ -85,8 +85,8 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    OUTFILE=`ls -1r $FOLD/hdd/boot/initrd.img-* | grep -v ".bak$\|.gz$" | awk -F "/" '{print $NF}' | grep -m1 "initrd"`
-    VERSION=`echo $OUTFILE | cut -d "-" -f2-`
+    OUTFILE=$(ls -1r $FOLD/hdd/boot/initrd.img-* | grep -v ".bak$\|.gz$" | awk -F "/" '{print $NF}' | grep -m1 "initrd")
+    VERSION=$(echo $OUTFILE | cut -d "-" -f2-)
     echo "Kernel Version found: $VERSION" | debugoutput
 
     if [ "$IMG_VERSION" -ge 1204 ]; then
