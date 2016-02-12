@@ -351,8 +351,8 @@ randomize_cpanel_mysql_passwords() {
   CPHULKDCONF="$FOLD/hdd/var/cpanel/hulkd/password"
   CPHULKDPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c16)
   ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
-  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\""$CPHULKDPASS"\") WHERE user='cphulkd'; \
-  UPDATE mysql.user SET password=PASSWORD(\""$ROOTPASS"\") WHERE user='root';\nFLUSH PRIVILEGES;"
+  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
+  UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
   echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
   debug "changing mysql passwords"
   execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; declare -i EXITCODE=$?
