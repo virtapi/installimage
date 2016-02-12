@@ -188,7 +188,7 @@ create_config() {
      DISK="$(eval echo \$DRIVE${i})"
      OPTDISK="$(eval echo \$OPT_DRIVE${i})"
      if [ -n "$OPTDISK" ] ; then
-       optdrive_count=$[$optdrive_count+1]
+       optdrive_count=$(($optdrive_count+1))
        found_optdrive=1
        hdinfo /dev/$OPTDISK >>$CNF
        echo "DRIVE$i /dev/$OPTDISK" >>$CNF
@@ -328,15 +328,15 @@ create_config() {
    ## Calculate how much hardisk space at raid level 0,1,5,6,10
    RAID0=0
    local small_hdd="$(smallest_hd)"
-   local small_hdd_size="$[$(blockdev --getsize64 $small_hdd)/1024/1024/1024]"
-   RAID0=$[$small_hdd_size*$COUNT_DRIVES]
+   local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
+   RAID0=$(($small_hdd_size*$COUNT_DRIVES))
    RAID1=$small_hdd_size
    if [ $COUNT_DRIVES -ge 3 ] ; then
-     RAID5=$[$RAID0-$small_hdd_size]
+     RAID5=$(($RAID0-$small_hdd_size))
    fi
    if [ $COUNT_DRIVES -ge 4 ] ; then
-     RAID6=$[$RAID0-2*$small_hdd_size]
-     RAID10=$[$RAID0/2]
+     RAID6=$(($RAID0-2*$small_hdd_size))
+     RAID10=$(($RAID0/2))
    fi
 
    # partitions
@@ -534,7 +534,7 @@ getdrives() {
   done
   [ -z "$DRIVE1" ] && DRIVE1="no valid drive found"
 
-  COUNT_DRIVES=$[$i - 1]
+  COUNT_DRIVES=$(($i - 1))
 
   return 0
 }
@@ -600,7 +600,7 @@ if [ "$1" ]; then
   echo "$PART_LINES" > /tmp/part_lines.tmp
   i=0
   while read PART_LINE ; do
-    i=$[$i+1]
+    i=$(($i+1))
     PART_MOUNT[$i]="$(echo $PART_LINE | awk '{print \$2}')"
     PART_FS[$i]="$(echo $PART_LINE | awk '{print \$3}')"
     PART_SIZE[$i]="$(translate_unit "$(echo "$PART_LINE" | awk '{ print $4 }')")"
@@ -778,7 +778,7 @@ validate_vars() {
     if [ $i -gt 1 ] ; then
       for j in $(seq 0 $((${#drive_array[@]} - 1))); do
         if [ ${drive_array[$j]} = $drive ]; then
-          graph_error "Duplicate DRIVE definition. $drive used for DRIVE$[$j+1] and DRIVE$i"
+          graph_error "Duplicate DRIVE definition. $drive used for DRIVE$(($j+1)) and DRIVE$i"
         fi
       done
       drive_array=( "${drive_array[@]}" "$drive" )
@@ -857,25 +857,25 @@ validate_vars() {
     # this variable is used later when determining what disk to use as reference
     # when drives of different sizes are in a system
     SMALLEST_HDD_SIZE=$DRIVE_SUM_SIZE
-    SMALLEST_HDD_SIZE=$[$SMALLEST_HDD_SIZE / 1024 / 1024]
+    SMALLEST_HDD_SIZE=$(($SMALLEST_HDD_SIZE / 1024 / 1024))
     echo "Size of smallest drive is $DRIVE_SUM_SIZE" | debugoutput
     if [ "$SWRAIDLEVEL" = "0" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * $COUNT_DRIVES]
+      DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE * $COUNT_DRIVES))
     elif [ "$SWRAIDLEVEL" = "5" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES - 1)]
+      DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE * ($COUNT_DRIVES - 1)))
     elif [ "$SWRAIDLEVEL" = "6" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES - 2)]
+      DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE * ($COUNT_DRIVES - 2)))
     elif [ "$SWRAIDLEVEL" = "10" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES / 2)]
+      DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE * ($COUNT_DRIVES / 2)))
     fi
     echo "Calculated size of array is: $DRIVE_SUM_SIZE" | debugoutput
   fi
 
-  DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE / 1024 / 1024]
+  DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE / 1024 / 1024))
   for i in $(seq 1 $PART_COUNT); do
     if [ "${PART_SIZE[$i]}" = "all" ]; then
       # make sure that the all partition has at least 1G available
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE - 1024]
+      DRIVE_SUM_SIZE=$(($DRIVE_SUM_SIZE - 1024))
     fi
   done
 
@@ -1174,17 +1174,17 @@ validate_vars() {
       if [ "${LVM_VG_NAME[$i]}" = "$vg_name" -a $i -ne $vg_id ] ; then
         vg_add_size=0
         if [ "${LVM_VG_SIZE[$i]}" = "all" ] ; then
-          vg_add_size=$[$DRIVE_SUM_SIZE - $PARTS_SUM_SIZE]
+          vg_add_size=$(($DRIVE_SUM_SIZE - $PARTS_SUM_SIZE))
         else
           vg_add_size=${LVM_VG_SIZE[$i]}
         fi
-        vg_size=$[$vg_size + $vg_add_size]
+        vg_size=$(($vg_size + $vg_add_size))
       fi
     done
 
     for lv_id in $(seq 1 $LVM_LV_COUNT) ; do
       if [ "${LVM_LV_VG[$lv_id]}" = "$vg_name" -a "${LVM_LV_SIZE[$lv_id]}" = "all" ] ; then
-        sum_size=$[$sum_size + ${LVM_LV_SIZE[$lv_id]}]
+        sum_size=$(($sum_size + ${LVM_LV_SIZE[$lv_id]}))
       fi
     done
 
@@ -1233,7 +1233,7 @@ validate_vars() {
   fi
 
   if [ "$DRIVE_SUM_SIZE" -lt "$PARTS_SUM_SIZE" ]; then
-    local diff=$[DRIVE_SUM_SIZE - $PARTS_SUM_SIZE]
+    local diff=$((DRIVE_SUM_SIZE - $PARTS_SUM_SIZE))
     graph_error "ERROR: You are going to use more space than your drives have available.
                  \nUsage: $PARTS_SUM_SIZE MiB of $DRIVE_SUM_SIZE MiB
                  \nDiff: $diff MiB"
@@ -1372,7 +1372,7 @@ unmount_all() {
     device="$(echo "$line" | grep -v "^/dev/loop" | grep -v "^/dev/root" | grep "^/" | awk '{ print $1 }')"
     if [ "$device" ] ; then
       unmount_output="$unmount_output\n$(umount $device 2>&1)"; EXITCODE=$?
-      unmount_errors=$[$unmount_errors + $EXITCODE]
+      unmount_errors=$(($unmount_errors + $EXITCODE))
     fi
   done < /proc/mounts
 
@@ -1432,7 +1432,7 @@ function get_end_of_extended() {
   local sum=0
   local LIMIT=2199023255040
   # get sector limit
-  local SECTORLIMIT=$[($LIMIT / $SECTORSIZE) - 1]
+  local SECTORLIMIT=$((($LIMIT / $SECTORSIZE) - 1))
   local STARTSEC=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
 
   for i in $(seq 1 3); do
@@ -1440,10 +1440,10 @@ function get_end_of_extended() {
   done
   rest=$(echo "$DRIVE_SIZE - ($sum * 1024 * 1024)" | bc)
 
-  end=$[$DRIVE_SIZE / $SECTORSIZE]
+  end=$(($DRIVE_SIZE / $SECTORSIZE))
 
   if [ $DRIVE_SIZE -lt $LIMIT ]; then
-    echo "$[$end-1]"
+    echo "$(($end-1))"
   else
     if [ $rest -gt $LIMIT ]; then
       # if the remaining space is more than 2 TiB, the end of the extended
@@ -1451,7 +1451,7 @@ function get_end_of_extended() {
       echo "$(echo "$STARTSEC+$SECTORLIMIT" | bc)"
     else
       # otherwise the end is the number of sectors - 1
-      echo "$[$end-1]"
+      echo "$(($end-1))"
     fi
   fi
 }
@@ -1464,10 +1464,10 @@ function get_end_of_partition {
   local NR=$3
   local LIMIT=2199023255040
   local SECTORSIZE=$(blockdev --getss $DEV)
-  local SECTORLIMIT=$[($LIMIT / $SECTORSIZE) - 1]
+  local SECTORLIMIT=$((($LIMIT / $SECTORSIZE) - 1))
   local END_EXTENDED="$(parted -s $DEV unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
   local DEVSIZE=$(blockdev --getsize64 $DEV)
-  START=$[START * $SECTORSIZE]
+  START=$((START * $SECTORSIZE))
   # use the smallest hdd as reference when using swraid
   # to determine the end of a partition
   local smallest_hdd=$(smallest_hd)
@@ -1482,23 +1482,23 @@ function get_end_of_partition {
 
   if [ "$(echo ${PART_SIZE[$NR]} |tr [:upper:] [:lower:])" = "all" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$[$LAST-1048576]
+    END=$(($LAST-1048576))
   else
     END="$(echo "$START+(${PART_SIZE[$NR]}* 1024 * 1024)" | bc)"
     # trough alignment the calculated end could be a little bit over drive size
     # or too close to the end. Always leave 1MiB space
     # (may be needed for mdadm or for later conversion to GPT)
-    if [ $END -ge $LAST ] || [ $[$LAST - $END] -lt 1048576 ]; then
-      END=$[$LAST-1048576]
+    if [ $END -ge $LAST ] || [ $(($LAST - $END)) -lt 1048576 ]; then
+      END=$(($LAST-1048576))
     fi
   fi
   # check if end of logical partition is over the end extended partition
   if [ $PCOUNT -gt 4 ] && [ $END -gt $END_EXTENDED ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$[$END_EXTENDED-1048576]
+    END=$(($END_EXTENDED-1048576))
   fi
 
-  END=$[$END / $SECTORSIZE]
+  END=$(($END / $SECTORSIZE))
   echo $END
 }
 
@@ -1567,7 +1567,7 @@ create_partitions() {
    if [ $GPT -eq 1 ]; then
 
      # start at 2MiB so we have 1 MiB left for BIOS Boot Partition
-     START=$[2097152/$SECTORSIZE]
+     START=$((2097152/$SECTORSIZE))
      if [ $i -gt 1 ]; then
        START=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
      fi
@@ -1581,7 +1581,7 @@ create_partitions() {
      local gpt_part_type="${SFDISKTYPE}00"
 
      if [ $i -eq $PART_COUNT ]; then
-       local bios_grub_start=$[1048576/$SECTORSIZE]
+       local bios_grub_start=$((1048576/$SECTORSIZE))
        echo "Creating BIOS_GRUB partition" | debugoutput
        sgdisk --new $i:$bios_grub_start:+1M -t $i:EF02 $1 2>&1 | debugoutput
      else
@@ -1596,7 +1596,7 @@ create_partitions() {
 
    else
      # part without GPT
-     START=$[1048576/$SECTORSIZE]
+     START=$((1048576/$SECTORSIZE))
 
      TYPE="primary"
      PCOUNT="$i"
@@ -1619,10 +1619,10 @@ create_partitions() {
           echo "$OUTPUT" | debugoutput
        fi
 
-       PCOUNT=$[$PCOUNT+1]
+       PCOUNT=$(($PCOUNT+1))
 
        TYPE="logical"
-       START=$[$START + (1048576 / $SECTORSIZE) ]
+       START=$(($START + (1048576 / $SECTORSIZE) ))
 
        END=$(get_end_of_partition $1 $START $i)
      fi
@@ -1655,7 +1655,7 @@ create_partitions() {
 
 
      if [ "$PART_COUNT" -ge "4" -a "$i" -ge "4" ]; then
-       make_fstab_entry "$1" "$[$i+1]" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
+       make_fstab_entry "$1" "$(($i+1))" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
      else
        make_fstab_entry "$1" "$i" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
      fi
@@ -1734,12 +1734,12 @@ next_partnum() {
   num="$1"
   if [ "$GPT" != "1" ]; then
     if [ $num -lt 3 ] ; then
-      echo $[$num+1] ; return
+      echo $(($num+1)) ; return
     else
-      echo $[$num+2]
+      echo $(($num+2))
     fi
   else
-   echo $[$num+1]
+    echo $(($num+1))
   fi
 }
 
@@ -1826,7 +1826,7 @@ make_swraid() {
 
         yes | mdadm -q -C $raid_device -l$array_raidlevel -n$n $array_metadata $can_assume_clean $components 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
 
-        count="$[$count+1]"
+        count="$(($count+1))"
        fi
 
     done < $fstab.tmp
@@ -1850,7 +1850,7 @@ make_lvm() {
       done
     else
       for inc_dev in $(seq 1 $(ls -1 ${DRIVE1}[0-9]* | wc -l)) ; do
-        dev[$inc_dev]="$disk1$(next_partnum $[$inc_dev-1])"
+        dev[$inc_dev]="$disk1$(next_partnum $(($inc_dev-1)))"
       done
     fi
 
@@ -3458,7 +3458,7 @@ function getHDDsNotInToleranceRange() {
   local RANGE=135
   local smallest_hdd="$(smallest_hd)"
   local smallest_hdd_size="$(blockdev --getsize64 $smallest_hdd)"
-  local max_size=$[ $smallest_hdd_size * $RANGE / 100 ]
+  local max_size=$(( $smallest_hdd_size * $RANGE / 100 ))
   debug "checking if hdd sizes are within tolerance. min: $smallest_hdd_size / max: $max_size"
   for i in $(seq 1 $COUNT_DRIVES); do
     if [ "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" -gt "$max_size" ]; then
@@ -3580,7 +3580,7 @@ function part_test_size() {
   if [ "$FORCE_GPT" = "2" ]; then
     debug "Forcing use of GPT as directed"
     GPT=1
-    PART_COUNT=$[$PART_COUNT+1]
+    PART_COUNT=$(($PART_COUNT+1))
     return 0
   fi
 
@@ -3589,7 +3589,7 @@ function part_test_size() {
     dev=$DRIVE1
   fi
   local DRIVE_SIZE=$(blockdev --getsize64 $dev)
-  DRIVE_SIZE=$[ $DRIVE_SIZE / 1024 / 1024 ]
+  DRIVE_SIZE=$(( $DRIVE_SIZE / 1024 / 1024 ))
 
   if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" = "1" ]; then
     # use only GPT if not CentOS or OpenSuSE newer than 12.2
@@ -3599,7 +3599,7 @@ function part_test_size() {
       else
         echo "using GPT (drive size bigger then 2TB or requested)" | debugoutput
         GPT=1
-        PART_COUNT=$[$PART_COUNT+1]
+        PART_COUNT=$(($PART_COUNT+1))
       fi
     else
       echo "cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
@@ -3635,7 +3635,7 @@ function check_dos_partitions() {
   fi
 
   local DRIVE_SIZE=$(blockdev --getsize64 $dev)
-  DRIVE_SIZE=$[ $DRIVE_SIZE / 1024 / 1024 ]
+  DRIVE_SIZE=$(( $DRIVE_SIZE / 1024 / 1024 ))
 
   if [ $DRIVE_SIZE -lt $LIMIT ]; then
     return 0
