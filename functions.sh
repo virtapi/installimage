@@ -1390,7 +1390,7 @@ stop_lvm_raid() {
 
   dmsetup remove_all
 
-  test -x "$(which mdadm)" && for i in $(cat /proc/mdstat | grep md | cut -d ' ' -f1); do
+  test -x "$(which mdadm)" && for i in $(grep md /proc/mdstat | cut -d ' ' -f1); do
     [ -e /dev/$i ] && mdadm -S /dev/$i >> /dev/null 2>&1
   done
 }
@@ -1539,7 +1539,7 @@ create_partitions() {
     sfdisk -A $1 1 --force 1>/dev/null 2>/dev/null
   else
     parted -s $1 mklabel msdos 1>/dev/null 2>/tmp/$$.tmp
-    cat /tmp/$$.tmp | debugoutput
+    debugoutput < /tmp/$$.tmp
   fi
 
   # start loop to create all partitions
@@ -1980,7 +1980,7 @@ mount_partitions() {
     fstab="$1"
     basedir="$2"
 
-    ROOTDEVICE="`cat $fstab | grep " / " | cut -d " " -f 1`"
+    ROOTDEVICE="`grep " / " $fstab | cut -d " " -f 1`"
     SYSTEMROOTDEVICE="$ROOTDEVICE"
     SYSTEMBOOTDEVICE="$SYSTEMROOTDEVICE"
 
@@ -2020,7 +2020,7 @@ mount_partitions() {
     mount -o bind /sys $basedir/sys 2>&1 | debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    cat $fstab | grep -v " / \|swap" | grep "^/dev/" > $fstab.tmp
+    grep -v " / \|swap" $fstab | grep "^/dev/" > $fstab.tmp
 
     while read line ; do
       DEVICE="`echo $line | cut -d " " -f 1`"
@@ -2540,7 +2540,7 @@ generate_hosts() {
       fi
     else
       FULLHOSTNAME="`cat $HOSTNAMEFILE`"
-      HOSTNAME="`cat $HOSTNAMEFILE | cut -d. -f1`";
+      HOSTNAME="`cut -d. -f1 $HOSTNAMEFILE`";
       [ "$FULLHOSTNAME" = "$HOSTNAME" ] && FULLHOSTNAME=""
     fi
     echo "### Hetzner Online GmbH installimage" > $HOSTSFILE
@@ -3009,7 +3009,7 @@ generate_config_lilo() {
     echo -e "$LILOEXTRABOOT" >> $BFILE
   fi
   echo -e "boot=$SYSTEMDEVICE" >> $BFILE
-  echo -e "root=`cat $FOLD/hdd/etc/fstab |grep " / " |cut -d " " -f 1`" >> $BFILE
+  echo -e "root=`grep " / " $FOLD/hdd/etc/fstab |cut -d " " -f 1`" >> $BFILE
   echo -e "vga=0x317" >> $BFILE
   echo -e "timeout=40" >> $BFILE
   echo -e "prompt" >> $BFILE
@@ -3396,7 +3396,7 @@ exit_function() {
 
 #function to check if it is a intel or amd cpu
 function check_cpu () {
-  if [ "$(cat /proc/cpuinfo | grep GenuineIntel)" ]; then
+  if [ "$(grep GenuineIntel /proc/cpuinfo)" ]; then
     MODEL="intel"
   else
     MODEL="amd"
@@ -3499,7 +3499,7 @@ function hdinfo() {
   local name; name=
   local logical_nr; logical_nr=
   withoutdev=${1##*/}
-  vendor="$(cat /sys/block/$withoutdev/device/vendor | tr -d ' ')"
+  vendor="$(tr -d ' ' < /sys/block/$withoutdev/device/vendor)"
 
   case "$vendor" in
     LSI)
@@ -3509,6 +3509,10 @@ function hdinfo() {
       echo "# LSI RAID (LD $logical_nr): $name"
       ;;
     Adaptec)
+      #
+      # Unsure if this version does work in all cases, the original one does print the filename, if the file is not present.
+      #
+      # logical_nr="$(awk '{print $2}' /sys/block/$withoutdev/device/model 2>&1)"
       logical_nr="$(cat /sys/block/$withoutdev/device/model 2>&1 | awk '{print $2}')"
       name="$(arcconf GETCONFIG 1 LD $logical_nr | grep "Logical device name" | sed 's/.*: \(.*\)/\1/g')"
       [ -z "$name" ] && name="no name"
