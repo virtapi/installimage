@@ -434,11 +434,11 @@ create_config() {
    RAM=$(free -m | grep Mem: | tr -s ' ' | cut -d' ' -f2)
    SWAPSIZE=4
    if [ "$RAM" -lt 2048 ]; then
-    SWAPSIZE=$(($RAM * 2 / 1024 + 1))
+    SWAPSIZE=$((RAM * 2 / 1024 + 1))
    elif [ "$RAM" -lt 8192 ]; then
-	SWAPSIZE=$(($RAM / 1024 + 1))
+	SWAPSIZE=$((RAM / 1024 + 1))
    elif [ "$RAM" -lt 65535 ]; then
-	SWAPSIZE=$(($RAM / 2 / 1024 + 1))
+	SWAPSIZE=$((RAM / 2 / 1024 + 1))
    fi
 
    DEFAULTPARTS=${DEFAULTPARTS/SWAPSIZE##/$SWAPSIZE}
@@ -609,13 +609,13 @@ if [ "$1" ]; then
     if [ "$SWRAID" = "1" ]; then
       if [ "${PART_MOUNT[$i]}" != "/boot" -a "${PART_SIZE[$i]}" != "all" -a "${PART_MOUNT[$i]}" != "swap" ]; then
         if [ "$SWRAIDLEVEL" = "0" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/$COUNT_DRIVES))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/COUNT_DRIVES))
         elif [ "$SWRAIDLEVEL" = "5" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES-1)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES-1)))
         elif [ "$SWRAIDLEVEL" = "6" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES-2)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES-2)))
         elif [ "$SWRAIDLEVEL" = "10" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES/2)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES/2)))
         fi
       fi
     fi
@@ -3254,7 +3254,7 @@ translate_unit() {
           factor=1048576
           ;;
       esac
-      echo $(($value * $factor))
+      echo $((value * factor))
       return 0
     fi
   done

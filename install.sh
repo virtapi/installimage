@@ -18,7 +18,7 @@ clear
 
 
 inc_step() {
-  CURSTEP=$(($CURSTEP + 1))
+  CURSTEP=$((CURSTEP + 1))
 }
 
 status_busy() {
@@ -107,10 +107,10 @@ else
   status_failed
 fi
 
-test "$SWRAID" = "1" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$LVM" = "1" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$OPT_INSTALL" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$(($TOTALSTEPS + 1))
+test "$SWRAID" = "1" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$LVM" = "1" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$OPT_INSTALL" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$((TOTALSTEPS + 1))
 
 #
 # Remove partitions
