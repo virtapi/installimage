@@ -89,37 +89,37 @@ generate_menu() {
   # find image-files and generate raw list
   FINALIMAGEPATH="$IMAGESPATH"
   if [ "$1" = "openSUSE" ]; then
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse"`
+    RAWLIST=$(ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse")
   elif [ "$1" = "Virtualization" ]; then
     RAWLIST=""
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^CoreOS"`
+    RAWLIST=$(ls -1 $IMAGESPATH | grep -i -e "^CoreOS")
     RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Wheezy"
   elif [ "$1" = "old_images" ]; then
-    RAWLIST=`ls -1 $OLDIMAGESPATH`
+    RAWLIST=$(ls -1 $OLDIMAGESPATH)
     FINALIMAGEPATH="$OLDIMAGESPATH"
   else
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1"`
+    RAWLIST=$(ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1")
   fi
   # Remove CPANEL image and signature files from list
-  RAWLIST="`echo $RAWLIST |tr ' ' '\n' |egrep -i -v "cpanel|.sig$"`"
+  RAWLIST="$(echo $RAWLIST |tr ' ' '\n' |egrep -i -v "cpanel|.sig$")"
   # check if 32-bit rescue is activated and disable 64-bit images then
-  ARCH="`uname -m`"
+  ARCH="$(uname -m)"
   if [ "$ARCH" != "x86_64" ]; then
-    RAWLIST="`echo $RAWLIST |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]"`"
+    RAWLIST="$(echo $RAWLIST |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]")"
   fi
   # generate formatted list for usage with "dialog"
   for i in $RAWLIST; do
    TEMPVAR="$i"
-   TEMPVAR=`basename $TEMPVAR .bin`
-   TEMPVAR=`basename $TEMPVAR .bin.bz2`
-   TEMPVAR=`basename $TEMPVAR .txz`
-   TEMPVAR=`basename $TEMPVAR .tar.xz`
-   TEMPVAR=`basename $TEMPVAR .tgz`
-   TEMPVAR=`basename $TEMPVAR .tar.gz`
-   TEMPVAR=`basename $TEMPVAR .tbz`
-   TEMPVAR=`basename $TEMPVAR .tar.bz`
-   TEMPVAR=`basename $TEMPVAR .tar.bz2`
-   TEMPVAR=`basename $TEMPVAR .tar`
+   TEMPVAR=$(basename $TEMPVAR .bin)
+   TEMPVAR=$(basename $TEMPVAR .bin.bz2)
+   TEMPVAR=$(basename $TEMPVAR .txz)
+   TEMPVAR=$(basename $TEMPVAR .tar.xz)
+   TEMPVAR=$(basename $TEMPVAR .tgz)
+   TEMPVAR=$(basename $TEMPVAR .tar.gz)
+   TEMPVAR=$(basename $TEMPVAR .tbz)
+   TEMPVAR=$(basename $TEMPVAR .tar.bz)
+   TEMPVAR=$(basename $TEMPVAR .tar.bz2)
+   TEMPVAR=$(basename $TEMPVAR .tar)
    MENULIST=$MENULIST"$TEMPVAR . "
   done
   # add "back to mainmenu" entry
@@ -127,7 +127,7 @@ generate_menu() {
 
   # show menu and get result
   dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2>$FOLD/submenu.chosen
-  IMAGENAME=`cat $FOLD/submenu.chosen`
+  IMAGENAME=$(cat $FOLD/submenu.chosen)
 
   # create proxmox post-install file if needed
   case $IMAGENAME in
@@ -138,7 +138,7 @@ generate_menu() {
       cp $SCRIPTPATH/post-install/proxmox$PROXMOX_VERSION /post-install
       chmod 0755 /post-install
       PROXMOX=true
-      IMAGENAME=`eval echo \\$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE`
+      IMAGENAME=$(eval echo \\$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE)
       DEFAULTPARTS=""
       DEFAULTPARTS="$DEFAULTPARTS\nPART  /boot  ext3  512M"
       DEFAULTPARTS="$DEFAULTPARTS\nPART  lvm    vg0    all\n"
@@ -421,7 +421,7 @@ create_config() {
    # check if there are 3TB disks inside and use other default scheme
    local LIMIT=2096128
    local THREE_TB=2861588
-   local DRIVE_SIZE="$(sfdisk -s `smallest_hd` 2>/dev/null)"
+   local DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
    DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
 
    # adjust swap dynamically according to RAM
@@ -548,21 +548,21 @@ if [ "$1" ]; then
 
   # special hidden configure option: create RAID1 and 10 with assume clean to
   # avoid initial resync
-  RAID_ASSUME_CLEAN="`grep -m1 -e ^RAID_ASSUME_CLEAN $1 |awk '{print \$2}'`"
+  RAID_ASSUME_CLEAN="$(grep -m1 -e ^RAID_ASSUME_CLEAN $1 |awk '{print \$2}')"
 
   # special hidden configure option: GPT usage
   # if set to 1, use GPT even on disks smaller than 2TiB
   # if set to 2, always use GPT, even if the OS does not support it
-  FORCE_GPT="`grep -m1 -e ^FORCE_GPT $1 |awk '{print \$2}'`"
+  FORCE_GPT="$(grep -m1 -e ^FORCE_GPT $1 |awk '{print \$2}')"
 
   # another special hidden configure option: force image validation
   # if set to 1: force validation
-  FORCE_SIGN="`grep -m1 -e ^FORCE_SIGN $1 |awk '{print \$2}'`"
+  FORCE_SIGN="$(grep -m1 -e ^FORCE_SIGN $1 |awk '{print \$2}')"
 
   # hidden configure option:
   # if set to 1: force setting root password even if ssh keys are
   # provided
-  FORCE_PASSWORD="`grep -m1 -e ^FORCE_PASSWORD $1 |awk '{print \$2}'`"
+  FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD $1 |awk '{print \$2}')"
 
   # get all disks from configfile
   local used_disks=1
@@ -587,7 +587,7 @@ if [ "$1" ]; then
   COUNT_DRIVES="$((used_disks-1))"
 
   # is RAID activated?
-  SWRAID="`grep -m1 -e ^SWRAID $1 |awk '{print \$2}'`"
+  SWRAID="$(grep -m1 -e ^SWRAID $1 |awk '{print \$2}')"
   [ "$SWRAID" = "" ] && SWRAID="0"
 
   # Software RAID Level
@@ -601,8 +601,8 @@ if [ "$1" ]; then
   i=0
   while read PART_LINE ; do
     i=$[$i+1]
-    PART_MOUNT[$i]="`echo $PART_LINE | awk '{print \$2}'`"
-    PART_FS[$i]="`echo $PART_LINE | awk '{print \$3}'`"
+    PART_MOUNT[$i]="$(echo $PART_LINE | awk '{print \$2}')"
+    PART_FS[$i]="$(echo $PART_LINE | awk '{print \$3}')"
     PART_SIZE[$i]="$(translate_unit "$(echo "$PART_LINE" | awk '{ print $4 }')")"
     MOUNT_POINT_SIZE[$i]=${PART_SIZE[$i]}
     #calculate new partition size if software raid is enabled and it is not /boot or swap
@@ -634,11 +634,11 @@ if [ "$1" ]; then
 
   # void the check var
   LVM_VG_CHECK=""
-  for i in `seq 1 $LVM_VG_COUNT`; do
-    LVM_VG_LINE="`echo "$LVM_VG_ALL" | head -n$i | tail -n1`"
-    #LVM_VG_PART[$i]=$i #"`echo $LVM_VG_LINE | awk '{print \$2}'`"
+  for i in $(seq 1 $LVM_VG_COUNT); do
+    LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n$i | tail -n1)"
+    #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print \$2}')"
     LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n$i | tail -n1 | cut -d: -f1)
-    LVM_VG_NAME[$i]="`echo $LVM_VG_LINE | awk '{print \$3}'`"
+    LVM_VG_NAME[$i]="$(echo $LVM_VG_LINE | awk '{print \$3}')"
     LVM_VG_SIZE[$i]="$(translate_unit "$(echo $LVM_VG_LINE | awk '{print $4}')")"
 
     if [ "${LVM_VG_SIZE[$i]}" != "all" ] ; then
@@ -647,15 +647,15 @@ if [ "$1" ]; then
   done
 
   # get LVM logical volume config
-  LVM_LV_COUNT="`grep -c -e "^LV " $1`"
-  LVM_LV_ALL="`grep -e "^LV " $1`"
-  for i in `seq 1 $LVM_LV_COUNT`; do
-    LVM_LV_LINE="`echo "$LVM_LV_ALL" | head -n$i | tail -n1`"
-    LVM_LV_VG[$i]="`echo $LVM_LV_LINE | awk '{print \$2}'`"
+  LVM_LV_COUNT="$(grep -c -e "^LV " $1)"
+  LVM_LV_ALL="$(grep -e "^LV " $1)"
+  for i in $(seq 1 $LVM_LV_COUNT); do
+    LVM_LV_LINE="$(echo "$LVM_LV_ALL" | head -n$i | tail -n1)"
+    LVM_LV_VG[$i]="$(echo $LVM_LV_LINE | awk '{print \$2}')"
     LVM_LV_VG_SIZE[$i]="$(echo "$LVM_VG_ALL" | grep "${LVM_LV_VG[$i]}" | awk '{print $4}')"
-    LVM_LV_NAME[$i]="`echo $LVM_LV_LINE | awk '{print \$3}'`"
-    LVM_LV_MOUNT[$i]="`echo $LVM_LV_LINE | awk '{print \$4}'`"
-    LVM_LV_FS[$i]="`echo $LVM_LV_LINE | awk '{print \$5}'`"
+    LVM_LV_NAME[$i]="$(echo $LVM_LV_LINE | awk '{print \$3}')"
+    LVM_LV_MOUNT[$i]="$(echo $LVM_LV_LINE | awk '{print \$4}')"
+    LVM_LV_FS[$i]="$(echo $LVM_LV_LINE | awk '{print \$5}')"
     LVM_LV_SIZE[$i]="$(translate_unit "$(echo "$LVM_LV_LINE" | awk '{ print $6 }')")"
     # we only add LV sizes to PART_SUM_SIZE if the appropiate volume group has
     # "all" as size (otherwise we would count twice: SIZE of VG + SIZE of LVs of VG)
@@ -673,7 +673,7 @@ if [ "$1" ]; then
   [ "$LVM_VG_COUNT" != "0" -a "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
 
 
-  IMAGE="`grep -m1 -e ^IMAGE $1 | awk '{print \$2}'`"
+  IMAGE="$(grep -m1 -e ^IMAGE $1 | awk '{print \$2}')"
   [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
   IMAGE_PATH="$(dirname $IMAGE)/"
   IMAGE_FILE="$(basename $IMAGE)"
@@ -691,7 +691,7 @@ if [ "$1" ]; then
     *.bin.bz2|*.bin.bz) IMAGE_FILE_TYPE="bbz" ;;
   esac
 
-  BOOTLOADER="`grep -m1 -e ^BOOTLOADER $1 |awk '{print \$2}'`"
+  BOOTLOADER="$(grep -m1 -e ^BOOTLOADER $1 |awk '{print \$2}')"
   if [ "$BOOTLOADER" = "" ]; then
     BOOTLOADER=$(echo "$DEFAULTLOADER" | awk '{ print $2 }')
   fi
@@ -699,7 +699,7 @@ if [ "$1" ]; then
 
   NEWHOSTNAME=$(grep -m1 -e ^HOSTNAME $1 | awk '{print $2}')
 
-  GOVERNOR="`grep -m1 -e ^GOVERNOR $1 |awk '{print \$2}'`"
+  GOVERNOR="$(grep -m1 -e ^GOVERNOR $1 |awk '{print \$2}')"
   if [ "$GOVERNOR" = "" ]; then GOVERNOR="ondemand"; fi
 
   SYSTEMDEVICE="$DRIVE1"
@@ -723,7 +723,7 @@ validate_vars() {
   fi
 
   # test if PATHTYPE is a supported type
-  CHECK="`echo $IMAGE_PATH_TYPE |grep -i -e "^http$\|^nfs$\|^local$"`"
+  CHECK="$(echo $IMAGE_PATH_TYPE |grep -i -e "^http$\|^nfs$\|^local$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid PATHTYPE"
    return 1
@@ -736,7 +736,7 @@ validate_vars() {
   fi
 
   # test if FILETYPE is a supported type
-  CHECK="`echo $IMAGE_FILE_TYPE |grep -i -e "^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$"`"
+  CHECK="$(echo $IMAGE_FILE_TYPE |grep -i -e "^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: $IMAGE_FILE_TYPE is no valid FILETYPE for images"
    return 1
@@ -745,7 +745,7 @@ validate_vars() {
   whoami "$IMAGE_FILE"
 
   # test if $DRIVE1 is a valid block device and is able to create partitions
-  CHECK="`test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null`"
+  CHECK="$(test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null)"
   if [ -z "$CHECK" ]; then
     graph_error "ERROR: Value for DRIVE1 is not correct: $DRIVE1 "
     return 1
@@ -793,7 +793,7 @@ validate_vars() {
     fi
     if [ "$SWRAID" = "1" -o "$format" = "1" -o $i -eq 1 ] ; then
       # test if drive is a valid block device and is able to create partitions
-      CHECK="`test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null`"
+      CHECK="$(test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null)"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Value for DRIVE$i is not correct: $drive"
         return 1
@@ -872,7 +872,7 @@ validate_vars() {
   fi
 
   DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE / 1024 / 1024]
-  for i in `seq 1 $PART_COUNT`; do
+  for i in $(seq 1 $PART_COUNT); do
     if [ "${PART_SIZE[$i]}" = "all" ]; then
       # make sure that the all partition has at least 1G available
       DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE - 1024]
@@ -934,17 +934,17 @@ validate_vars() {
   if [ "$PART_COUNT" -gt "0" ]; then
   WARNBTRFS=0
     # test each partition line
-    for i in `seq 1 $PART_COUNT`; do
+    for i in $(seq 1 $PART_COUNT); do
 
       # test if the mountpoint is valid (start with / or swap or lvm)
-      CHECK="`echo ${PART_MOUNT[$i]} | grep -e "^none\|^/\|^swap$\|^lvm$"`"
+      CHECK="$(echo ${PART_MOUNT[$i]} | grep -e "^none\|^/\|^swap$\|^lvm$")"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Mountpoint for partition $i is not correct"
         return 1
       fi
 
       # test if the filesystem is one of our supportet types (btrfs/ext2/ext3/ext4/reiserfs/xfs/swap)
-      CHECK="`echo ${PART_FS[$i]} |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$"`"
+      CHECK="$(echo ${PART_FS[$i]} |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$")"
       if [ -z "$CHECK" -a "${PART_MOUNT[$i]}" != "lvm" ]; then
         graph_error "ERROR: Filesystem for partition $i is not correct"
         return 1
@@ -1013,7 +1013,7 @@ validate_vars() {
             graph_error "ERROR: CentOS 32bit doesn't support xfs on partition /"
             return 1
           fi
-          for j in `seq 1 $PART_COUNT`; do
+          for j in $(seq 1 $PART_COUNT); do
             if [ "${PART_MOUNT[$j]}" = "/boot" ]; then
               TMPCHECK="1"
             fi
@@ -1039,7 +1039,7 @@ validate_vars() {
   if [ "$LVM_VG_COUNT" -gt "0" ]; then
     names=
 
-    for i in `seq 1 $LVM_VG_COUNT`; do
+    for i in $(seq 1 $LVM_VG_COUNT); do
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
@@ -1050,7 +1050,7 @@ validate_vars() {
 
   fi
 
-  CHECK="`echo $BOOTLOADER |grep -i -e "^grub$\|^lilo$"`"
+  CHECK="$(echo $BOOTLOADER |grep -i -e "^grub$\|^lilo$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid BOOTLOADER"
    return 1
@@ -1093,14 +1093,14 @@ validate_vars() {
 
 
     # test if the mountpoint is valid (start with / or swap)
-    CHECK="`echo $lv_mountp | grep -e "^/\|^swap$"`"
+    CHECK="$(echo $lv_mountp | grep -e "^/\|^swap$")"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Mountpoint for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
     fi
 
     # test if the filesystem is one of our supportet types (ext2/ext3/reiserfs/xfs/swap)
-    CHECK="`echo $lv_fs |grep -e "^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$"`"
+    CHECK="$(echo $lv_fs |grep -e "^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$")"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Filesystem for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
@@ -1200,13 +1200,13 @@ validate_vars() {
   local mounts_as_string=""
 
   # list all mountpoints without the 'lvm' and 'swap' keyword
-  for i in `seq 1 $PART_COUNT`; do
+  for i in $(seq 1 $PART_COUNT); do
       if [ ${PART_MOUNT[$i]} != "lvm" -a ${PART_MOUNT[$i]} != "swap" ]; then
           mounts_as_string="$mounts_as_string${PART_MOUNT[$i]}\n"
       fi
   done
   # append all logical volume mountpoints to $mounts_as_string
-  for i in `seq 1 $LVM_LV_COUNT`; do
+  for i in $(seq 1 $LVM_LV_COUNT); do
       mounts_as_string="$mounts_as_string${LVM_LV_MOUNT[$i]}\n"
   done
 
@@ -1480,7 +1480,7 @@ function get_end_of_partition {
   # make the partition at least 1 MiB if all else fails
   local END=[$START+1048576]
 
-  if [ "`echo ${PART_SIZE[$NR]} |tr [:upper:] [:lower:]`" = "all" ]; then
+  if [ "$(echo ${PART_SIZE[$NR]} |tr [:upper:] [:lower:])" = "all" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
     END=$[$LAST-1048576]
   else
@@ -1543,7 +1543,7 @@ create_partitions() {
   fi
 
   # start loop to create all partitions
-  for i in `seq 1 $PART_COUNT`; do
+  for i in $(seq 1 $PART_COUNT); do
 
    SFDISKTYPE="83"
    if [ "${PART_FS[$i]}" = "swap" ]; then
@@ -1556,7 +1556,7 @@ create_partitions() {
      SFDISKTYPE="fd"
    fi
 
-   if [ "`echo ${PART_SIZE[$i]} |tr [:upper:] [:lower:]`" = "all" ]; then
+   if [ "$(echo ${PART_SIZE[$i]} |tr [:upper:] [:lower:])" = "all" ]; then
      SFDISKSIZE=""
    else
      SFDISKSIZE="${PART_SIZE[$i]}"
@@ -1980,7 +1980,7 @@ mount_partitions() {
     fstab="$1"
     basedir="$2"
 
-    ROOTDEVICE="`grep " / " $fstab | cut -d " " -f 1`"
+    ROOTDEVICE="$(grep " / " $fstab | cut -d " " -f 1)"
     SYSTEMROOTDEVICE="$ROOTDEVICE"
     SYSTEMBOOTDEVICE="$SYSTEMROOTDEVICE"
 
@@ -2023,8 +2023,8 @@ mount_partitions() {
     grep -v " / \|swap" $fstab | grep "^/dev/" > $fstab.tmp
 
     while read line ; do
-      DEVICE="`echo $line | cut -d " " -f 1`"
-      MOUNTPOINT="`echo $line | cut -d " " -f 2`"
+      DEVICE="$(echo $line | cut -d " " -f 1)"
+      MOUNTPOINT="$(echo $line | cut -d " " -f 2)"
       mkdir -p "$basedir$MOUNTPOINT" 2>&1 | debugoutput
 
       # create lock and run dir for ubuntu if /var has its own filesystem
@@ -2230,12 +2230,12 @@ function get_active_eth_dev() {
 
 # gather_network_information
 gather_network_information_old() {
-  HWADDR="`ifconfig $ETHDEV |grep HWaddr |tr -s ' ' |cut -d " " -f5 |tr [:upper:] [:lower:]`"
-  IPADDR="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f3 |cut -d ":" -f2`"
-  BROADCAST="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f4 |cut -d ":" -f2`"
-  SUBNETMASK="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f5 |cut -d ":" -f2`"
-  GATEWAY="`route -n |tr -s ' ' |grep " UG .*. $ETHDEV" |cut -d " " -f2 | head -n1`"
-  NETWORK="`route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1`"
+  HWADDR="$(ifconfig $ETHDEV |grep HWaddr |tr -s ' ' |cut -d " " -f5 |tr [:upper:] [:lower:])"
+  IPADDR="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f3 |cut -d ":" -f2)"
+  BROADCAST="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f4 |cut -d ":" -f2)"
+  SUBNETMASK="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f5 |cut -d ":" -f2)"
+  GATEWAY="$(route -n |tr -s ' ' |grep " UG .*. $ETHDEV" |cut -d " " -f2 | head -n1)"
+  NETWORK="$(route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1)"
 }
 
 # gather_network_information "$ETHDEV"
@@ -2539,8 +2539,8 @@ generate_hosts() {
         HOSTNAME="$IMAGENAME";
       fi
     else
-      FULLHOSTNAME="`cat $HOSTNAMEFILE`"
-      HOSTNAME="`cut -d. -f1 $HOSTNAMEFILE`";
+      FULLHOSTNAME="$(cat $HOSTNAMEFILE)"
+      HOSTNAME="$(cut -d. -f1 $HOSTNAMEFILE)";
       [ "$FULLHOSTNAME" = "$HOSTNAME" ] && FULLHOSTNAME=""
     fi
     echo "### Hetzner Online GmbH installimage" > $HOSTSFILE
@@ -2832,7 +2832,7 @@ clear_logs() {
   if [ "$1" ]; then
     find $FOLD/hdd/var/log -type f > /tmp/filelist.tmp
     while read a; do
-      if [ "`echo $a |grep ".gz$\|.[[:digit:]]\{1,3\}$"`" ]; then
+      if [ "$(echo $a |grep ".gz$\|.[[:digit:]]\{1,3\}$")" ]; then
         rm -rf "$a" >> /dev/null 2>&1
       else
         echo -n > $a
@@ -3009,7 +3009,7 @@ generate_config_lilo() {
     echo -e "$LILOEXTRABOOT" >> $BFILE
   fi
   echo -e "boot=$SYSTEMDEVICE" >> $BFILE
-  echo -e "root=`grep " / " $FOLD/hdd/etc/fstab |cut -d " " -f 1`" >> $BFILE
+  echo -e "root=$(grep " / " $FOLD/hdd/etc/fstab |cut -d " " -f 1)" >> $BFILE
   echo -e "vga=0x317" >> $BFILE
   echo -e "timeout=40" >> $BFILE
   echo -e "prompt" >> $BFILE
@@ -3296,12 +3296,12 @@ report_statistic() {
   if [ "$1" -a "$2" -a "$3" -a "$4" -a "$5" ]; then
     REPORTSRV="$1"
 
-    STANDARDIMAGE="`ls -1 "$IMAGESPATH" |grep "$2"`"
+    STANDARDIMAGE="$(ls -1 "$IMAGESPATH" |grep "$2")"
 
     if [ ! "$STANDARDIMAGE" ]; then
       REPORTIMG="Custom"
     else
-      REPORTIMG="`echo $2 |sed 's/\./___/g'`"
+      REPORTIMG="$(echo $2 |sed 's/\./___/g')"
     fi
 
     REPORTSWR="$3"
@@ -3852,3 +3852,5 @@ is_private_ip() {
   return 1
  fi
 }
+
+# vim: ai:ts=2:sw=2:et

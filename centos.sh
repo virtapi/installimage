@@ -236,7 +236,7 @@ generate_config_grub() {
     echo "#" >> "$BFILE" 2>> "$DEBUGFILE"
     echo >> "$BFILE" 2>> "$DEBUGFILE"
 
-    PARTNUM=`echo "$SYSTEMBOOTDEVICE" | rev | cut -c1`
+    PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
 
     if [ "$SWRAID" = "0" ]; then
       PARTNUM="$((PARTNUM - 1))"
