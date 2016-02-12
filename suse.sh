@@ -34,7 +34,7 @@ setup_network_config() {
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
     # remove any other existing config files
-    for i in $(find "$FOLD/hdd/etc/sysconfig/network/" -name "*-eth*"); do rm -rf "$i" >>/dev/null 2>&1; done
+    find "$FOLD/hdd/etc/sysconfig/network/" -name "*-eth*" -delete
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network/ifcfg-$1"
 
