@@ -1844,7 +1844,7 @@ make_lvm() {
     # get device names for PVs depending if we use swraid or not
     inc_dev=1
     if [ $SWRAID -eq 1 ]; then
-      for md in $(ls -1 /dev/md/[0-9]*) ; do
+      for md in /dev/md/[0-9]*; do
         dev[$inc_dev]="$md"
         let inc_dev=inc_dev+1
       done
