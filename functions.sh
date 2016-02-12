@@ -3530,9 +3530,9 @@ function hdinfo() {
 function isNegotiated() {
   # search for first NIC which has an IP
   for interface in $(find /sys/class/net/* -type l -name 'eth*' -printf '%f\n'); do
-    if [ -n "$(ip a show $i | grep "inet [1-9]")" ]; then
+    if [ -n "$(ip a show $interface | grep "inet [1-9]")" ]; then
       #check if we got autonegotiated
-      if [ -n "$(mii-tool 2>/dev/null | grep "negotiated")" ]; then
+      if [ -n "$(mii-tool $interface 2>/dev/null | grep "negotiated")" ]; then
         return 0
       else
         return 1
