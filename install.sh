@@ -190,7 +190,7 @@ fi
 #
 inc_step
 status_none "Formatting partitions"
-cat $FOLD/fstab | grep "^/dev/" > /tmp/fstab.tmp
+grep "^/dev/" $FOLD/fstab > /tmp/fstab.tmp
 while read line ; do
   DEV="$(echo $line |cut -d " " -f 1)"
   FS="$(echo $line |cut -d " " -f 3)"
@@ -515,7 +515,7 @@ report_debuglog $report_id
   echo "# http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
   echo "#"
   echo
-  cat $FOLD/install.conf | grep -v "^#" | grep -v "^$"
+  grep -v "^#" $FOLD/install.conf | grep -v "^$"
 ) > $FOLD/hdd/installimage.conf
 cat /root/debug.txt > $FOLD/hdd/installimage.debug
 chmod 640 $FOLD/hdd/installimage.conf

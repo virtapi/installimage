@@ -232,7 +232,7 @@ ubuntu_grub_fix() {
   local tempfile="$FOLD/hdd/tmp/mapper.tmp"
 
   ls -l $mapper > $tempfile
-  cat $tempfile | grep -v "total" | grep -v "crw" | while read line; do
+  grep -v "total" $tempfile | grep -v "crw" | while read line; do
     local volgroup=$(echo $line | cut -d " " -f9)
     local dmdevice=$(echo $line | cut -d "/" -f2)
 
