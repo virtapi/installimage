@@ -7,6 +7,7 @@
 +[Multiline Output to File](#multiline-output-to-file)
 +[Escaping](#escaping)
 +[Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
++[Inspiration](#inspiration)
 
 ---
 
@@ -71,3 +72,8 @@ for ((i=1; i<="$COUNT_DRIVES"; i++)); do
 	fi
 done
 ```
+
+## Inspiration
+This is loosely based on:
++ [Bash Hackers Style Guide](http://wiki.bash-hackers.org/scripting/style)
++ [Googles Shell Style Guide](https://google.github.io/styleguide/shell.xml)
