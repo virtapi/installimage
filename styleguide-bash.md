@@ -3,11 +3,11 @@
 ---
 
 ## Contents
-+[Indentation Guidelines](#indentation-guidelines)
-+[Multiline Output to File](#multiline-output-to-file)
-+[Escaping](#escaping)
-+[Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
-+[Inspiration](#inspiration)
++ [Indentation Guidelines](#indentation-guidelines)
++ [Multiline Output to File](#multiline-output-to-file)
++ [Escaping](#escaping)
++ [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
++ [Inspiration](#inspiration)
 
 ---
 
