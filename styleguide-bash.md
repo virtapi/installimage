@@ -5,6 +5,7 @@
 ## Contents
 + [Indentation Guidelines](#indentation-guidelines)
 + [Multiline Output to File](#multiline-output-to-file)
++ [Functions](#functions)
 + [Escaping](#escaping)
 + [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
 + [Inspiration](#inspiration)
@@ -40,6 +41,10 @@ This good example is:
 	echo ""
 } > "$CONFIGFILE"
 ```
+
+## Functions
+Functions should be pure if possible, e.g. the same input produces the same output and they should not access global variables.
+This makes reasoning about correctness much easier.
 
 ## Escaping
 We don't want dirty escaping for variables in `echo`, we should prefer printf in these cases, here is a bad example:
