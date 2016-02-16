@@ -264,7 +264,7 @@ randomize_maint_mysql_pass() {
   MYSQLCOMMAND="USE mysql;\nUPDATE user SET password=PASSWORD(\"$DEBIANPASS\") WHERE user='debian-sys-maint';
     UPDATE user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';
     UPDATE user SET password=PASSWORD(\"$PMAPASS\") WHERE user='phpmyadmin'; FLUSH PRIVILEGES;"
-  echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
+  echo "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
   execute_chroot_command "/etc/init.d/mysql start >>/dev/null 2>&1"
   execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; declare -i EXITCODE=$?
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"

@@ -79,14 +79,14 @@ NOCOL="\033[00m"
 # write log entries in debugfile - single line as second argument
 debug() {
   line="$@"
-  echo -e "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
+  echo "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
 }
 
 
 # write log entries in debugfile - multiple lines at once
 debugoutput() {
   while read line ; do
-    echo -e "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
+    echo "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
   done
 }
 

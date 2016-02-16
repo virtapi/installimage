@@ -59,7 +59,7 @@ if [ "$OPT_AUTOMODE" ] ; then
   echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m"
   echo ""
   grep -v "^#" $FOLD/install.conf | grep -v "^$"
-  echo -e ""
+  echo ""
   echo ""
 
   # print warning

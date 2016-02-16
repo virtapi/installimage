@@ -166,9 +166,9 @@ setup_cpufreq() {
      # check release notes of furture releases carefully, if this has changed!
 
 #    CPUFREQCONF="$FOLD/hdd/etc/init.d/boot.local"
-#    echo -e "### $COMPANY - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
-#    echo -e "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
-#    echo -e "cpufreq-set -g $1 -r >> /dev/null 2>&1" >> $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "### $COMPANY - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "cpufreq-set -g $1 -r >> /dev/null 2>&1" >> $CPUFREQCONF 2>>$DEBUGFILE
 
     return 0
   fi

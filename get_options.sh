@@ -74,7 +74,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
         debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
@@ -82,9 +82,9 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       cp $OPT_CONFIGFILE /autosetup
       if grep -q PASSWD /autosetup ; then
         echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
-        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
+        echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
         echo ""
-        echo -e -n "PASSWORD:  "
+        echo -n "PASSWORD:  "
         read -s imagepasswd
         sed -i /autosetup -e "s/PASSWD/$imagepasswd/"
       fi
@@ -99,7 +99,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
         debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
@@ -228,7 +228,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
      else
         msg="=> FAILED: cannot install ssh-keys without a source"
         debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        echo "${RED}$msg${NOCOL}"
         exit 1
      fi
      ;;
@@ -247,7 +247,7 @@ fi
 if [ "$OPT_USE_SSHKEYS" -a -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
         debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        echo "${RED}$msg${NOCOL}"
         exit 1
 fi
 

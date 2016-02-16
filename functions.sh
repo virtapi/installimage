@@ -468,12 +468,12 @@ create_config() {
 
     if [ $DRIVE_SIZE -gt $LIMIT ]; then
       if [ $DRIVE_SIZE -gt $THREE_TB ]; then
-        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS_LARGE" >>$CNF
       else
-        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS_BIG" >>$CNF
       fi
     else
-      [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
+      [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS" >>$CNF
     fi
 
     [ "$OPT_LVS" ] && echo "$OPT_LVS" >>$CNF

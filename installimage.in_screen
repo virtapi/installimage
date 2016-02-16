@@ -28,8 +28,8 @@ case $1 in
 
       if [ $EXITCODE -eq 0 ] ; then
         echo -e "\n\n\n===>  Erfolgreich beendet.\n"
-        echo -e "Der Computer wird in $TIMEOUT Sekunden neu gestartet !"
-        echo -en "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
+        echo "Der Computer wird in $TIMEOUT Sekunden neu gestartet !"
+        echon "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
         for i in $(seq 1 $TIMEOUT) ; do
           echo -n "."
           read -n1 -t1 key
@@ -44,7 +44,7 @@ case $1 in
         sleep 60
       else
         echo -e "\n\n\n===>  Es sind Fehler aufgetreten.\n"
-        echo -e "Es wird eine Sub-Shell gestartet ..."
+        echo "Es wird eine Sub-Shell gestartet ..."
         echo -e "Nach beenden der Sub-Shell wird installimage erneut ausgefuehrt.\n"
         /bin/bash
       fi
@@ -56,7 +56,7 @@ case $1 in
     # if we were called without the parameter 'start', restart ourself in a new screen
     #
     echo -e "\n\nHINWEIS:\n-------" >>/etc/motd
-    echo -e "installimage wurde nach dem booten in einer screen-session gestartet." >>/etc/motd
+    echo "installimage wurde nach dem booten in einer screen-session gestartet." >>/etc/motd
     echo -e "Um sich mit der screen-session zu verbinden, 'screen -x' eingeben ...\n" >>/etc/motd
     screen -AS installimage $0 start $@
   ;;
