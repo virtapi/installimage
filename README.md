@@ -36,7 +36,9 @@ TBD
 
 
 ## Usage
-```$ installimage ...```
+```bash
+$ installimage ...
+```
 
 ---
 
