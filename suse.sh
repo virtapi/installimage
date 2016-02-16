@@ -204,8 +204,8 @@ generate_config_grub() {
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
   local -i i=0
   for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-    local j="$((i - 1))"
-    local disk="$(eval echo "\$DRIVE"$i)"
+    local j; disk="$((i - 1))"
+    local disk; disk="$(eval echo "\$DRIVE"$i)"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
@@ -268,7 +268,7 @@ generate_config_grub() {
     GRUBINSTALLDEV_FILE="$FOLD/hdd/etc/default/grub_installdevice"
     [ -f "$GRUBINSTALLDEV_FILE" ] && rm "$GRUBINSTALLDEV_FILE"
     for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-      local disk="$(eval echo "\$DRIVE"$i)"
+      local disk; disk="$(eval echo "\$DRIVE"$i)"
       echo "$disk" >> "$GRUBINSTALLDEV_FILE"
     done
     echo "generic_mbr" >> "$GRUBINSTALLDEV_FILE"
@@ -289,7 +289,7 @@ write_grub() {
 
     for ((i=1; i<="$COUNT_DRIVES"; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ $i -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
       fi
     done
@@ -297,7 +297,7 @@ write_grub() {
     # only install grub2 in mbr of all other drives if we use swraid
     for ((i=1; i<="$COUNT_DRIVES"; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" declare -i EXITCODE="$?"
       fi
     done
