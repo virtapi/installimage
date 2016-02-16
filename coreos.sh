@@ -339,7 +339,7 @@ EOF
 run_os_specific_functions() {
     local ROOT_DEV; ROOT_DEV=$(blkid -t "LABEL=ROOT" -o device "${DRIVE1}"*)
     local OEM_DEV; OEM_DEV=$(blkid -t "LABEL=OEM" -o device "${DRIVE1}"*)
-    local is_ext4; is_ext4=$(blkid -o value $ROOT_DEV | grep ext4)
+    local is_ext4; is_ext4=$(blkid -o value "$ROOT_DEV" | grep ext4)
     if [ -n "$is_ext4" ]; then
       mount "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
     else
