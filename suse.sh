@@ -38,24 +38,30 @@ setup_network_config() {
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network/ifcfg-$1"
 
-    echo "### $COMPANY - installimage" > "$CONFIGFILE"
-    echo "# device: $1" >> "$CONFIGFILE"
-    echo "BOOTPROTO='static'" >> "$CONFIGFILE"
-    echo "MTU=''" >> "$CONFIGFILE"
-    echo "STARTMODE='auto'" >> "$CONFIGFILE"
-    echo "UNIQUE=''" >> "$CONFIGFILE"
-    echo "USERCONTROL='no'" >> "$CONFIGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      echo "BOOTPROTO='static'"
+      echo "MTU=''"
+      echo "STARTMODE='auto'"
+      echo "UNIQUE=''"
+      echo "USERCONTROL='no'"
+    } > "$CONFIGFILE"
 
     if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo "REMOTE_IPADDR=''" >> "$CONFIGFILE"
-      echo "BROADCAST='$4'" >> "$CONFIGFILE"
-      echo "IPADDR='$3'" >> "$CONFIGFILE"
-      echo "NETMASK='$5'" >> "$CONFIGFILE"
-      echo "NETWORK='$7'" >> "$CONFIGFILE"
+      {
+        echo "REMOTE_IPADDR=''"
+        echo "BROADCAST='$4'"
+        echo "IPADDR='$3'"
+        echo "NETMASK='$5'"
+        echo "NETWORK='$7'"
+      } >> "$CONFIGFILE"
 
-      echo "$7 $6 $5 $1" > "$ROUTEFILE"
-      echo "$6 - 255.255.255.255 $1" >> "$ROUTEFILE"
-      echo "default $6 - -" >> "$ROUTEFILE"
+      {
+        echo "$7 $6 $5 $1"
+        echo "$6 - 255.255.255.255 $1"
+        echo "default $6 - -"
+      } > "$ROUTEFILE"
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
@@ -114,16 +120,18 @@ generate_new_ramdisk() {
     fi
 
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/99-local.conf"
-    echo "### $COMPANY - installimage" > "$blacklist_conf"
-    echo '### silence any onboard speaker' >> "$blacklist_conf"
-    echo 'blacklist pcspkr' >> "$blacklist_conf"
-    echo 'blacklist snd_pcsp' >> "$blacklist_conf"
-    echo '### i915 driver blacklisted due to various bugs' >> "$blacklist_conf"
-    echo '### especially in combination with nomodeset' >> "$blacklist_conf"
-    echo 'blacklist i915' >> "$blacklist_conf"
-    echo '### mei driver blacklisted due to serious bugs' >> "$blacklist_conf"
-    echo 'blacklist mei' >> "$blacklist_conf" >> "$blacklist_conf"
-    echo 'blacklist mei-me' >> "$blacklist_conf">> "$blacklist_conf"
+    {
+      echo "### $COMPANY - installimage"
+      echo '### silence any onboard speaker'
+      echo 'blacklist pcspkr'
+      echo 'blacklist snd_pcsp'
+      echo '### i915 driver blacklisted due to various bugs'
+      echo '### especially in combination with nomodeset'
+      echo 'blacklist i915'
+      echo '### mei driver blacklisted due to serious bugs'
+      echo 'blacklist mei'
+      echo 'blacklist mei-me'
+    } > "$blacklist_conf"
 
     local dracut_feature=''
     local dracut_modules=''
@@ -205,11 +213,13 @@ generate_config_grub() {
   if [ "$SUSEVERSION" -lt 122 ]; then
     BFILE="$FOLD/hdd/boot/grub/menu.lst"
 
-    echo '#' > "$BFILE" 2>> "$DEBUGFILE"
-    echo "# $COMPANY - installimage" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo '# GRUB bootloader configuration file' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo '#' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
+    {
+      echo '#'
+      echo "# $COMPANY - installimage"
+      echo '# GRUB bootloader configuration file'
+      echo '#'
+      echo ''
+    } > "$BFILE" 2>> "$DEBUGFILE"
 
     PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
 
@@ -217,12 +227,14 @@ generate_config_grub() {
       PARTNUM="$((PARTNUM - 1))"
     fi
 
-    echo 'timeout 5' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo 'default 0' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-    echo 'title Linux (openSUSE)' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "root (hd0,$PARTNUM)" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317" >> "$BFILE" 2>> "$DEBUGFILE"
+    {
+      echo 'timeout 5'
+      echo 'default 0'
+      echo ''
+      echo 'title Linux (openSUSE)'
+      echo "root (hd0,$PARTNUM)"
+      echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317"
+    } >> "$BFILE" 2>> "$DEBUGFILE"
 
     if [ -f "$FOLD/hdd/boot/initrd-$1" ]; then
       echo "initrd /boot/initrd-$1" >> "$BFILE" 2>> "$DEBUGFILE"
