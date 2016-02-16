@@ -184,8 +184,8 @@ create_config() {
       echo "## ===================="
       echo ""
     } >> "$CNF"
-    [ $COUNT_DRIVES -gt 2 ] && echo -e "## PLEASE READ THE NOTES BELOW!" >> $CNF
-    echo -e "" >> $CNF
+    [ $COUNT_DRIVES -gt 2 ] && echo "## PLEASE READ THE NOTES BELOW!" >> $CNF
+    echo "" >> $CNF
 
     local found_optdrive=0
     local optdrive_count=0
@@ -208,7 +208,7 @@ create_config() {
     # reset drive count to number of drives explicitly passed via command line
     [ $optdrive_count -gt 0 ] && COUNT_DRIVES=$optdrive_count
 
-    echo -e "" >> $CNF
+    echo "" >> $CNF
     if [ $COUNT_DRIVES -gt 2 ] ; then
      if [ $COUNT_DRIVES -lt 4 ] ; then
        echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5" >>$CNF
@@ -218,21 +218,21 @@ create_config() {
        echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>$CNF
      fi
     fi
-    echo -e "" >> $CNF
+    echo "" >> $CNF
 
     # software-raid
     if [ $COUNT_DRIVES -gt 1 ]; then
       echo -e "\n" >> $CNF
 
-      echo -e "## ===============" >> $CNF
-      echo -e "##  SOFTWARE RAID:" >> $CNF
+      echo "## ===============" >> $CNF
+      echo "##  SOFTWARE RAID:" >> $CNF
       echo -e "## ===============\n" >> $CNF
       echo -e "## activate software RAID?  < 0 | 1 >\n" >> $CNF
 
       case "$OPT_SWRAID" in
-        0) echo -e "SWRAID 0" >> $CNF ;;
-        1) echo -e "SWRAID 1" >> $CNF ;;
-        *) echo -e "SWRAID $DEFAULTSWRAID" >> $CNF ;;
+        0) echo "SWRAID 0" >> $CNF ;;
+        1) echo "SWRAID 1" >> $CNF ;;
+        *) echo "SWRAID $DEFAULTSWRAID" >> $CNF ;;
       esac
 
       echo >> $CNF
@@ -275,7 +275,7 @@ create_config() {
       [ -z "$set_level" ] && set_level="$default_level"
 
       echo -e "## Choose the level for the software RAID < $avail_level >\n" >> $CNF
-      echo -e "SWRAIDLEVEL $set_level" >> $CNF
+      echo "SWRAIDLEVEL $set_level" >> $CNF
     fi
 
     # bootloader
@@ -292,8 +292,8 @@ create_config() {
     fi
 
     echo -e "\n" >> $CNF
-    echo -e "## ============" >> $CNF
-    echo -e "##  BOOTLOADER:" >> $CNF
+    echo "## ============" >> $CNF
+    echo "##  BOOTLOADER:" >> $CNF
     echo -e "## ============\n" >> $CNF
     if [ "$NOLILO" ]; then
       echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> $CNF
@@ -305,15 +305,15 @@ create_config() {
         grub) echo "BOOTLOADER grub" >> $CNF ;;
         *)    echo "BOOTLOADER $DEFAULTLOADER" >> $CNF ;;
       esac
-      echo -e "" >> $CNF
+      echo "" >> $CNF
     fi
 
     # hostname
     get_active_eth_dev
     gather_network_information
     echo -e "\n" >> $CNF
-    echo -e "## ==========" >> $CNF
-    echo -e "##  HOSTNAME:" >> $CNF
+    echo "## ==========" >> $CNF
+    echo "##  HOSTNAME:" >> $CNF
     echo -e "## ==========\n" >> $CNF
     echo -e "## which hostname should be set?\n## \n" >> $CNF
     # set default hostname to image name
@@ -325,8 +325,8 @@ create_config() {
     fi
     # or to the hostname passed through options
     [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
-    echo -e "HOSTNAME $DEFAULT_HOSTNAME" >> $CNF
-    echo -e "" >> $CNF
+    echo "HOSTNAME $DEFAULT_HOSTNAME" >> $CNF
+    echo "" >> $CNF
 
     ## Calculate how much hardisk space at raid level 0,1,5,6,10
     RAID0=0
@@ -344,82 +344,82 @@ create_config() {
 
     # partitions
     echo -e "\n" >> $CNF
-    echo -e "## ==========================" >> $CNF
-    echo -e "##  PARTITIONS / FILESYSTEMS:" >> $CNF
+    echo "## ==========================" >> $CNF
+    echo "##  PARTITIONS / FILESYSTEMS:" >> $CNF
     echo -e "## ==========================\n" >> $CNF
-    echo -e "## define your partitions and filesystems like this:" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'" >> $CNF
-    echo -e "##                    to use this PART as volume group (VG) for LVM" >> $CNF
-    echo -e "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name" >> $CNF
-    echo -e "##                    of the LVM volume group (VG), if this PART is a VG" >> $CNF
-    echo -e "## * <size>           you can use the keyword 'all' to assign all the" >> $CNF
-    echo -e "##                    remaining space of the drive to the *last* partition." >> $CNF
-    echo -e "##                    you can use M/G/T for unit specification in MIB/GIB/TIB" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## notes:" >> $CNF
-    echo -e "##   - extended partitions are created automatically" >> $CNF
-    echo -e "##   - '/boot' cannot be on a xfs filesystem!" >> $CNF
-    echo -e "##   - '/boot' cannot be on LVM!" >> $CNF
-    echo -e "##   - when using software RAID 0, you need a '/boot' partition" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## example without LVM (default):" >> $CNF
-    echo -e "## -> 4GB   swapspace" >> $CNF
-    echo -e "## -> 512MB /boot" >> $CNF
-    echo -e "## -> 10GB  /" >> $CNF
-    echo -e "## -> 5GB   /tmp" >> $CNF
-    echo -e "## -> all the rest to /home" >> $CNF
-    echo -e "#PART swap   swap      4096" >> $CNF
-    echo -e "#PART /boot  ext2       512" >> $CNF
-    echo -e "#PART /      reiserfs 10240" >> $CNF
-    echo -e "#PART /tmp   xfs       5120" >> $CNF
-    echo -e "#PART /home  ext3       all" >> $CNF
-    echo -e "#" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## to activate LVM, you have to define volume groups and logical volumes" >> $CNF
-    echo -e "##" >> $CNF
-    echo -e "## example with LVM:" >> $CNF
-    echo -e "#" >> $CNF
-    echo -e "## normal filesystems and volume group definitions:" >> $CNF
-    echo -e "## -> 512MB boot  (not on lvm)" >> $CNF
-    echo -e "## -> all the rest for LVM VG 'vg0'" >> $CNF
-    echo -e "#PART /boot  ext3     512M" >> $CNF
-    echo -e "#PART lvm    vg0       all" >> $CNF
+    echo "## define your partitions and filesystems like this:" >> $CNF
+    echo "##" >> $CNF
+    echo "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>" >> $CNF
+    echo "##" >> $CNF
+    echo "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'" >> $CNF
+    echo "##                    to use this PART as volume group (VG) for LVM" >> $CNF
+    echo "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name" >> $CNF
+    echo "##                    of the LVM volume group (VG), if this PART is a VG" >> $CNF
+    echo "## * <size>           you can use the keyword 'all' to assign all the" >> $CNF
+    echo "##                    remaining space of the drive to the *last* partition." >> $CNF
+    echo "##                    you can use M/G/T for unit specification in MIB/GIB/TIB" >> $CNF
+    echo "##" >> $CNF
+    echo "## notes:" >> $CNF
+    echo "##   - extended partitions are created automatically" >> $CNF
+    echo "##   - '/boot' cannot be on a xfs filesystem!" >> $CNF
+    echo "##   - '/boot' cannot be on LVM!" >> $CNF
+    echo "##   - when using software RAID 0, you need a '/boot' partition" >> $CNF
+    echo "##" >> $CNF
+    echo "## example without LVM (default):" >> $CNF
+    echo "## -> 4GB   swapspace" >> $CNF
+    echo "## -> 512MB /boot" >> $CNF
+    echo "## -> 10GB  /" >> $CNF
+    echo "## -> 5GB   /tmp" >> $CNF
+    echo "## -> all the rest to /home" >> $CNF
+    echo "#PART swap   swap      4096" >> $CNF
+    echo "#PART /boot  ext2       512" >> $CNF
+    echo "#PART /      reiserfs 10240" >> $CNF
+    echo "#PART /tmp   xfs       5120" >> $CNF
+    echo "#PART /home  ext3       all" >> $CNF
+    echo "#" >> $CNF
+    echo "##" >> $CNF
+    echo "## to activate LVM, you have to define volume groups and logical volumes" >> $CNF
+    echo "##" >> $CNF
+    echo "## example with LVM:" >> $CNF
+    echo "#" >> $CNF
+    echo "## normal filesystems and volume group definitions:" >> $CNF
+    echo "## -> 512MB boot  (not on lvm)" >> $CNF
+    echo "## -> all the rest for LVM VG 'vg0'" >> $CNF
+    echo "#PART /boot  ext3     512M" >> $CNF
+    echo "#PART lvm    vg0       all" >> $CNF
 
-    echo -e "#" >> $CNF
-    echo -e "## logical volume definitions:" >> $CNF
-    echo -e "#LV <VG> <name> <mount> <filesystem> <size>" >> $CNF
-    echo -e "#" >> $CNF
-    echo -e "#LV vg0   root   /        ext4         10G" >> $CNF
-    echo -e "#LV vg0   swap   swap     swap          4G" >> $CNF
-    echo -e "#LV vg0   tmp    /tmp     reiserfs      5G" >> $CNF
-    echo -e "#LV vg0   home   /home    xfs          20G" >> $CNF
-    echo -e "#" >> $CNF
+    echo "#" >> $CNF
+    echo "## logical volume definitions:" >> $CNF
+    echo "#LV <VG> <name> <mount> <filesystem> <size>" >> $CNF
+    echo "#" >> $CNF
+    echo "#LV vg0   root   /        ext4         10G" >> $CNF
+    echo "#LV vg0   swap   swap     swap          4G" >> $CNF
+    echo "#LV vg0   tmp    /tmp     reiserfs      5G" >> $CNF
+    echo "#LV vg0   home   /home    xfs          20G" >> $CNF
+    echo "#" >> $CNF
 
     if [ -x "/usr/local/bin/hwdata" ]; then
-      echo -e "#" >> $CNF
-      echo -e "## your system has the following devices:" >> $CNF
-      echo -e "#" >> $CNF
-      echo -e "$(/usr/local/bin/hwdata | grep "Disk /" | sed "s/^  /#/")" >> $CNF
+      echo "#" >> $CNF
+      echo "## your system has the following devices:" >> $CNF
+      echo "#" >> $CNF
+      echo "$(/usr/local/bin/hwdata | grep "Disk /" | sed "s/^  /#/")" >> $CNF
     fi
 
     if [ "$RAID1" -a "$RAID0" ] ; then
-      echo -e "#" >> $CNF
-      echo -e "## Based on your disks and which RAID level you will choose you have" >> $CNF
-      echo -e "## the following free space to allocate (in GiB):" >> $CNF
-      echo -e "# RAID  0: ~$RAID0" >> $CNF
-      echo -e "# RAID  1: ~$RAID1" >> $CNF
-      [ "$RAID5" ] && echo -e "# RAID  5: ~$RAID5" >> $CNF
+      echo "#" >> $CNF
+      echo "## Based on your disks and which RAID level you will choose you have" >> $CNF
+      echo "## the following free space to allocate (in GiB):" >> $CNF
+      echo "# RAID  0: ~$RAID0" >> $CNF
+      echo "# RAID  1: ~$RAID1" >> $CNF
+      [ "$RAID5" ] && echo "# RAID  5: ~$RAID5" >> $CNF
       if [ "$RAID6" ]; then
-        echo -e "# RAID  6: ~$RAID6" >> $CNF
-        echo -e "# RAID 10: ~$RAID10" >> $CNF
+        echo "# RAID  6: ~$RAID6" >> $CNF
+        echo "# RAID 10: ~$RAID10" >> $CNF
       fi
     fi
 
-    echo -e "#" >> $CNF
-    echo -e "" >> $CNF
+    echo "#" >> $CNF
+    echo "" >> $CNF
 
     # check if there are 3TB disks inside and use other default scheme
     local LIMIT=2096128
@@ -462,60 +462,60 @@ create_config() {
     fi
 
     if [ "$IAM" = "coreos" ]; then
-      echo -e "## NOTICE: This image does not support custom partition sizes." >>$CNF
-      echo -e "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
+      echo "## NOTICE: This image does not support custom partition sizes." >>$CNF
+      echo "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
     fi
 
     if [ $DRIVE_SIZE -gt $LIMIT ]; then
       if [ $DRIVE_SIZE -gt $THREE_TB ]; then
-        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
       else
-        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
       fi
     else
-      [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
+      [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
     fi
 
-    [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >>$CNF
-    echo -e "" >> $CNF
+    [ "$OPT_LVS" ] && echo "$OPT_LVS" >>$CNF
+    echo "" >> $CNF
 
     # image
     echo -e "\n" >> $CNF
-    echo -e "## ========================" >> $CNF
-    echo -e "##  OPERATING SYSTEM IMAGE:" >> $CNF
+    echo "## ========================" >> $CNF
+    echo "##  OPERATING SYSTEM IMAGE:" >> $CNF
     echo -e "## ========================\n" >> $CNF
-    echo -e "## full path to the operating system image" >> $CNF
-    echo -e "##   supported image sources:  local dir,  ftp,  http,  nfs" >> $CNF
-    echo -e "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz" >> $CNF
-    echo -e "## examples:" >> $CNF
-    echo -e "#" >> $CNF
-    echo -e "# local: /path/to/image/filename.tar.gz" >> $CNF
-    echo -e "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2" >> $CNF
-    echo -e "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-    echo -e "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-    echo -e "# nfs:   hostname:/path/to/image/filename.tgz" >> $CNF
-    echo -e "#" >> $CNF
-    echo -e "# for validation of the image, place the detached gpg-signature" >> $CNF
-    echo -e "# and your public key in the same directory as your image file." >> $CNF
-    echo -e "# naming examples:" >> $CNF
-    echo -e "#  signature:   filename.tar.bz2.sig" >> $CNF
-    echo -e "#  public key:  public-key.asc" >> $CNF
-    echo -e "" >> $CNF
+    echo "## full path to the operating system image" >> $CNF
+    echo "##   supported image sources:  local dir,  ftp,  http,  nfs" >> $CNF
+    echo "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz" >> $CNF
+    echo "## examples:" >> $CNF
+    echo "#" >> $CNF
+    echo "# local: /path/to/image/filename.tar.gz" >> $CNF
+    echo "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2" >> $CNF
+    echo "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
+    echo "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
+    echo "# nfs:   hostname:/path/to/image/filename.tgz" >> $CNF
+    echo "#" >> $CNF
+    echo "# for validation of the image, place the detached gpg-signature" >> $CNF
+    echo "# and your public key in the same directory as your image file." >> $CNF
+    echo "# naming examples:" >> $CNF
+    echo "#  signature:   filename.tar.bz2.sig" >> $CNF
+    echo "#  public key:  public-key.asc" >> $CNF
+    echo "" >> $CNF
     if [ "$1" = "custom" ]; then
-      echo -e "IMAGE " >> $CNF
+      echo "IMAGE " >> $CNF
     else
       if [ "$OPT_IMAGE" ] ; then
         if [ -f "$FINALIMAGEPATH/$OPT_IMAGE" ] ; then
-          echo -e "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> $CNF
+          echo "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> $CNF
         else
-          echo -e "IMAGE $OPT_IMAGE" >> $CNF
+          echo "IMAGE $OPT_IMAGE" >> $CNF
         fi
       else
         [ -n "$IMG_EXT" ] && IMAGESEXT="$IMG_EXT"
-        echo -e "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> $CNF
+        echo "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> $CNF
       fi
     fi
-    echo -e "" >> $CNF
+    echo "" >> $CNF
 
   fi
   return 0
@@ -1046,7 +1046,7 @@ validate_vars() {
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
-    if [ $(echo -e "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 -a $BOOTLOADER = "lilo" ] ; then
+    if [ $(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 -a $BOOTLOADER = "lilo" ] ; then
       graph_error "ERROR: you cannot use more than one VG with lilo - use grub as bootloader"
       return 1
     fi
@@ -1214,7 +1214,7 @@ validate_vars() {
   done
 
   # check if there are identical mountpoints
-  local identical_mount_points="$(echo -e "$mounts_as_string" | sort | uniq -d)"
+  local identical_mount_points="$(echo "$mounts_as_string" | sort | uniq -d)"
   if [ "$identical_mount_points" ]; then
      graph_error "ERROR: There are identical mountpoints in the config ($(echo $identical_mount_points | tr " " ", "))"
      return 1
@@ -2434,8 +2434,8 @@ generate_resolvconf() {
   fi
 #  else
     NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
-    echo -e "### Hetzner Online GmbH installimage" > $NAMESERVERFILE
-    echo -e "# nameserver config" >> $NAMESERVERFILE
+    echo "### Hetzner Online GmbH installimage" > $NAMESERVERFILE
+    echo "# nameserver config" >> $NAMESERVERFILE
 
     # IPV4
     if [ "$V6ONLY" -eq 1 ]; then
@@ -2496,7 +2496,7 @@ set_hostname() {
 
     if [ -f $networkfile ]; then
       debug "# set new hostname '$shortname' in $networkfile"
-      echo -e "HOSTNAME=$shortname" >> $networkfile 2>>$DEBUGFILE
+      echo "HOSTNAME=$shortname" >> $networkfile 2>>$DEBUGFILE
     fi
 
     local fqdn_name="$sethostname"
@@ -3006,32 +3006,32 @@ generate_config_lilo() {
   if [ "$1" ]; then
   BFILE="$FOLD/hdd/etc/lilo.conf"
   rm -rf "$FOLD/hdd/boot/grub/menu.lst" >>/dev/null 2>&1
-  echo -e "### Hetzner Online GmbH installimage" > $BFILE
-  echo -e "# bootloader config" >> $BFILE
+  echo "### Hetzner Online GmbH installimage" > $BFILE
+  echo "# bootloader config" >> $BFILE
   if [ "$LILOEXTRABOOT" ]; then
-    echo -e "$LILOEXTRABOOT" >> $BFILE
+    echo "$LILOEXTRABOOT" >> $BFILE
   fi
-  echo -e "boot=$SYSTEMDEVICE" >> $BFILE
-  echo -e "root=$(grep " / " $FOLD/hdd/etc/fstab |cut -d " " -f 1)" >> $BFILE
-  echo -e "vga=0x317" >> $BFILE
-  echo -e "timeout=40" >> $BFILE
-  echo -e "prompt" >> $BFILE
-  echo -e "default=Linux" >> $BFILE
-  echo -e "large-memory" >> $BFILE
-  echo -e "" >> $BFILE
+  echo "boot=$SYSTEMDEVICE" >> $BFILE
+  echo "root=$(grep " / " $FOLD/hdd/etc/fstab |cut -d " " -f 1)" >> $BFILE
+  echo "vga=0x317" >> $BFILE
+  echo "timeout=40" >> $BFILE
+  echo "prompt" >> $BFILE
+  echo "default=Linux" >> $BFILE
+  echo "large-memory" >> $BFILE
+  echo "" >> $BFILE
   if [ -e "$FOLD/hdd/boot/vmlinuz-$VERSION" ]; then
-    echo -e "image=/boot/vmlinuz-$VERSION" >> $BFILE
+    echo "image=/boot/vmlinuz-$VERSION" >> $BFILE
   else
     return 1
   fi
-  echo -e "  label=Linux" >> $BFILE
-#  echo -e "  read-only" >> $BFILE
+  echo "  label=Linux" >> $BFILE
+#  echo "  read-only" >> $BFILE
   if [ -e "$FOLD/hdd/boot/initrd.img-$VERSION" ]; then
-    echo -e "  initrd=/boot/initrd.img-$VERSION" >> $BFILE
+    echo "  initrd=/boot/initrd.img-$VERSION" >> $BFILE
   elif [ -e "$FOLD/hdd/boot/initrd-$VERSION" ]; then
-    echo -e "  initrd=/boot/initrd-$VERSION" >> $BFILE
+    echo "  initrd=/boot/initrd-$VERSION" >> $BFILE
   fi
-  echo -e "" >> $BFILE
+  echo "" >> $BFILE
 
 
     return 0
@@ -3137,7 +3137,7 @@ check_plesk_subversion() {
   fi
 
   output="$(execute_chroot_command_wo_debug "/pleskinstaller --select-product-id plesk --show-releases" 2>&1)"
-  latest_release="$(echo -e "$output" | grep "PLESK_${main_version}" | head -n1 | awk '{print $2}')"
+  latest_release="$(echo "$output" | grep "PLESK_${main_version}" | head -n1 | awk '{print $2}')"
 
   [ -n "$latest_release" ] && echo "$latest_release"
 
@@ -3284,7 +3284,7 @@ install_robot_script() {
         echo -e "[ -x /robot.sh ] && /robot.sh\nexit 0" >> $FOLD/hdd/etc/rc.local
         ;;
       centos)
-        echo -e "[ -x /robot.sh ] && /robot.sh" >> $FOLD/hdd/etc/rc.local
+        echo "[ -x /robot.sh ] && /robot.sh" >> $FOLD/hdd/etc/rc.local
         chmod +x $FOLD/hdd/etc/rc.local 1>/dev/null 2>&1
         ;;
       suse)
@@ -3376,8 +3376,8 @@ exit_function() {
 
   test "$1" && echo_red "$1"
   echo
-  echo -e "$RED         An error occured while installing the new system!$NOCOL"
-  echo -e "$RED          See the debug file $DEBUGFILE for details.$NOCOL"
+  echo "$RED         An error occured while installing the new system!$NOCOL"
+  echo "$RED          See the debug file $DEBUGFILE for details.$NOCOL"
   echo
   echo "Please check our wiki for a description of the error:"
   echo
