@@ -17,7 +17,7 @@ setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     # good we have a device and a MAC
 
-    SUSEVERSION="$(grep VERSION $FOLD/hdd/etc/SuSE-release | cut -d ' '  -f3 | sed -e 's/\.//')"
+    SUSEVERSION="$(grep VERSION "$FOLD/hdd/etc/SuSE-release" | cut -d ' '  -f3 | sed -e 's/\.//')"
     debug "# Version: ${SUSEVERSION}"
 
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network/routes"
@@ -252,7 +252,7 @@ generate_config_grub() {
       grub_linux_default="${grub_linux_default} elevater=noop"
     fi
     # H8SGL need workaround for iommu
-    if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ $IMG_VERSION -ge 131 ] ; then
+    if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ "$IMG_VERSION" -ge 131 ] ; then
       grub_linux_default="${grub_linux_default} iommu=noaperture"
     fi
 
@@ -261,7 +261,7 @@ generate_config_grub() {
 
     execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"'
 
-    [ -e $FOLD/hdd/boot/grub2/grub.cfg ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
+    [ -e "$FOLD/hdd/boot/grub2/grub.cfg" ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
     execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"
 
     # the opensuse mkinitrd uses this file to determine where to write the bootloader...
