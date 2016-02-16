@@ -11,6 +11,7 @@
 + [Usage](#usage)
 + [How does it work](#how-does-it-work)
 + [Issues](#issues)
++ [Styleguide](#styleguide)
 + [Copyright and Contributors](#copyright-and-contributors)
   - [Hetzner Online GmbH](#hetzner-online-gmbh)
   - [GitHub Users](#github-users)
@@ -52,6 +53,10 @@ $ installimage ...
 [Github Issues](https://www.github.com/virtapi/installimage/)
 
 ---
+
+## Styleguide
+We defined our own styleguide [here](styleguide-bash.md), this is a work-in-progress style. We discussed all points on IRC, most of them are based on shellcheck suggestions and our own opinion. We update the guide from time to time.
+
 
 ## Copyright and Contributors
 ### Hetzner Online GmbH
