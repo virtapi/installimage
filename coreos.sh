@@ -171,11 +171,13 @@ generate_sysctlconf() {
 set_rootpassword() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     if [ "$2" != '*' ]; then
-      echo "users:" >> "$CLOUDINIT"
-      echo "  - name: core" >> "$CLOUDINIT"
-      echo "    passwd: $2" >> "$CLOUDINIT"
-      echo "  - name: root" >> "$CLOUDINIT"
-      echo "    passwd: $2" >> "$CLOUDINIT"
+      {
+        echo "users:"
+        echo "  - name: core"
+        echo "    passwd: $2"
+        echo "  - name: root"
+        echo "    passwd: $2"
+      } >> "$CLOUDINIT"
     fi
     return 0
   else
