@@ -23,38 +23,40 @@ setup_network_config() {
     echo "# device: $1" >> "$UDEVFILE"
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
-    echo "### $COMPANY - installimage" > "$CONFIGFILE"
-    echo '# Loopback device:' >> "$CONFIGFILE"
-    echo 'auto lo' >> "$CONFIGFILE"
-    echo 'iface lo inet loopback' >> "$CONFIGFILE"
-    echo '' >> "$CONFIGFILE"
-    if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo "# device: $1" >> "$CONFIGFILE"
-      echo "auto  $1" >> "$CONFIGFILE"
-      echo "iface $1 inet static" >> "$CONFIGFILE"
-      echo "  address   $3" >> "$CONFIGFILE"
-      echo "  netmask   $5" >> "$CONFIGFILE"
-      echo "  gateway   $6" >> "$CONFIGFILE"
-      if ! is_private_ip "$3"; then
-        echo '  # default route to access subnet' >> "$CONFIGFILE"
-        echo "  up route add -net $7 netmask $5 gw $6 $1" >> "$CONFIGFILE"
-      fi
-    fi
+    {
+        echo "### $COMPANY - installimage"
+        echo '# Loopback device:'
+        echo 'auto lo'
+        echo 'iface lo inet loopback'
+        echo '' >> "$CONFIGFILE"
+        if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
+          echo "# device: $1"
+          echo "auto  $1"
+          echo "iface $1 inet static"
+          echo "  address   $3"
+          echo "  netmask   $5"
+          echo "  gateway   $6"
+          if ! is_private_ip "$3"; then
+            echo '  # default route to access subnet'
+            echo "  up route add -net $7 netmask $5 gw $6 $1"
+          fi
+        fi
 
-    if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
-      debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo '' >> "$CONFIGFILE"
-      echo "iface $1 inet6 static" >> "$CONFIGFILE"
-      echo "  address $8" >> "$CONFIGFILE"
-      echo "  netmask $9" >> "$CONFIGFILE"
-      echo "  gateway ${10}" >> "$CONFIGFILE"
-    fi
+        if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
+          debug "setting up ipv6 networking $8/$9 via ${10}"
+          echo ''
+          echo "iface $1 inet6 static"
+          echo "  address $8"
+          echo "  netmask $9"
+          echo "  gateway ${10}"
+        fi
 
-    # set duplex speed
-    if ! isNegotiated && ! isVServer; then
-      echo '  # force full-duplex for ports without auto-neg' >> "$CONFIGFILE"
-      echo "  post-up mii-tool -F 100baseTx-FD $1" >> "$CONFIGFILE"
-    fi
+        # set duplex speed
+        if ! isNegotiated && ! isVServer; then
+          echo '  # force full-duplex for ports without auto-neg'
+          echo "  post-up mii-tool -F 100baseTx-FD $1"
+        fi
+    } > "$CONFIGFILE "
 
     return 0
   fi
@@ -85,25 +87,31 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    OUTFILE=$(ls -1r $FOLD/hdd/boot/initrd.img-* | grep -v ".bak$\|.gz$" | awk -F "/" '{print $NF}' | grep -m1 "initrd")
-    VERSION=$(echo $OUTFILE | cut -d "-" -f2-)
+    shopt -s extglob
+    for file in "$FOLD/hdd/boot/initrd.img-"!(*.bak|*.gz); do
+      VERSION="${file##*/}"
+      VERSION="${VERSION#*-}"
+    done
+    shopt -u extglob
     echo "Kernel Version found: $VERSION" | debugoutput
 
     if [ "$IMG_VERSION" -ge 1204 ]; then
       # blacklist i915 driver due to many bugs and stability issues
       # required for Ubuntu 12.10 because of a kernel bug
       local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-      echo "### $COMPANY - installimage" > "$blacklist_conf"
-      echo '### silence any onboard speaker' >> "$blacklist_conf"
-      echo 'blacklist pcspkr' >> "$blacklist_conf"
-      echo '### i915 driver blacklisted due to various bugs' >> "$blacklist_conf"
-      echo '### especially in combination with nomodeset' >> "$blacklist_conf"
-      echo 'blacklist i915' >> "$blacklist_conf"
-      echo 'blacklist i915_bdw' >> "$blacklist_conf"
-      echo 'install i915 /bin/true' >> "$blacklist_conf"
-      echo '### mei driver blacklisted due to serious bugs' >> "$blacklist_conf"
-      echo 'blacklist mei' >> "$blacklist_conf"
-      echo 'blacklist mei_me' >> "$blacklist_conf"
+      {
+        echo "### $COMPANY - installimage"
+        echo '### silence any onboard speaker'
+        echo 'blacklist pcspkr'
+        echo '### i915 driver blacklisted due to various bugs'
+        echo '### especially in combination with nomodeset'
+        echo 'blacklist i915'
+        echo 'blacklist i915_bdw'
+        echo 'install i915 /bin/true'
+        echo '### mei driver blacklisted due to serious bugs'
+        echo 'blacklist mei'
+        echo 'blacklist mei_me'
+      } > "$blacklist_conf"
     fi
 
     sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
@@ -124,10 +132,12 @@ setup_cpufreq() {
       echo 'ENABLE="false"' > "$LOADCPUFREQCONF"
       echo 'ENABLE="false"' >> "$CPUFREQCONF"
     else
-      echo 'ENABLE="true"' >> "$CPUFREQCONF"
-      printf 'GOVERNOR="%s"', "$1" >> "$CPUFREQCONF"
-      echo 'MAX_SPEED="0"' >> "$CPUFREQCONF"
-      echo 'MIN_SPEED="0"' >> "$CPUFREQCONF"
+      {
+          echo 'ENABLE="true"'
+          printf 'GOVERNOR="%s"' "$1"
+          echo 'MAX_SPEED="0"'
+          echo 'MIN_SPEED="0"'
+      } >> "$CPUFREQCONF"
     fi
 
     return 0
@@ -171,7 +181,7 @@ generate_config_grub() {
   fi
 
   # H8SGL need workaround for iommu
-  if [ -n "$(dmidecode -s baseboard-product-name | grep -i h8sgl)" -a $IMG_VERSION -ge 1404 ] ; then
+  if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ "$IMG_VERSION" -ge 1404 ] ; then
     grub_linux_default="${grub_linux_default} iommu=noaperture"
   fi
 
@@ -187,7 +197,8 @@ generate_config_grub() {
   # only install grub2 in mbr of all other drives if we use swraid
   for ((i=1; i<="$COUNT_DRIVES"; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-      local disk="$(eval echo "\$DRIVE"$i)"
+      local disk
+      disk="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
     fi
   done
@@ -219,8 +230,8 @@ randomize_mdadm_checkarray_cronjob_time() {
     debug "# Randomizing cronjob run time for mdadm checkarray: day $day @ $hour:$minute"
 
     sed -i \
-      -e "s/^57 0 \* \* 0 /$minute $hour $day \* \* /" \
-      -e 's/ && \[ \$(date +\\%d) -le 7 \]//' \
+      -e "s|^57 0 \* \* 0 |$minute $hour $day \* \* |" \
+      -e 's| && \[ \$\(date +\\%d\) -le 7 \]||' \
       "$FOLD/hdd/etc/cron.d/mdadm"
   else
     debug '# No /etc/cron.d/mdadm found to randomize cronjob run time'
@@ -231,10 +242,18 @@ ubuntu_grub_fix() {
   local mapper="$FOLD/hdd/dev/mapper"
   local tempfile="$FOLD/hdd/tmp/mapper.tmp"
 
+<<<<<<< HEAD
   ls -l $mapper > $tempfile
   grep -v "total" $tempfile | grep -v "crw" | while read line; do
     local volgroup=$(echo $line | cut -d " " -f9)
     local dmdevice=$(echo $line | cut -d "/" -f2)
+=======
+  ls -l "$mapper" > "$tempfile"
+  grep -v "total" "$tempfile" | grep -v "crw" | while read -r line; do
+    local dmdevice volgroup
+    volgroup="$(echo "$line" | cut -d " " -f9)"
+    dmdevice="$(echo "$line" | cut -d "/" -f2)"
+>>>>>>> 15d53fb... fix ubuntu.sh with shellcheck
 
     rm "$mapper/$volgroup"
     cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
