@@ -24,12 +24,12 @@ inc_step() {
 status_busy() {
   local step="$CURSTEP"
   test $CURSTEP -lt 10 && step=" $CURSTEP"
-  echo -ne "  $step/$TOTALSTEPS  :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
+  echo -e -n "  $step/$TOTALSTEPS  :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
   debug "# $@"
 }
 
 status_busy_nostep() {
-  echo -ne "         :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
+  echo -e -n "         :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
 }
 
 status_none() {

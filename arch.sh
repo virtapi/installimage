@@ -17,34 +17,34 @@ setup_network_config() {
     CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-hetzner.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
 
-    echo -e "### ${COMPANY} - installimage" > "$UDEVFILE"
-    echo -e "# device: $1" >> "$UDEVFILE"
+    echo "### ${COMPANY} - installimage" > "$UDEVFILE"
+    echo "# device: $1" >> "$UDEVFILE"
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
-    { echo -e "### $COMPANY - installimage"
-    echo -e "# device: $1"
-    echo -e "[Match]"
-    echo -e "MACAddress=$2"
-    echo -e ""; } > "$CONFIGFILE"
+    { echo "### $COMPANY - installimage"
+    echo "# device: $1"
+    echo "[Match]"
+    echo "MACAddress=$2"
+    echo ""; } > "$CONFIGFILE"
 
-    echo -e "[Network]" >> "$CONFIGFILE"
+    echo "[Network]" >> "$CONFIGFILE"
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      { echo -e "Address=$8/$9"
-      echo -e "Gateway=${10}"
-      echo -e ""; } >> "$CONFIGFILE"
+      { echo "Address=$8/$9"
+      echo "Gateway=${10}"
+      echo ""; } >> "$CONFIGFILE"
     fi
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
       debug "setting up ipv4 networking $3/$5 via $6"
-      { echo -e "Address=$3/$CIDR"
-      echo -e "Gateway=$6"
-      echo -e ""; } >> "$CONFIGFILE"
+      { echo "Address=$3/$CIDR"
+      echo "Gateway=$6"
+      echo ""; } >> "$CONFIGFILE"
 
       if ! is_private_ip "$3"; then
-        { echo -e "[Route]"
-        echo -e "Destination=$7/$CIDR"
-        echo -e "Gateway=$6"; } >> "$CONFIGFILE"
+        { echo "[Route]"
+        echo "Destination=$7/$CIDR"
+        echo "Gateway=$6"; } >> "$CONFIGFILE"
       fi
     fi
 
@@ -70,16 +70,16 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ "$1" ]; then
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-    { echo -e "### $COMPANY - installimage"
-    echo -e "### silence any onboard speaker"
-    echo -e "blacklist pcspkr"
-    echo -e "blacklist snd_pcsp"
-    echo -e "### i915 driver blacklisted due to various bugs"
-    echo -e "### especially in combination with nomodeset"
-    echo -e "blacklist i915"
-    echo -e "### mei driver blacklisted due to serious bugs"
-    echo -e "blacklist mei"
-    echo -e "blacklist mei-me"; } > "$blacklist_conf"
+    { echo "### $COMPANY - installimage"
+    echo "### silence any onboard speaker"
+    echo "blacklist pcspkr"
+    echo "blacklist snd_pcsp"
+    echo "### i915 driver blacklisted due to various bugs"
+    echo "### especially in combination with nomodeset"
+    echo "blacklist i915"
+    echo "### mei driver blacklisted due to serious bugs"
+    echo "blacklist mei"
+    echo "blacklist mei-me"; } > "$blacklist_conf"
 
     execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base udev autodetect modconf block mdadm lvm2 filesystems keyboard fsck\"/"'
     execute_chroot_command "mkinitcpio -p linux"; EXITCODE=$?

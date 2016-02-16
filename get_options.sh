@@ -82,8 +82,9 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       cp $OPT_CONFIGFILE /autosetup
       if grep -q PASSWD /autosetup ; then
         echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
-        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}\n"
-        echo -en "PASSWORD:  "
+        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
+        echo ""
+        echo -e -n "PASSWORD:  "
         read -s imagepasswd
         sed -i /autosetup -e "s/PASSWD/$imagepasswd/"
       fi
@@ -237,7 +238,8 @@ done
 
 # VALIDATION
 if [ "$OPT_AUTOMODE" -a -z "$OPT_IMAGE" -a -z "$OPT_CONFIGFILE" ] ; then
-  echo -e "\n${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}\n"
+  echo -e "\n${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}"
+  echo ""
   debug "=> FAILED, no image given"
   exit 1
 fi

@@ -9,7 +9,9 @@
 PROXMOX_KERNEL_VERSION="2.6.32"
 
 
-echo -e "\n----- Add Proxmox Repo to APT sources -----\n"
+echo ""
+echo "----- Add Proxmox Repo to APT sources -----"
+echo ""
 
 echo -e "\n\n# PVE packages provided by proxmox.com" >>/etc/apt/sources.list.d/proxmox.list
 echo -e "deb http://mirror.hetzner.de/debian/pve wheezy pve-no-subscription\n" >>/etc/apt/sources.list.d/proxmox.list
@@ -17,11 +19,15 @@ echo -e "deb http://download.proxmox.com/debian wheezy pve-no-subscription\n" >>
 wget -q -O- "http://download.proxmox.com/debian/key.asc" | apt-key add -
    
 
-#echo -e "\n----- Remove default kernel -----\n"
+#echo ""
+echo "----- Remove default kernel -----"
+echo ""
 #aptitude -y remove $(dpkg -l | grep "^ii  linux-image" | tr -s " " | cut -d " " -f2)
 
 
-echo -e "\n----- Update and upgrade system, please wait ... -----\n"
+echo ""
+echo "----- Update and upgrade system, please wait ... -----"
+echo ""
 
 export LANG="en_US.UTF-8"
 export LC_ALL="C"
@@ -33,7 +39,9 @@ chmod a+rwxt /run/lock
 aptitude update >/dev/null
 aptitude -y safe-upgrade
 
-echo -e "\n----------------- Deinstallieren des Linux-Firmware-Realtek-Paketes ------------------\n"
+echo ""
+echo "----------------- Deinstallieren des Linux-Firmware-Realtek-Paketes ------------------"
+echo ""
 
 firmware="$(dpkg -l | grep -i 'firmware')"
 
@@ -43,11 +51,15 @@ else
   echo "kein firmware Paket vorhanden"
 fi
 
-echo -e "\n----------------- Deinstallieren des Standard-Linux-Kernel-Paketes ------------------\n"
+echo ""
+echo "----------------- Deinstallieren des Standard-Linux-Kernel-Paketes ------------------"
+echo ""
 aptitude -q -y purge linux-image-amd64 linux-image-3.2.0-4-amd64
 
 
-echo -e "\n----- Install Proxmox packages -----\n"
+echo ""
+echo "----- Install Proxmox packages -----"
+echo ""
 
 cat <<EOF | debconf-set-selections
 postfix postfix/mailname           string $(cat /etc/hostname)
@@ -65,7 +77,9 @@ EOF
 #/usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' install proxmox-ve-$PROXMOX_KERNEL_VERSION
 aptitude --without-recommends -y install postfix proxmox-ve-$PROXMOX_KERNEL_VERSION
 if [ -f /etc/apt/sources.list.d/pve-enterprise.list ]; then
-	echo -e "\n----- Removing Proxmox Enterprise Repo -----\n"
+	echo ""
+echo "----- Removing Proxmox Enterprise Repo -----"
+echo ""
 	rm /etc/apt/sources.list.d/pve-enterprise.list
 fi
 update-grub
@@ -79,5 +93,7 @@ service pveproxy stop
 service rrdcached stop
 service spiceproxy stop
 
-echo -e "\n----- Done installing Proxmox VE -----\n"
+echo ""
+echo "----- Done installing Proxmox VE -----"
+echo ""
 

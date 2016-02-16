@@ -56,9 +56,11 @@ if [ "$OPT_AUTOMODE" ] ; then
 
   # display information about automatic mode
   echo -e "\n\033[01;32mStarting AUTOMATIC MODE\033[00m"
-  echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m\n"
+  echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m"
+  echo ""
   grep -v "^#" $FOLD/install.conf | grep -v "^$"
-  echo -e "\n"
+  echo -e ""
+  echo ""
 
   # print warning
   echo -e "\033[01;31mWARNING:"

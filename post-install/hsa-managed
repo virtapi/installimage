@@ -19,10 +19,14 @@ fi
 
 
 
-echo -e "\n===============================================================\n"
-echo -e "Press any key to edit the new IP and hostname:\n"
+echo ""
+echo "==============================================================="
+echo ""
+echo "Press any key to edit the new IP and hostname:"
+echo ""
 echo -e "  Hostname: ... old=$OLD_HNAME \t=>\t new=$NEW_HNAME"
-echo -e "  IP: ......... old=$OLD_ADDRESS \t\t=>\t new=$NEW_ADDRESS\n  "
+echo -e "  IP: ......... old=$OLD_ADDRESS \t\t=>\t new=$NEW_ADDRESS"
+echo "  "
 
 X=""
 for i in $(seq 1 10) ; do
@@ -95,7 +99,7 @@ echo "...Removing /etc/host_type"
 rm -rf /etc/host_type
 
 #echo "...Tripwire config"
-#echo -e "Please enter Tripwire Site passphrase: " 
+#echo "Please enter Tripwire Site passphrase: " 
 #read twpass 
 #/usr/sbin/twadmin -m G -S /etc/tripwire/site.key -Q $twpass
 #echo "... Reconfiguring new passphrase"
@@ -147,7 +151,8 @@ for fsname in root tmp usr usrhome var vartmp; do
 	/sbin/tune2fs -c 0 -i 0 /dev/mapper/vg-$fsname >/dev/null
 done
 
-#echo -e "\n"
+#echo ""
+echo ""
 #WK/SB/WB - Removing this because we now install the rescue system udev rules
 #rm -f /etc/udev/rules.d/*-net.rules
 
@@ -204,6 +209,7 @@ if echo $NEW_HNAME | grep -q backup; then
   fi
 fi
 
-echo -e "...done\n"
+echo "...done"
+echo ""
 echo "==============================================================="
 

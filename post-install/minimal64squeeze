@@ -19,10 +19,14 @@ fi
 
 
 
-echo -e "\n===============================================================\n"
-echo -e "Press any key to edit the new IP and hostname:\n"
+echo ""
+echo "==============================================================="
+echo ""
+echo "Press any key to edit the new IP and hostname:"
+echo ""
 echo -e "  Hostname: ... old=$OLD_HNAME \t=>\t new=$NEW_HNAME"
-echo -e "  IP: ......... old=$OLD_ADDRESS \t\t=>\t new=$NEW_ADDRESS\n  "
+echo -e "  IP: ......... old=$OLD_ADDRESS \t\t=>\t new=$NEW_ADDRESS"
+echo "  "
 
 X=""
 for i in $(seq 1 10) ; do
@@ -93,7 +97,8 @@ for fsname in root tmp usr usrhome var vartmp; do
 	/sbin/tune2fs -c 0 -i 0 /dev/mapper/vg-$fsname >/dev/null
 done
 
-echo -e "\n"
+echo ""
+echo ""
 rm -f /etc/udev/rules.d/*-net.rules
 
 if echo $NEW_HNAME | grep -Eq '\.(cpt[123]|jnb[12]|nur4|flk1)\.'; then
@@ -158,6 +163,7 @@ chown -R libuuid:libuuid /usr/sbin/uuidd
 echo "Fix ntp ownership"
 chown -R ntp:ntp /var/lib/ntp
 
-echo -e "...done\n"
+echo "...done"
+echo ""
 echo "==============================================================="
 

@@ -23,10 +23,13 @@ fi
 
 
 # display information about autosetup
-echo -e "\n\033[01;32mFound AUTOSETUP file '$AUTOSETUPCONFIG'\033[00m"
-echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m\n"
+echo ""
+echo -e "\033[01;32mFound AUTOSETUP file '$AUTOSETUPCONFIG'\033[00m"
+echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m"
+echo ""
 grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
-echo -e "\n"
+echo ""
+echo ""
 
 
 # validate config
@@ -51,8 +54,10 @@ done
 # if we are using the config file option "-c" and not using the automatic mode,
 # ask for confirmation before continuing ...
 if [ "$OPT_CONFIGFILE" ] && [ -z "$OPT_AUTOMODE" ] ; then
-  echo -en "\n${RED}ALL DATA ON THE GIVEN DISKS WILL BE DESTROYED!\n"
-  echo -en "${YELLOW}DO YOU REALLY WANT TO CONTINUE?${NOCOL} [y|N] "
+  echo -n ""
+  echo "${RED}ALL DATA ON THE GIVEN DISKS WILL BE DESTROYED!"
+  echo ""
+  echo -n "${YELLOW}DO YOU REALLY WANT TO CONTINUE?${NOCOL} [y|N] "
   read -r -n1 aw
   case "$aw" in
     y|Y|j|J) echo -e "\n\n" ;;
@@ -86,7 +91,8 @@ if [ -f "$INSTALLFILE" ] && [ "$VALIDATED" = "true" ] ; then
   declare -i EXITCODE="$?"
 else
   debug "=> FAILED"
-  echo -e "\n\033[01;31mERROR: Cant find files\033[00m"
+  echo ""
+  echo -e "\033[01;31mERROR: Cant find files\033[00m"
 fi
 
 
