@@ -252,7 +252,7 @@ generate_config_grub() {
       grub_linux_default="${grub_linux_default} elevater=noop"
     fi
     # H8SGL need workaround for iommu
-    if [ -n "$(dmidecode -s baseboard-product-name | grep -i h8sgl)" -a $IMG_VERSION -ge 131 ] ; then
+    if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ $IMG_VERSION -ge 131 ] ; then
       grub_linux_default="${grub_linux_default} iommu=noaperture"
     fi
 
