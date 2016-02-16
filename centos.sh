@@ -53,30 +53,30 @@ setup_network_config() {
       echo "ONBOOT=yes"
     } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo -e "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
       if is_private_ip "$3"; then
-        echo -e "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo -e "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
       else
-        echo -e "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo -e "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 
-        echo -e "### $COMPANY - installimage" > "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "# routing for eth0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "ADDRESS0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "NETMASK0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "GATEWAY0=$6" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        echo "### $COMPANY - installimage" > "$ROUTEFILE" 2>> "$DEBUGFILE"
+        echo "# routing for eth0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        echo "ADDRESS0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        echo "NETMASK0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        echo "GATEWAY0=$6" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo -e "NETWORKING_IPV6=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6INIT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6ADDR=$8/$9" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6_DEFAULTGW=${10}" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6_DEFAULTDEV=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "NETWORKING_IPV6=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
+      echo "IPV6INIT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "IPV6ADDR=$8/$9" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "IPV6_DEFAULTGW=${10}" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "IPV6_DEFAULTDEV=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     fi
 
     # set duplex/speed
@@ -86,7 +86,7 @@ setup_network_config() {
 
     # remove all hardware info from image (CentOS 5)
     if [ -f "$FOLD/hdd/etc/sysconfig/hwconf" ]; then
-      echo -e "" > "$FOLD/hdd/etc/sysconfig/hwconf"
+      echo "" > "$FOLD/hdd/etc/sysconfig/hwconf"
     fi
 
     return 0
@@ -116,28 +116,28 @@ generate_new_ramdisk() {
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
       # So we only add aliases for the controller
-      echo -e "### $COMPANY - installimage" > "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo -e "# load all modules" >> "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo -e "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "### $COMPANY - installimage" > "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "# load all modules" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
 
-      echo -e "# hdds" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "# hdds" >> "$MODULESFILE" 2>> "$DEBUGFILE"
       HDDDEV=""
       for hddmodule in $MODULES; do
         if [ "$hddmodule" != "powernow-k8" ] && [ "$hddmodule" != "via82cxxx" ] && [ "$hddmodule" != "atiixp" ]; then
-          echo -e "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
           HDDDEV="$((HDDDEV + 1))"
         fi
       done
-      echo -e "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
     elif [ "$IMG_VERSION" -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
       local -r blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-      echo -e "### $COMPANY - installimage" > "$blacklist_conf"
-      echo -e "### silence any onboard speaker" >> "$blacklist_conf"
-      echo -e "blacklist pcspkr" >> "$blacklist_conf"
-      echo -e "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
-      echo -e "### especially in combination with nomodeset" >> "$blacklist_conf"
-      echo -e "blacklist i915" >> "$blacklist_conf"
+      echo "### $COMPANY - installimage" > "$blacklist_conf"
+      echo "### silence any onboard speaker" >> "$blacklist_conf"
+      echo "blacklist pcspkr" >> "$blacklist_conf"
+      echo "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
+      echo "### especially in combination with nomodeset" >> "$blacklist_conf"
+      echo "blacklist i915" >> "$blacklist_conf"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
@@ -177,20 +177,20 @@ setup_cpufreq() {
     else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
       local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
-      echo -e "" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "#!/bin/sh" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "### $COMPANY - installimage" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "# cpu frequency scaling" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "# this gets started by /etc/rc.sysinit" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "#!/bin/sh" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "### $COMPANY - installimage" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "# cpu frequency scaling" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "# this gets started by /etc/rc.sysinit" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       if [ "$(check_cpu)" = "intel" ]; then
         debug "# Setting: cpufreq modprobe to intel"
-        echo -e "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-        echo -e "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       else
         debug "# Setting: cpufreq modprobe to amd"
-        echo -e "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       fi
-      echo -e "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       chmod a+x "$CPUFREQCONF" >> "$DEBUGFILE"
 
     return 0
@@ -360,7 +360,7 @@ randomize_cpanel_mysql_passwords() {
   ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
   MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
   UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
-  echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
+  echo "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
   debug "changing mysql passwords"
   execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; declare -i EXITCODE=$?
   execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; declare -i EXITCODE=$?
@@ -371,7 +371,7 @@ randomize_cpanel_mysql_passwords() {
   rm "$CPHULKDCONF.old"
 
   # write password file
-  echo -e "[client]\nuser=root\npass=$ROOTPASS" > "$FOLD/hdd/root/.my.cnf"
+  echo "[client]\nuser=root\npass=$ROOTPASS" > "$FOLD/hdd/root/.my.cnf"
 
   return "$EXITCODE"
 }
