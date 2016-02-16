@@ -62,21 +62,25 @@ setup_network_config() {
         echo "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
         echo "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 
-        echo "### $COMPANY - installimage" > "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo "# routing for eth0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo "ADDRESS0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo "NETMASK0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo "GATEWAY0=$6" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        {
+          echo "### $COMPANY - installimage"
+          echo "# routing for eth0"
+          echo "ADDRESS0=0.0.0.0"
+          echo "NETMASK0=0.0.0.0"
+          echo "GATEWAY0=$6"
+        } > "$ROUTEFILE" 2>> "$DEBUGFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo "NETWORKING_IPV6=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
-      echo "IPV6INIT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo "IPV6ADDR=$8/$9" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo "IPV6_DEFAULTGW=${10}" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo "IPV6_DEFAULTDEV=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "NETWORKING_IPV6=yes"
+        echo "IPV6INIT=yes"
+        echo "IPV6ADDR=$8/$9"
+        echo "IPV6_DEFAULTGW=${10}"
+        echo "IPV6_DEFAULTDEV=$1"
+      } >> "$NETWORKFILE" 2>> "$DEBUGFILE"
     fi
 
     # set duplex/speed
@@ -116,11 +120,13 @@ generate_new_ramdisk() {
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
       # So we only add aliases for the controller
-      echo "### $COMPANY - installimage" > "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo "# load all modules" >> "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      {
+        echo "### $COMPANY - installimage"
+        echo "# load all modules"
+        echo ""
+        echo "# hdds"
+      } > "$MODULESFILE" 2>> "$DEBUGFILE"
 
-      echo "# hdds" >> "$MODULESFILE" 2>> "$DEBUGFILE"
       HDDDEV=""
       for hddmodule in $MODULES; do
         if [ "$hddmodule" != "powernow-k8" ] && [ "$hddmodule" != "via82cxxx" ] && [ "$hddmodule" != "atiixp" ]; then
@@ -132,22 +138,26 @@ generate_new_ramdisk() {
     elif [ "$IMG_VERSION" -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
       local -r blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-      echo "### $COMPANY - installimage" > "$blacklist_conf"
-      echo "### silence any onboard speaker" >> "$blacklist_conf"
-      echo "blacklist pcspkr" >> "$blacklist_conf"
-      echo "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
-      echo "### especially in combination with nomodeset" >> "$blacklist_conf"
-      echo "blacklist i915" >> "$blacklist_conf"
+      {
+        echo "### $COMPANY - installimage"
+        echo "### silence any onboard speaker"
+        echo "blacklist pcspkr"
+        echo "### i915 driver blacklisted due to various bugs"
+        echo "### especially in combination with nomodeset"
+        echo "blacklist i915"
+      } > "$blacklist_conf"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
       declare -r DRACUTFILE="$FOLD/hdd/etc/dracut.conf.d/hetzner.conf"
-      echo 'add_dracutmodules+="mdraid lvm"' >> "$DRACUTFILE"
-      echo 'add_drivers+="raid1 raid10 raid0 raid456"' >> "$DRACUTFILE"
-      echo 'mdadmconf="yes"' >> "$DRACUTFILE"
-      echo 'lvmconf="yes"' >> "$DRACUTFILE"
-      echo 'hostonly="no"' >> "$DRACUTFILE"
-      echo 'early_microcode="no"' >> "$DRACUTFILE"
+      {
+        echo 'add_dracutmodules+="mdraid lvm"'
+        echo 'add_drivers+="raid1 raid10 raid0 raid456"'
+        echo 'mdadmconf="yes"'
+        echo 'lvmconf="yes"'
+        echo 'hostonly="no"'
+        echo 'early_microcode="no"'
+      } >> "$DRACUTFILE"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
@@ -177,11 +187,13 @@ setup_cpufreq() {
     else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
       local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
-      echo "" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo "#!/bin/sh" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo "### $COMPANY - installimage" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo "# cpu frequency scaling" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo "# this gets started by /etc/rc.sysinit" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      {
+        echo "#!/bin/sh"
+        echo "### $COMPANY - installimage"
+        echo "# cpu frequency scaling"
+        echo "# this gets started by /etc/rc.sysinit"
+      } > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+
       if [ "$(check_cpu)" = "intel" ]; then
         debug "# Setting: cpufreq modprobe to intel"
         echo "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
@@ -234,26 +246,27 @@ generate_config_grub() {
     #execute_chroot_command "grub-install --no-floppy $DRIVE1 2>&1"; declare -i EXITCODE="$?"
 
     BFILE="$FOLD/hdd/boot/grub/grub.conf"
-
-    rm -rf "$FOLD/hdd/boot/grub/*" >> /dev/null 2>&1
-
-    echo "#" > "$BFILE" 2>> "$DEBUGFILE"
-    echo "# $COMPANY - installimage" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "# GRUB bootloader configuration file" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "#" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-
     PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
 
     if [ "$SWRAID" = "0" ]; then
       PARTNUM="$((PARTNUM - 1))"
     fi
 
-    echo "timeout 5" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "default 0" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "title CentOS ($1)" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "root (hd0,$PARTNUM)" >> "$BFILE" 2>> "$DEBUGFILE"
+    rm -rf "$FOLD/hdd/boot/grub/*" >> /dev/null 2>&1
+
+    {
+      echo "#"
+      echo "# $COMPANY - installimage"
+      echo "# GRUB bootloader configuration file"
+      echo "#"
+      echo ''
+      echo "timeout 5"
+      echo "default 0"
+      echo >> "$BFILE"
+      echo "title CentOS ($1)"
+      echo "root (hd0,$PARTNUM)"
+    } > "$BFILE" 2>> "$DEBUGFILE"
+
     # disable pcie active state power management. does not work as it should,
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
     [ "$(lspci -n | grep '8086:10d3')" ] && ASPM='pcie_aspm=off' || ASPM=''
