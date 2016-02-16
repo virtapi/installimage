@@ -19,32 +19,39 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
-    echo -e "### $COMPANY - installimage" > $UDEVFILE
-    echo -e "# device: $1" >> $UDEVFILE
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
     local upper_mac="${2^^*}"
 
     NETWORKFILE="$FOLD/hdd/etc/sysconfig/network"
-    echo -e "### $COMPANY - installimage" > "$NETWORKFILE" 2>> "$DEBUGFILE"
-    echo -e "# general networking" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
-    echo -e "NETWORKING=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# general networking"
+      echo "NETWORKING=yes"
+    } > "$NETWORKFILE" 2>> "$DEBUGFILE"
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-$1"
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network-scripts/route-$1"
 
-    echo -e "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    echo "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
+    echo "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     if ! is_private_ip "$3"; then
-      echo -e "# Note for customers who want to create bridged networking for virtualisation:" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "# Gateway is set in separate file" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "# Do not forget to change interface in file route-$1 and rename this file" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "# Note for customers who want to create bridged networking for virtualisation:"
+        echo "# Gateway is set in separate file"
+        echo "# Do not forget to change interface in file route-$1 and rename this file"
+      } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     fi
-    echo -e "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "# device: $1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "DEVICE=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "BOOTPROTO=none" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "ONBOOT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-
+    {
+      echo "#"
+      echo "# device: $1"
+      echo "DEVICE=$1"
+      echo "BOOTPROTO=none"
+      echo "ONBOOT=yes"
+    } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
       echo -e "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
       echo -e "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
