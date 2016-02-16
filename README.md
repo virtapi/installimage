@@ -9,8 +9,10 @@
 + [Requirements](#requirements)
 + [Configuration](#configuration)
 + [Usage](#usage)
-+ [Hot does it work](#how-does-it-work)
++ [How does it work](#how-does-it-work)
 + [Issues](#issues)
++ [Styleguide](#styleguide)
++ [Contributor Code of Conduct](#contributor-code-of-conduct)
 + [Copyright and Contributors](#copyright-and-contributors)
   - [Hetzner Online GmbH](#hetzner-online-gmbh)
   - [GitHub Users](#github-users)
@@ -36,7 +38,9 @@ TBD
 
 
 ## Usage
-```$ installimage ...```
+```bash
+$ installimage ...
+```
 
 ---
 
@@ -48,6 +52,16 @@ TBD
 
 ## Issues
 [Github Issues](https://www.github.com/virtapi/installimage/)
+
+---
+
+## Styleguide
+We defined our own styleguide [here](styleguide-bash.md), this is a work-in-progress style. We discussed all points on IRC, most of them are based on shellcheck suggestions and our own opinion. We update the guide from time to time.
+
+---
+
+## Contributor Code of Conduct
+We support the Contributor Covenant, you can find it [here](code_of_conduct.md).
 
 ---
 

@@ -8,6 +8,7 @@
 + [Functions](#functions)
 + [Escaping](#escaping)
 + [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
++ [Multiple Parameter Validation](#multiple-parameter-validation)
 + [Inspiration](#inspiration)
 
 ---
@@ -76,6 +77,17 @@ for ((i=1; i<="$COUNT_DRIVES"; i++)); do
 		execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
 	fi
 done
+```
+
+## Multiple Parameter Validation
+Always use seperate testcases for params, bad example:
+```bash
+if [ "$1" -a "$2" ]; then
+```
+
+good example:
+```bash
+if [ -n "$1" ] && [ -n "$2" ]; then
 ```
 
 ## Inspiration
