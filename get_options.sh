@@ -237,14 +237,14 @@ done
 
 
 # VALIDATION
-if [ "$OPT_AUTOMODE" -a -z "$OPT_IMAGE" -a -z "$OPT_CONFIGFILE" ] ; then
+if [ -n "$OPT_AUTOMODE" ] && [ -z "$OPT_IMAGE" ] && [ -z "$OPT_CONFIGFILE" ] ; then
   echo -e "\n${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}"
   echo ""
   debug "=> FAILED, no image given"
   exit 1
 fi
 
-if [ "$OPT_USE_SSHKEYS" -a -z "$OPT_SSHKEYS_URL" ]; then
+if [ -n "$OPT_USE_SSHKEYS" ] && [ -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
         debug "$msg"
         echo "${RED}$msg${NOCOL}"
