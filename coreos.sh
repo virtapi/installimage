@@ -127,7 +127,7 @@ printf 'write_files:
 
 set_hostname() {
   if [ -f "$CLOUDINIT" ]; then
-    echo -e "hostname: $1\n" >> "$CLOUDINIT"
+    echo "hostname: $1\n" >> "$CLOUDINIT"
     return 0
   else
     return 1
@@ -139,8 +139,8 @@ setup_cpufreq() {
 }
 
 generate_resolvconf() {
-    echo -e "write_files:" >> "$CLOUDINIT"
-    echo -e "  - path: /etc/resolv.conf\n    permissions: 0644\n    owner: root\n    content: |" >> "$CLOUDINIT"
+    echo "write_files:" >> "$CLOUDINIT"
+    echo "  - path: /etc/resolv.conf\n    permissions: 0644\n    owner: root\n    content: |" >> "$CLOUDINIT"
 
     # IPV4
     if [ "$V6ONLY" -eq 1 ]; then
@@ -171,11 +171,11 @@ generate_sysctlconf() {
 set_rootpassword() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     if [ "$2" != '*' ]; then
-      echo -e "users:" >> "$CLOUDINIT"
-      echo -e "  - name: core" >> "$CLOUDINIT"
-      echo -e "    passwd: $2" >> "$CLOUDINIT"
-      echo -e "  - name: root" >> "$CLOUDINIT"
-      echo -e "    passwd: $2" >> "$CLOUDINIT"
+      echo "users:" >> "$CLOUDINIT"
+      echo "  - name: core" >> "$CLOUDINIT"
+      echo "    passwd: $2" >> "$CLOUDINIT"
+      echo "  - name: root" >> "$CLOUDINIT"
+      echo "    passwd: $2" >> "$CLOUDINIT"
     fi
     return 0
   else
@@ -217,17 +217,17 @@ EOF
 copy_ssh_keys() {
   if [ "$1" ]; then
     local key_url="$1"
-    echo -e "ssh_authorized_keys:" >> "$CLOUDINIT"
+    echo "ssh_authorized_keys:" >> "$CLOUDINIT"
     case $key_url in
       https:*|http:*|ftp:*)
         wget "$key_url" -O "$FOLD/authorized_keys"
         while read line; do
-          echo -e "  - $line" >> "$CLOUDINIT"
+          echo "  - $line" >> "$CLOUDINIT"
         done < "$FOLD/authorized_keys"
       ;;
       *)
         while read line; do
-          echo -e "  - $line" >> "$CLOUDINIT"
+          echo "  - $line" >> "$CLOUDINIT"
         done < "$key_url"
       ;;
     esac
@@ -280,7 +280,7 @@ add_coreos_oem_cloudconfig() {
   if [ "$1" ]; then
     local mntpath=$1
     local cloudconfig="$mntpath/cloud-config.yml"
-    echo -e "#cloud-config" > "$cloudconfig"
+    echo "#cloud-config" > "$cloudconfig"
     if ! isVServer; then
       cat << EOF >> $cloudconfig
 write_files:
