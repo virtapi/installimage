@@ -9,7 +9,7 @@
 + [Requirements](#requirements)
 + [Configuration](#configuration)
 + [Usage](#usage)
-+ [Hot does it work](#how-does-it-work)
++ [How does it work](#how-does-it-work)
 + [Issues](#issues)
 + [Copyright and Contributors](#copyright-and-contributors)
   - [Hetzner Online GmbH](#hetzner-online-gmbh)
