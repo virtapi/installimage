@@ -32,6 +32,15 @@ echo "iface lo inet loopback" >> "$CONFIGFILE"
 echo "" >> "$CONFIGFILE"
 ```
 
+The `{` and the `}` have to be in own lines and the content between them indented by two spaces. Here is another bad example:
+```bash
+{	echo "### $COMPANY - installimage"
+echo "# Loopback device:"
+echo "auto lo"
+echo "iface lo inet loopback"
+echo "" } > "$CONFIGFILE"
+```
+
 This good example is:
 ```bash
 {
