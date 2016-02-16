@@ -109,18 +109,18 @@ generate_menu() {
   fi
   # generate formatted list for usage with "dialog"
   for i in $RAWLIST; do
-   TEMPVAR="$i"
-   TEMPVAR=$(basename $TEMPVAR .bin)
-   TEMPVAR=$(basename $TEMPVAR .bin.bz2)
-   TEMPVAR=$(basename $TEMPVAR .txz)
-   TEMPVAR=$(basename $TEMPVAR .tar.xz)
-   TEMPVAR=$(basename $TEMPVAR .tgz)
-   TEMPVAR=$(basename $TEMPVAR .tar.gz)
-   TEMPVAR=$(basename $TEMPVAR .tbz)
-   TEMPVAR=$(basename $TEMPVAR .tar.bz)
-   TEMPVAR=$(basename $TEMPVAR .tar.bz2)
-   TEMPVAR=$(basename $TEMPVAR .tar)
-   MENULIST=$MENULIST"$TEMPVAR . "
+    TEMPVAR="$i"
+    TEMPVAR=$(basename $TEMPVAR .bin)
+    TEMPVAR=$(basename $TEMPVAR .bin.bz2)
+    TEMPVAR=$(basename $TEMPVAR .txz)
+    TEMPVAR=$(basename $TEMPVAR .tar.xz)
+    TEMPVAR=$(basename $TEMPVAR .tgz)
+    TEMPVAR=$(basename $TEMPVAR .tar.gz)
+    TEMPVAR=$(basename $TEMPVAR .tbz)
+    TEMPVAR=$(basename $TEMPVAR .tar.bz)
+    TEMPVAR=$(basename $TEMPVAR .tar.bz2)
+    TEMPVAR=$(basename $TEMPVAR .tar)
+    MENULIST=$MENULIST"$TEMPVAR . "
   done
   # add "back to mainmenu" entry
   MENULIST=$MENULIST'back . '
@@ -184,32 +184,32 @@ create_config() {
       echo "## ===================="
       echo ""
     } >> "$CNF"
-   [ $COUNT_DRIVES -gt 2 ] && echo -e "## PLEASE READ THE NOTES BELOW!" >> $CNF
-   echo -e "" >> $CNF
+    [ $COUNT_DRIVES -gt 2 ] && echo -e "## PLEASE READ THE NOTES BELOW!" >> $CNF
+    echo -e "" >> $CNF
 
-   local found_optdrive=0
-   local optdrive_count=0
-   for i in $(seq 1 $COUNT_DRIVES) ; do
-     DISK="$(eval echo \$DRIVE${i})"
-     OPTDISK="$(eval echo \$OPT_DRIVE${i})"
-     if [ -n "$OPTDISK" ] ; then
-       optdrive_count=$(($optdrive_count+1))
-       found_optdrive=1
-       hdinfo /dev/$OPTDISK >>$CNF
-       echo "DRIVE$i /dev/$OPTDISK" >>$CNF
-     else
-       hdinfo $DISK >>$CNF
-       # comment drive out when not given via commandline
-       [ $found_optdrive -eq 1 ] && echo -n "# " >>$CNF
-       echo "DRIVE$i $DISK" >>$CNF
-     fi
-   done
+    local found_optdrive=0
+    local optdrive_count=0
+    for i in $(seq 1 $COUNT_DRIVES) ; do
+      DISK="$(eval echo \$DRIVE${i})"
+      OPTDISK="$(eval echo \$OPT_DRIVE${i})"
+      if [ -n "$OPTDISK" ] ; then
+        optdrive_count=$(($optdrive_count+1))
+        found_optdrive=1
+        hdinfo /dev/$OPTDISK >>$CNF
+        echo "DRIVE$i /dev/$OPTDISK" >>$CNF
+      else
+        hdinfo $DISK >>$CNF
+        # comment drive out when not given via commandline
+        [ $found_optdrive -eq 1 ] && echo -n "# " >>$CNF
+        echo "DRIVE$i $DISK" >>$CNF
+      fi
+    done
 
-   # reset drive count to number of drives explicitly passed via command line
-   [ $optdrive_count -gt 0 ] && COUNT_DRIVES=$optdrive_count
+    # reset drive count to number of drives explicitly passed via command line
+    [ $optdrive_count -gt 0 ] && COUNT_DRIVES=$optdrive_count
 
-   echo -e "" >> $CNF
-   if [ $COUNT_DRIVES -gt 2 ] ; then
+    echo -e "" >> $CNF
+    if [ $COUNT_DRIVES -gt 2 ] ; then
      if [ $COUNT_DRIVES -lt 4 ] ; then
        echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5" >>$CNF
        echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>$CNF
@@ -217,310 +217,308 @@ create_config() {
        echo "## if you dont want raid over all of your drives then comment out the following line and set SWRAIDLEVEL not to 5 or 6 or 10" >>$CNF
        echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>$CNF
      fi
-   fi
-   echo -e "" >> $CNF
+    fi
+    echo -e "" >> $CNF
 
-   # software-raid
-   if [ $COUNT_DRIVES -gt 1 ]; then
-     echo -e "\n" >> $CNF
+    # software-raid
+    if [ $COUNT_DRIVES -gt 1 ]; then
+      echo -e "\n" >> $CNF
 
-     echo -e "## ===============" >> $CNF
-     echo -e "##  SOFTWARE RAID:" >> $CNF
-     echo -e "## ===============\n" >> $CNF
-     echo -e "## activate software RAID?  < 0 | 1 >\n" >> $CNF
+      echo -e "## ===============" >> $CNF
+      echo -e "##  SOFTWARE RAID:" >> $CNF
+      echo -e "## ===============\n" >> $CNF
+      echo -e "## activate software RAID?  < 0 | 1 >\n" >> $CNF
 
-     case "$OPT_SWRAID" in
-       0) echo -e "SWRAID 0" >> $CNF ;;
-       1) echo -e "SWRAID 1" >> $CNF ;;
-       *) echo -e "SWRAID $DEFAULTSWRAID" >> $CNF ;;
-     esac
+      case "$OPT_SWRAID" in
+        0) echo -e "SWRAID 0" >> $CNF ;;
+        1) echo -e "SWRAID 1" >> $CNF ;;
+        *) echo -e "SWRAID $DEFAULTSWRAID" >> $CNF ;;
+      esac
 
-     echo >> $CNF
+      echo >> $CNF
 
-     # available raidlevels
-     local raid_levels="0 1 5 6 10"
-     # set default raidlevel
-     local default_level=$DEFAULTTWODRIVESWRAIDLEVEL
-     if [ $COUNT_DRIVES -eq 3 ] ; then
-       default_level=$DEFAULTTHREEDRIVESWRAIDLEVEL
-     elif [ $COUNT_DRIVES -gt 3 ] ; then
-       default_level=$DEFAULTFOURDRIVESWRAIDLEVEL
-     fi
+      # available raidlevels
+      local raid_levels="0 1 5 6 10"
+      # set default raidlevel
+      local default_level=$DEFAULTTWODRIVESWRAIDLEVEL
+      if [ $COUNT_DRIVES -eq 3 ] ; then
+        default_level=$DEFAULTTHREEDRIVESWRAIDLEVEL
+      elif [ $COUNT_DRIVES -gt 3 ] ; then
+        default_level=$DEFAULTFOURDRIVESWRAIDLEVEL
+      fi
 
-     local set_level=""
-     local avail_level=""
-     # check for possible raidlevels
-     for level in $raid_levels ; do
-       # set raidlevel to given opt raidlevel
-       if [ -n "$OPT_SWRAIDLEVEL" ] ; then
-         [ $OPT_SWRAIDLEVEL -eq $level ] && set_level="$level"
-       fi
+      local set_level=""
+      local avail_level=""
+      # check for possible raidlevels
+      for level in $raid_levels ; do
+        # set raidlevel to given opt raidlevel
+        if [ -n "$OPT_SWRAIDLEVEL" ] ; then
+          [ $OPT_SWRAIDLEVEL -eq $level ] && set_level="$level"
+        fi
 
-       # no raidlevel 5 if less then 3 hdds
-       [ $level -eq 5 -a $COUNT_DRIVES -lt 3 ] && continue
+        # no raidlevel 5 if less then 3 hdds
+        [ $level -eq 5 -a $COUNT_DRIVES -lt 3 ] && continue
 
-       # no raidlevel 6 if less then 4 hdds
-       [ $level -eq 6 -a $COUNT_DRIVES -lt 4 ] && continue
+        # no raidlevel 6 if less then 4 hdds
+        [ $level -eq 6 -a $COUNT_DRIVES -lt 4 ] && continue
 
-       # no raidlevel 10 if less then 2 hdds
-       [ $level -eq 10 -a $COUNT_DRIVES -lt 2 ] && continue
+        # no raidlevel 10 if less then 2 hdds
+        [ $level -eq 10 -a $COUNT_DRIVES -lt 2 ] && continue
 
-       # create list of all possible raidlevels
-       if [ -z "$avail_level" ] ; then
-         avail_level="$level"
-       else
-         avail_level="$avail_level | $level"
-       fi
-     done
-     [ -z "$set_level" ] && set_level="$default_level"
+        # create list of all possible raidlevels
+        if [ -z "$avail_level" ] ; then
+          avail_level="$level"
+        else
+          avail_level="$avail_level | $level"
+        fi
+      done
+      [ -z "$set_level" ] && set_level="$default_level"
 
-     echo -e "## Choose the level for the software RAID < $avail_level >\n" >> $CNF
-     echo -e "SWRAIDLEVEL $set_level" >> $CNF
-   fi
+      echo -e "## Choose the level for the software RAID < $avail_level >\n" >> $CNF
+      echo -e "SWRAIDLEVEL $set_level" >> $CNF
+    fi
 
-
-   # bootloader
-   # we no longer support lilo, so don't show this option if it isn't in the image
-   if [ "$IAM" = "arch" ] ||
+    # bootloader
+    # we no longer support lilo, so don't show this option if it isn't in the image
+    if [ "$IAM" = "arch" ] ||
       [ "$IAM" = "coreos" ] ||
       [ "$IAM" = "centos" ] ||
       [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
       [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
       [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
-     NOLILO="true"
-   else
-     NOLILO=''
-   fi
+      NOLILO="true"
+    else
+      NOLILO=''
+    fi
 
-   echo -e "\n" >> $CNF
-   echo -e "## ============" >> $CNF
-   echo -e "##  BOOTLOADER:" >> $CNF
-   echo -e "## ============\n" >> $CNF
-   if [ "$NOLILO" ]; then
-     echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> $CNF
-     echo "BOOTLOADER grub" >> $CNF
-   else
-     echo -e "\n## which bootloader should be used?  < lilo | grub >\n" >> $CNF
-     case "$OPT_BOOTLOADER" in
-       lilo) echo "BOOTLOADER lilo" >> $CNF ;;
-       grub) echo "BOOTLOADER grub" >> $CNF ;;
-       *)    echo "BOOTLOADER $DEFAULTLOADER" >> $CNF ;;
-     esac
-     echo -e "" >> $CNF
-   fi
+    echo -e "\n" >> $CNF
+    echo -e "## ============" >> $CNF
+    echo -e "##  BOOTLOADER:" >> $CNF
+    echo -e "## ============\n" >> $CNF
+    if [ "$NOLILO" ]; then
+      echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> $CNF
+      echo "BOOTLOADER grub" >> $CNF
+    else
+      echo -e "\n## which bootloader should be used?  < lilo | grub >\n" >> $CNF
+      case "$OPT_BOOTLOADER" in
+        lilo) echo "BOOTLOADER lilo" >> $CNF ;;
+        grub) echo "BOOTLOADER grub" >> $CNF ;;
+        *)    echo "BOOTLOADER $DEFAULTLOADER" >> $CNF ;;
+      esac
+      echo -e "" >> $CNF
+    fi
 
-   # hostname
-   get_active_eth_dev
-   gather_network_information
-   echo -e "\n" >> $CNF
-   echo -e "## ==========" >> $CNF
-   echo -e "##  HOSTNAME:" >> $CNF
-   echo -e "## ==========\n" >> $CNF
-   echo -e "## which hostname should be set?\n## \n" >> $CNF
-   # set default hostname to image name
-   DEFAULT_HOSTNAME="$1"
-   # or to proxmox if chosen
-   if [ "$PROXMOX" = "true" ]; then
-     echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> $CNF
-     DEFAULT_HOSTNAME="Proxmox-VE.localdomain"
-   fi
-   # or to the hostname passed through options
-   [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
-   echo -e "HOSTNAME $DEFAULT_HOSTNAME" >> $CNF
-   echo -e "" >> $CNF
+    # hostname
+    get_active_eth_dev
+    gather_network_information
+    echo -e "\n" >> $CNF
+    echo -e "## ==========" >> $CNF
+    echo -e "##  HOSTNAME:" >> $CNF
+    echo -e "## ==========\n" >> $CNF
+    echo -e "## which hostname should be set?\n## \n" >> $CNF
+    # set default hostname to image name
+    DEFAULT_HOSTNAME="$1"
+    # or to proxmox if chosen
+    if [ "$PROXMOX" = "true" ]; then
+      echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> $CNF
+      DEFAULT_HOSTNAME="Proxmox-VE.localdomain"
+    fi
+    # or to the hostname passed through options
+    [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
+    echo -e "HOSTNAME $DEFAULT_HOSTNAME" >> $CNF
+    echo -e "" >> $CNF
 
+    ## Calculate how much hardisk space at raid level 0,1,5,6,10
+    RAID0=0
+    local small_hdd="$(smallest_hd)"
+    local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
+    RAID0=$(($small_hdd_size*$COUNT_DRIVES))
+    RAID1=$small_hdd_size
+    if [ $COUNT_DRIVES -ge 3 ] ; then
+      RAID5=$(($RAID0-$small_hdd_size))
+    fi
+    if [ $COUNT_DRIVES -ge 4 ] ; then
+      RAID6=$(($RAID0-2*$small_hdd_size))
+      RAID10=$(($RAID0/2))
+    fi
 
-   ## Calculate how much hardisk space at raid level 0,1,5,6,10
-   RAID0=0
-   local small_hdd="$(smallest_hd)"
-   local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
-   RAID0=$(($small_hdd_size*$COUNT_DRIVES))
-   RAID1=$small_hdd_size
-   if [ $COUNT_DRIVES -ge 3 ] ; then
-     RAID5=$(($RAID0-$small_hdd_size))
-   fi
-   if [ $COUNT_DRIVES -ge 4 ] ; then
-     RAID6=$(($RAID0-2*$small_hdd_size))
-     RAID10=$(($RAID0/2))
-   fi
+    # partitions
+    echo -e "\n" >> $CNF
+    echo -e "## ==========================" >> $CNF
+    echo -e "##  PARTITIONS / FILESYSTEMS:" >> $CNF
+    echo -e "## ==========================\n" >> $CNF
+    echo -e "## define your partitions and filesystems like this:" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'" >> $CNF
+    echo -e "##                    to use this PART as volume group (VG) for LVM" >> $CNF
+    echo -e "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name" >> $CNF
+    echo -e "##                    of the LVM volume group (VG), if this PART is a VG" >> $CNF
+    echo -e "## * <size>           you can use the keyword 'all' to assign all the" >> $CNF
+    echo -e "##                    remaining space of the drive to the *last* partition." >> $CNF
+    echo -e "##                    you can use M/G/T for unit specification in MIB/GIB/TIB" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## notes:" >> $CNF
+    echo -e "##   - extended partitions are created automatically" >> $CNF
+    echo -e "##   - '/boot' cannot be on a xfs filesystem!" >> $CNF
+    echo -e "##   - '/boot' cannot be on LVM!" >> $CNF
+    echo -e "##   - when using software RAID 0, you need a '/boot' partition" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## example without LVM (default):" >> $CNF
+    echo -e "## -> 4GB   swapspace" >> $CNF
+    echo -e "## -> 512MB /boot" >> $CNF
+    echo -e "## -> 10GB  /" >> $CNF
+    echo -e "## -> 5GB   /tmp" >> $CNF
+    echo -e "## -> all the rest to /home" >> $CNF
+    echo -e "#PART swap   swap      4096" >> $CNF
+    echo -e "#PART /boot  ext2       512" >> $CNF
+    echo -e "#PART /      reiserfs 10240" >> $CNF
+    echo -e "#PART /tmp   xfs       5120" >> $CNF
+    echo -e "#PART /home  ext3       all" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## to activate LVM, you have to define volume groups and logical volumes" >> $CNF
+    echo -e "##" >> $CNF
+    echo -e "## example with LVM:" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "## normal filesystems and volume group definitions:" >> $CNF
+    echo -e "## -> 512MB boot  (not on lvm)" >> $CNF
+    echo -e "## -> all the rest for LVM VG 'vg0'" >> $CNF
+    echo -e "#PART /boot  ext3     512M" >> $CNF
+    echo -e "#PART lvm    vg0       all" >> $CNF
 
-   # partitions
-   echo -e "\n" >> $CNF
-   echo -e "## ==========================" >> $CNF
-   echo -e "##  PARTITIONS / FILESYSTEMS:" >> $CNF
-   echo -e "## ==========================\n" >> $CNF
-   echo -e "## define your partitions and filesystems like this:" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'" >> $CNF
-   echo -e "##                    to use this PART as volume group (VG) for LVM" >> $CNF
-   echo -e "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name" >> $CNF
-   echo -e "##                    of the LVM volume group (VG), if this PART is a VG" >> $CNF
-   echo -e "## * <size>           you can use the keyword 'all' to assign all the" >> $CNF
-   echo -e "##                    remaining space of the drive to the *last* partition." >> $CNF
-   echo -e "##                    you can use M/G/T for unit specification in MIB/GIB/TIB" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## notes:" >> $CNF
-   echo -e "##   - extended partitions are created automatically" >> $CNF
-   echo -e "##   - '/boot' cannot be on a xfs filesystem!" >> $CNF
-   echo -e "##   - '/boot' cannot be on LVM!" >> $CNF
-   echo -e "##   - when using software RAID 0, you need a '/boot' partition" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## example without LVM (default):" >> $CNF
-   echo -e "## -> 4GB   swapspace" >> $CNF
-   echo -e "## -> 512MB /boot" >> $CNF
-   echo -e "## -> 10GB  /" >> $CNF
-   echo -e "## -> 5GB   /tmp" >> $CNF
-   echo -e "## -> all the rest to /home" >> $CNF
-   echo -e "#PART swap   swap      4096" >> $CNF
-   echo -e "#PART /boot  ext2       512" >> $CNF
-   echo -e "#PART /      reiserfs 10240" >> $CNF
-   echo -e "#PART /tmp   xfs       5120" >> $CNF
-   echo -e "#PART /home  ext3       all" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## to activate LVM, you have to define volume groups and logical volumes" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## example with LVM:" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "## normal filesystems and volume group definitions:" >> $CNF
-   echo -e "## -> 512MB boot  (not on lvm)" >> $CNF
-   echo -e "## -> all the rest for LVM VG 'vg0'" >> $CNF
-   echo -e "#PART /boot  ext3     512M" >> $CNF
-   echo -e "#PART lvm    vg0       all" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "## logical volume definitions:" >> $CNF
+    echo -e "#LV <VG> <name> <mount> <filesystem> <size>" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "#LV vg0   root   /        ext4         10G" >> $CNF
+    echo -e "#LV vg0   swap   swap     swap          4G" >> $CNF
+    echo -e "#LV vg0   tmp    /tmp     reiserfs      5G" >> $CNF
+    echo -e "#LV vg0   home   /home    xfs          20G" >> $CNF
+    echo -e "#" >> $CNF
 
-   echo -e "#" >> $CNF
-   echo -e "## logical volume definitions:" >> $CNF
-   echo -e "#LV <VG> <name> <mount> <filesystem> <size>" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "#LV vg0   root   /        ext4         10G" >> $CNF
-   echo -e "#LV vg0   swap   swap     swap          4G" >> $CNF
-   echo -e "#LV vg0   tmp    /tmp     reiserfs      5G" >> $CNF
-   echo -e "#LV vg0   home   /home    xfs          20G" >> $CNF
-   echo -e "#" >> $CNF
+    if [ -x "/usr/local/bin/hwdata" ]; then
+      echo -e "#" >> $CNF
+      echo -e "## your system has the following devices:" >> $CNF
+      echo -e "#" >> $CNF
+      echo -e "$(/usr/local/bin/hwdata | grep "Disk /" | sed "s/^  /#/")" >> $CNF
+    fi
 
-   if [ -x "/usr/local/bin/hwdata" ]; then
-     echo -e "#" >> $CNF
-     echo -e "## your system has the following devices:" >> $CNF
-     echo -e "#" >> $CNF
-     echo -e "$(/usr/local/bin/hwdata | grep "Disk /" | sed "s/^  /#/")" >> $CNF
-   fi
+    if [ "$RAID1" -a "$RAID0" ] ; then
+      echo -e "#" >> $CNF
+      echo -e "## Based on your disks and which RAID level you will choose you have" >> $CNF
+      echo -e "## the following free space to allocate (in GiB):" >> $CNF
+      echo -e "# RAID  0: ~$RAID0" >> $CNF
+      echo -e "# RAID  1: ~$RAID1" >> $CNF
+      [ "$RAID5" ] && echo -e "# RAID  5: ~$RAID5" >> $CNF
+      if [ "$RAID6" ]; then
+        echo -e "# RAID  6: ~$RAID6" >> $CNF
+        echo -e "# RAID 10: ~$RAID10" >> $CNF
+      fi
+    fi
 
-   if [ "$RAID1" -a "$RAID0" ] ; then
-     echo -e "#" >> $CNF
-     echo -e "## Based on your disks and which RAID level you will choose you have" >> $CNF
-     echo -e "## the following free space to allocate (in GiB):" >> $CNF
-     echo -e "# RAID  0: ~$RAID0" >> $CNF
-     echo -e "# RAID  1: ~$RAID1" >> $CNF
-     [ "$RAID5" ] && echo -e "# RAID  5: ~$RAID5" >> $CNF
-     if [ "$RAID6" ]; then
-       echo -e "# RAID  6: ~$RAID6" >> $CNF
-       echo -e "# RAID 10: ~$RAID10" >> $CNF
-     fi
-   fi
+    echo -e "#" >> $CNF
+    echo -e "" >> $CNF
 
-   echo -e "#" >> $CNF
-   echo -e "" >> $CNF
+    # check if there are 3TB disks inside and use other default scheme
+    local LIMIT=2096128
+    local THREE_TB=2861588
+    local DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
+    DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
 
-   # check if there are 3TB disks inside and use other default scheme
-   local LIMIT=2096128
-   local THREE_TB=2861588
-   local DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
-   DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
+    # adjust swap dynamically according to RAM
+    # RAM < 2 GB : SWAP=2 * RAM
+    # RAM > 2GB -  8GB : SWAP=RAM
+    # RAM > 8GB - 64GB : SWAP = 0.5 RAM
+    # RAM > 64GB: SWAP = 4GB
+    # http://docs.fedoraproject.org/en-US/Fedora/18/html/Installation_Guide/s2-diskpartrecommend-x86.html
+    # https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Installation_Guide/s2-diskpartrecommend-x86.html
+    RAM=$(free -m | grep Mem: | tr -s ' ' | cut -d' ' -f2)
+    SWAPSIZE=4
+    if [ "$RAM" -lt 2048 ]; then
+      SWAPSIZE=$((RAM * 2 / 1024 + 1))
+    elif [ "$RAM" -lt 8192 ]; then
+      SWAPSIZE=$((RAM / 1024 + 1))
+    elif [ "$RAM" -lt 65535 ]; then
+      SWAPSIZE=$((RAM / 2 / 1024 + 1))
+    fi
 
-   # adjust swap dynamically according to RAM
-   # RAM < 2 GB : SWAP=2 * RAM
-   # RAM > 2GB -  8GB : SWAP=RAM
-   # RAM > 8GB - 64GB : SWAP = 0.5 RAM
-   # RAM > 64GB: SWAP = 4GB
-   # http://docs.fedoraproject.org/en-US/Fedora/18/html/Installation_Guide/s2-diskpartrecommend-x86.html
-   # https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Installation_Guide/s2-diskpartrecommend-x86.html
-   RAM=$(free -m | grep Mem: | tr -s ' ' | cut -d' ' -f2)
-   SWAPSIZE=4
-   if [ "$RAM" -lt 2048 ]; then
-    SWAPSIZE=$((RAM * 2 / 1024 + 1))
-   elif [ "$RAM" -lt 8192 ]; then
-	SWAPSIZE=$((RAM / 1024 + 1))
-   elif [ "$RAM" -lt 65535 ]; then
-	SWAPSIZE=$((RAM / 2 / 1024 + 1))
-   fi
+    DEFAULTPARTS=${DEFAULTPARTS/SWAPSIZE##/$SWAPSIZE}
+    DEFAULTPARTS_BIG=${DEFAULTPARTS_BIG/SWAPSIZE##/$SWAPSIZE}
+    DEFAULTPARTS_LARGE=${DEFAULTPARTS_LARGE/SWAPSIZE##/$SWAPSIZE}
 
-   DEFAULTPARTS=${DEFAULTPARTS/SWAPSIZE##/$SWAPSIZE}
-   DEFAULTPARTS_BIG=${DEFAULTPARTS_BIG/SWAPSIZE##/$SWAPSIZE}
-   DEFAULTPARTS_LARGE=${DEFAULTPARTS_LARGE/SWAPSIZE##/$SWAPSIZE}
+    # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
+    if isVServer; then
+#      DEFAULTPARTS=${DEFAULTPARTS//ext4/ext3}
+      DEFAULTPARTS=$DEFAULTPARTS_VSERVER
+    fi
 
-   # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
-   if isVServer; then
-#     DEFAULTPARTS=${DEFAULTPARTS//ext4/ext3}
-     DEFAULTPARTS=$DEFAULTPARTS_VSERVER
-   fi
+    # use /var instead of /home for all partition when installing plesk
+    if [ "$OPT_INSTALL" ]; then
+      if [ $(echo $OPT_INSTALL | grep -i "PLESK") ]; then
+        DEFAULTPARTS_BIG="${DEFAULTPARTS_BIG//home/var}"
+      fi
+    fi
 
-   # use /var instead of /home for all partition when installing plesk
-   if [ "$OPT_INSTALL" ]; then
-     if [ $(echo $OPT_INSTALL | grep -i "PLESK") ]; then
-       DEFAULTPARTS_BIG="${DEFAULTPARTS_BIG//home/var}"
-     fi
-   fi
+    if [ "$IAM" = "coreos" ]; then
+      echo -e "## NOTICE: This image does not support custom partition sizes." >>$CNF
+      echo -e "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
+    fi
 
-   if [ "$IAM" = "coreos" ]; then
-     echo -e "## NOTICE: This image does not support custom partition sizes." >>$CNF
-     echo -e "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
-   fi
+    if [ $DRIVE_SIZE -gt $LIMIT ]; then
+      if [ $DRIVE_SIZE -gt $THREE_TB ]; then
+        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
+      else
+        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
+      fi
+    else
+      [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
+    fi
 
-   if [ $DRIVE_SIZE -gt $LIMIT ]; then
-     if [ $DRIVE_SIZE -gt $THREE_TB ]; then
-       [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
-     else
-       [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
-     fi
-   else
-     [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
-   fi
+    [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >>$CNF
+    echo -e "" >> $CNF
 
-   [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >>$CNF
-   echo -e "" >> $CNF
-
-   # image
-   echo -e "\n" >> $CNF
-   echo -e "## ========================" >> $CNF
-   echo -e "##  OPERATING SYSTEM IMAGE:" >> $CNF
-   echo -e "## ========================\n" >> $CNF
-   echo -e "## full path to the operating system image" >> $CNF
-   echo -e "##   supported image sources:  local dir,  ftp,  http,  nfs" >> $CNF
-   echo -e "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz" >> $CNF
-   echo -e "## examples:" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "# local: /path/to/image/filename.tar.gz" >> $CNF
-   echo -e "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2" >> $CNF
-   echo -e "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-   echo -e "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-   echo -e "# nfs:   hostname:/path/to/image/filename.tgz" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "# for validation of the image, place the detached gpg-signature" >> $CNF
-   echo -e "# and your public key in the same directory as your image file." >> $CNF
-   echo -e "# naming examples:" >> $CNF
-   echo -e "#  signature:   filename.tar.bz2.sig" >> $CNF
-   echo -e "#  public key:  public-key.asc" >> $CNF
-   echo -e "" >> $CNF
-   if [ "$1" = "custom" ]; then
-     echo -e "IMAGE " >> $CNF
-   else
-     if [ "$OPT_IMAGE" ] ; then
-       if [ -f "$FINALIMAGEPATH/$OPT_IMAGE" ] ; then
-         echo -e "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> $CNF
-       else
-         echo -e "IMAGE $OPT_IMAGE" >> $CNF
-       fi
-     else
-       [ -n "$IMG_EXT" ] && IMAGESEXT="$IMG_EXT"
-       echo -e "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> $CNF
-     fi
-   fi
-   echo -e "" >> $CNF
+    # image
+    echo -e "\n" >> $CNF
+    echo -e "## ========================" >> $CNF
+    echo -e "##  OPERATING SYSTEM IMAGE:" >> $CNF
+    echo -e "## ========================\n" >> $CNF
+    echo -e "## full path to the operating system image" >> $CNF
+    echo -e "##   supported image sources:  local dir,  ftp,  http,  nfs" >> $CNF
+    echo -e "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz" >> $CNF
+    echo -e "## examples:" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "# local: /path/to/image/filename.tar.gz" >> $CNF
+    echo -e "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2" >> $CNF
+    echo -e "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
+    echo -e "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
+    echo -e "# nfs:   hostname:/path/to/image/filename.tgz" >> $CNF
+    echo -e "#" >> $CNF
+    echo -e "# for validation of the image, place the detached gpg-signature" >> $CNF
+    echo -e "# and your public key in the same directory as your image file." >> $CNF
+    echo -e "# naming examples:" >> $CNF
+    echo -e "#  signature:   filename.tar.bz2.sig" >> $CNF
+    echo -e "#  public key:  public-key.asc" >> $CNF
+    echo -e "" >> $CNF
+    if [ "$1" = "custom" ]; then
+      echo -e "IMAGE " >> $CNF
+    else
+      if [ "$OPT_IMAGE" ] ; then
+        if [ -f "$FINALIMAGEPATH/$OPT_IMAGE" ] ; then
+          echo -e "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> $CNF
+        else
+          echo -e "IMAGE $OPT_IMAGE" >> $CNF
+        fi
+      else
+        [ -n "$IMG_EXT" ] && IMAGESEXT="$IMG_EXT"
+        echo -e "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> $CNF
+      fi
+    fi
+    echo -e "" >> $CNF
 
   fi
-return 0
+  return 0
 }
 
 getdrives() {
