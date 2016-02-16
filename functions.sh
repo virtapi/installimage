@@ -164,21 +164,26 @@ create_config() {
     CNF="$FOLD/install.conf"
     getdrives; EXITCODE=$?
 
-   if [ $COUNT_DRIVES -eq 0 ] ; then
-     graph_notice "There are no drives in your server!\nIf there is a raid controller in your server, please configure it!\n\nThe setup will quit now!"
-     return 1
-   fi
+    if [ $COUNT_DRIVES -eq 0 ] ; then
+      graph_notice "There are no drives in your server!\nIf there is a raid controller in your server, please configure it!\n\nThe setup will quit now!"
+      return 1
+    fi
 
-   echo -e "## ===================================================" > $CNF
-   echo -e "##  Hetzner Online GmbH - installimage - standardconfig " >> $CNF
-   echo -e "## ===================================================" >> $CNF
-   echo -e "" >> $CNF
+    {
+      echo "## ==================================================="
+      echo "##  Hetzner Online GmbH - installimage - standardconfig "
+      echo "## ==================================================="
+      echo ""
+    } > "$CNF"
 
-   # first drive
-   echo -e "\n" >> $CNF
-   echo -e "## ====================" >> $CNF
-   echo -e "##  HARD DISK DRIVE(S):" >> $CNF
-   echo -e "## ====================\n" >> $CNF
+    # first drive
+    {
+      echo "\n" >> $CNF
+      echo "## ===================="
+      echo "##  HARD DISK DRIVE(S):"
+      echo "## ===================="
+      echo ""
+    } >> "$CNF"
    [ $COUNT_DRIVES -gt 2 ] && echo -e "## PLEASE READ THE NOTES BELOW!" >> $CNF
    echo -e "" >> $CNF
 
