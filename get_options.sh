@@ -67,19 +67,19 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # config file  (file.name)
     c)
-      if [ -e $CONFIGSPATH/$OPTARG ] ; then
+      if [ -e "$CONFIGSPATH/$OPTARG" ] ; then
         OPT_CONFIGFILE=$CONFIGSPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
+      elif [ -e "$OPTARG" ] ; then
         OPT_CONFIGFILE=$OPTARG
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
-        debug $msg
+        debug "$msg"
         echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
-      echo $OPT_CONFIGFILE | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
-      cp $OPT_CONFIGFILE /autosetup
+      echo "$OPT_CONFIGFILE" | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
+      cp "$OPT_CONFIGFILE" /autosetup
       if grep -q PASSWD /autosetup ; then
         echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
         echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
@@ -92,19 +92,19 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # post-install file  (file.name)
     x)
-      if [ -e $POSTINSTALLPATH/$OPTARG ] ; then
+      if [ -e "$POSTINSTALLPATH/$OPTARG" ] ; then
         OPT_POSTINSTALLFILE=$POSTINSTALLPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
+      elif [ -e "$OPTARG" ] ; then
         OPT_POSTINSTALLFILE=$OPTARG
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
-        debug $msg
+        debug "$msg"
         echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
-      echo $OPT_POSTINSTALLFILE | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
-      ln -fs $OPT_POSTINSTALLFILE /post-install
+      echo "$OPT_POSTINSTALLFILE" | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
+      ln -fs "$OPT_POSTINSTALLFILE" /post-install
     ;;
 
     # automatic mode
@@ -136,7 +136,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: file.tar.gz | http://domain.tld/file.tar.gz
     i)
       [ -f "$IMAGESPATH/$OPTARG" ] && OPT_IMAGE="$IMAGESPATH/$OPTARG" || OPT_IMAGE="$OPTARG"
-      IMAGENAME=$(basename $OPT_IMAGE)
+      IMAGENAME=$(basename "$OPT_IMAGE")
       IMAGENAME=${IMAGENAME/.tar.gz/}
       IMAGENAME=${IMAGENAME/.tar.bz/}
       IMAGENAME=${IMAGENAME/.tar.bz2/}
@@ -187,7 +187,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: sda,sdb | sda
     d)
       OPT_DRIVES=$OPTARG
-      sel_drives="$(echo $OPT_DRIVES | sed s/,/\\n/g)"
+      sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
@@ -227,7 +227,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
        export OPT_USE_SSHKEYS="1"
      else
         msg="=> FAILED: cannot install ssh-keys without a source"
-        debug $msg
+        debug "$msg"
         echo "${RED}$msg${NOCOL}"
         exit 1
      fi
@@ -246,7 +246,7 @@ fi
 
 if [ "$OPT_USE_SSHKEYS" -a -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
-        debug $msg
+        debug "$msg"
         echo "${RED}$msg${NOCOL}"
         exit 1
 fi
