@@ -21,7 +21,7 @@ setup_network_config() {
     echo -e "# device: $1" >> "$UDEVFILE"
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
-    { echo -e "### $COMPANY - installimage" 
+    { echo -e "### $COMPANY - installimage"
     echo -e "# device: $1"
     echo -e "[Match]"
     echo -e "MACAddress=$2"
