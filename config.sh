@@ -12,7 +12,7 @@ DEBUGFILE=/root/debug.txt
 
 
 # set up standard env
-SCRIPTPATH=$(dirname $0)
+SCRIPTPATH=$(dirname "$0")
 DISABLEDFILE=$SCRIPTPATH"/disabled"
 SETUPFILE=$SCRIPTPATH"/setup.sh"
 AUTOSETUPFILE=$SCRIPTPATH"/autosetup.sh"
@@ -90,5 +90,5 @@ debugoutput() {
   done
 }
 
-. $FUNCTIONSFILE
+. "$FUNCTIONSFILE"
 
