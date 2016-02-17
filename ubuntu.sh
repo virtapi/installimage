@@ -242,18 +242,11 @@ ubuntu_grub_fix() {
   local mapper="$FOLD/hdd/dev/mapper"
   local tempfile="$FOLD/hdd/tmp/mapper.tmp"
 
-<<<<<<< HEAD
-  ls -l $mapper > $tempfile
-  grep -v "total" $tempfile | grep -v "crw" | while read line; do
-    local volgroup=$(echo $line | cut -d " " -f9)
-    local dmdevice=$(echo $line | cut -d "/" -f2)
-=======
   ls -l "$mapper" > "$tempfile"
   grep -v "total" "$tempfile" | grep -v "crw" | while read -r line; do
     local dmdevice volgroup
     volgroup="$(echo "$line" | cut -d " " -f9)"
     dmdevice="$(echo "$line" | cut -d "/" -f2)"
->>>>>>> 15d53fb... fix ubuntu.sh with shellcheck
 
     rm "$mapper/$volgroup"
     cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
