@@ -51,7 +51,7 @@ $ installimage ...
 ---
 
 ## Issues
-[Github Issues](https://www.github.com/virtapi/installimage/)
+[Github Issues](https://www.github.com/virtapi/installimage/issues)
 
 ---
 
@@ -76,6 +76,9 @@ We support the Contributor Covenant, you can find it [here](code_of_conduct.md).
 
 ### Original License
 * [Original License Statement](http://wiki.hetzner.de/index.php/Installimage/en#Who_is_the_author_of_the_script.3F_Can_I_use_it_freely.3F)
+
+### Our License
+All of our changes are licensed under the AGPL, you can find the license [here](LICENSE).
 
 ---
 
