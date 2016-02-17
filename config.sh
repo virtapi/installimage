@@ -95,3 +95,4 @@ debugoutput() {
 # shellcheck disable=SC1090
 . "$FUNCTIONSFILE"
 
+# vim: ai:ts=2:sw=2:et

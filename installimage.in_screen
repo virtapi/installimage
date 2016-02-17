@@ -63,3 +63,4 @@ case $1 in
 
 esac
 
+# vim: ai:ts=2:sw=2:et

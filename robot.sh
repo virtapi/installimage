@@ -22,3 +22,5 @@ else
 fi
 
 rm -f /robot.sh
+
+# vim: ai:ts=2:sw=2:et

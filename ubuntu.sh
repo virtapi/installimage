@@ -254,3 +254,4 @@ ubuntu_grub_fix() {
   rm "$tempfile"
 }
 
+# vim: ai:ts=2:sw=2:et
