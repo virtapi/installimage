@@ -1385,7 +1385,7 @@ whoami() {
 unmount_all() {
   unmount_errors=0
 
-  while read line ; do
+  while read -r line ; do
     device="$(echo "$line" | grep -v "^/dev/loop" | grep -v "^/dev/root" | grep "^/" | awk '{ print $1 }')"
     if [ "$device" ] ; then
       unmount_output="$unmount_output\n$(umount "$device" 2>&1)"; EXITCODE=$?
@@ -1796,7 +1796,7 @@ make_swraid() {
     local metadata_boot=$METADATA
     [ "$IAM" == "ubuntu" -a "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
 
-    while read line ; do
+    while read -r line ; do
       PARTNUM="$(next_partnum $count)"
 
       echo "Line is: \"$line\"" | debugoutput
@@ -1874,14 +1874,14 @@ make_lvm() {
 
     # remove all Logical Volumes and Volume Groups
     debug "# Removing all Logical Volumes and Volume Groups"
-    vgs --noheadings 2> /dev/null | while read vg pvs; do
+    vgs --noheadings 2> /dev/null | while read -r vg pvs; do
       lvremove -f "$vg" 2>&1 | debugoutput
       vgremove -f "$vg" 2>&1 | debugoutput
     done
 
     # remove all Physical Volumes
     debug "# Removing all Physical Volumes"
-    pvs --noheadings 2>/dev/null | while read pv vg; do
+    pvs --noheadings 2>/dev/null | while read -r pv vg; do
       pvremove -ff "$pv" 2>&1 | debugoutput
     done
 
@@ -2040,7 +2040,7 @@ mount_partitions() {
 
     grep -v " / \|swap" "$fstab" | grep "^/dev/" > $fstab.tmp
 
-    while read line ; do
+    while read -r line ; do
       DEVICE="$(echo "$line" | cut -d " " -f 1)"
       MOUNTPOINT="$(echo "$line" | cut -d " " -f 2)"
       mkdir -p "$basedir$MOUNTPOINT" 2>&1 | debugoutput
@@ -2691,7 +2691,7 @@ generate_new_sshkeys() {
         key_json="\"key_type\": \"${key_type}\""
         if [ -f "$FOLD/hdd/$file" ]; then
           execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
-          while read bits fingerprint name type ; do
+          while read -r bits fingerprint name type ; do
             key_json="${key_json}, \"key_bits\": \"${bits}\", \"key_fingerprint\": \"${fingerprint}\", \"key_name\": \"${name}\""
           done <<< "$(cat "$FOLD/hdd/tmp/${key_type}")"
           [ -z "${keys_json}" ] && keys_json="{${key_json}}" || keys_json="${keys_json}, {${key_json}}"
@@ -2852,7 +2852,7 @@ setup_cpufreq() {
 clear_logs() {
   if [ "$1" ]; then
     find "$FOLD/hdd/var/log" -type f > /tmp/filelist.tmp
-    while read a; do
+    while read -r a; do
       if [ "$(echo "$a" |grep ".gz$\|.[[:digit:]]\{1,3\}$")" ]; then
         rm -rf "$a" >> /dev/null 2>&1
       else
@@ -3376,7 +3376,7 @@ report_debuglog() {
 cleanup() {
   debug "# Cleaning up..."
 
-  while read line ; do
+  while read -r line ; do
     mount="$(echo "$line" | grep "$FOLD" | cut -d' ' -f2)"
     if [ -n "$mount" ] ; then
       umount -l "$mount" >> /dev/null 2>&1

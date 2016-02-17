@@ -191,7 +191,7 @@ fi
 inc_step
 status_none "Formatting partitions"
 grep "^/dev/" $FOLD/fstab > /tmp/fstab.tmp
-while read line ; do
+while read -r line ; do
   DEV="$(echo $line |cut -d " " -f 1)"
   FS="$(echo $line |cut -d " " -f 3)"
   status_busy_nostep "  formatting $DEV with $FS"

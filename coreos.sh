@@ -223,12 +223,12 @@ copy_ssh_keys() {
     case $key_url in
       https:*|http:*|ftp:*)
         wget "$key_url" -O "$FOLD/authorized_keys"
-        while read line; do
+        while read -r line; do
           echo "  - $line" >> "$CLOUDINIT"
         done < "$FOLD/authorized_keys"
       ;;
       *)
-        while read line; do
+        while read -r line; do
           echo "  - $line" >> "$CLOUDINIT"
         done < "$key_url"
       ;;
