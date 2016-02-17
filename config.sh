@@ -92,5 +92,7 @@ debugoutput() {
 
 # see https://github.com/koalaman/shellcheck/wiki/SC1090
 # shellcheck source=/dev/null
+# because travis uses an older version we need to disable the check completely
+# shellcheck disable=SC1090
 . "$FUNCTIONSFILE"
 
