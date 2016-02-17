@@ -330,7 +330,7 @@ create_config() {
 
     ## Calculate how much hardisk space at raid level 0,1,5,6,10
     RAID0=0
-    local small_hdd="$(smallest_hd)"
+    local small_hdd; small_hdd="$(smallest_hd)"
     local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
     RAID0=$(($small_hdd_size*$COUNT_DRIVES))
     RAID1="$small_hdd_size"
@@ -435,7 +435,7 @@ create_config() {
     # check if there are 3TB disks inside and use other default scheme
     local LIMIT=2096128
     local THREE_TB=2861588
-    local DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
+    local DRIVE_SIZE; DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
     DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
 
     # adjust swap dynamically according to RAM
@@ -536,7 +536,7 @@ create_config() {
 }
 
 getdrives() {
-  local DRIVES="$(sfdisk -s 2>/dev/null | sort -u | grep -e "/dev/[hsv]d" | cut -d: -f1)"
+  local DRIVES; DRIVES="$(sfdisk -s 2>/dev/null | sort -u | grep -e "/dev/[hsv]d" | cut -d: -f1)"
   local i=1
 
   #cast drives into an array
@@ -790,8 +790,8 @@ validate_vars() {
   # check for valid drives
   local drive_array=( $DRIVE1 )
   for i in $(seq 1 $COUNT_DRIVES) ; do
-    local format="$(eval echo \$FORMAT_DRIVE$i)"
-    local drive="$(eval echo \$DRIVE$i)"
+    local format; format="$(eval echo \$FORMAT_DRIVE$i)"
+    local drive; drive="$(eval echo \$DRIVE$i)"
     if [ $i -gt 1 ] ; then
       for j in $(seq 0 $((${#drive_array[@]} - 1))); do
         if [ ${drive_array[$j]} = "$drive" ]; then
@@ -869,7 +869,7 @@ validate_vars() {
     DRIVE_SUM_SIZE=$(blockdev --getsize64 "$DRIVE1")
     echo "Size of the first hdd is: $DRIVE_SUM_SIZE" | debugoutput
   else
-    local smallest_hdd=$(smallest_hd)
+    local smallest_hdd; smallest_hdd=$(smallest_hd)
     DRIVE_SUM_SIZE="$(blockdev --getsize64 "$smallest_hdd")"
     # this variable is used later when determining what disk to use as reference
     # when drives of different sizes are in a system
@@ -1228,7 +1228,7 @@ validate_vars() {
   done
 
   # check if there are identical mountpoints
-  local identical_mount_points="$(echo "$mounts_as_string" | sort | uniq -d)"
+  local identical_mount_points; identical_mount_points="$(echo "$mounts_as_string" | sort | uniq -d)"
   if [ "$identical_mount_points" ]; then
      graph_error "ERROR: There are identical mountpoints in the config ($(echo "$identical_mount_points" | tr " " ", "))"
      return 1
@@ -1273,7 +1273,7 @@ validate_vars() {
 
   if [ "$BOOTLOADER" == "grub" ]; then
     # check dos partition sizes for centos
-    local result="$(check_dos_partitions)"
+    local result; result="$(check_dos_partitions)"
 
     if [ -n "$result" ]; then
       if [ "$result" == "PART_OVERSIZED" ]; then
@@ -1443,15 +1443,15 @@ delete_partitions() {
 # get_end_of_extended "DRIVE"
 function get_end_of_extended() {
   local DEV="$1"
-  local DRIVE_SIZE=$(blockdev --getsize64 "$DEV")
-  local SECTORSIZE=$(blockdev --getss "$DEV")
+  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$DEV")
+  local SECTORSIZE; SECTORSIZE=$(blockdev --getss "$DEV")
 
   local end=0
   local sum=0
   local LIMIT=2199023255040
   # get sector limit
   local SECTORLIMIT=$((($LIMIT / $SECTORSIZE) - 1))
-  local STARTSEC=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
+  local STARTSEC; STARTSEC=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
 
   for i in $(seq 1 3); do
     sum=$(echo "$sum + ${PART_SIZE[$i]}" | bc)
@@ -1481,20 +1481,20 @@ function get_end_of_partition {
   local START=$2
   local NR=$3
   local LIMIT=2199023255040
-  local SECTORSIZE=$(blockdev --getss "$DEV")
+  local SECTORSIZE; SECTORSIZE=$(blockdev --getss "$DEV")
   local SECTORLIMIT=$((($LIMIT / $SECTORSIZE) - 1))
-  local END_EXTENDED="$(parted -s "$DEV" unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
-  local DEVSIZE=$(blockdev --getsize64 "$DEV")
+  local END_EXTENDED; END_EXTENDED="$(parted -s "$DEV" unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
+  local DEVSIZE; DEVSIZE=$(blockdev --getsize64 "$DEV")
   START=$((START * $SECTORSIZE))
   # use the smallest hdd as reference when using swraid
   # to determine the end of a partition
-  local smallest_hdd=$(smallest_hd)
-  local smallest_hdd_space="$(blockdev --getsize64 "$smallest_hdd")"
+  local smallest_hdd; smallest_hdd=$(smallest_hd)
+  local smallest_hdd_space; smallest_hdd_space="$(blockdev --getsize64 "$smallest_hdd")"
   if [ "$SWRAID" -eq "1" ] && [ "$DEVSIZE" -gt "$smallest_hdd_space" ]; then
     DEV="$smallest_hdd"
   fi
 
-  local LAST=$(blockdev --getsize64 "$DEV")
+  local LAST; LAST=$(blockdev --getsize64 "$DEV")
   # make the partition at least 1 MiB if all else fails
   local END=[$START+1048576]
 
@@ -1525,7 +1525,7 @@ function get_end_of_partition {
 # create_partitions "DRIVE"
 create_partitions() {
  if [ "$1" ]; then
-  local SECTORSIZE=$(blockdev --getss "$1")
+  local SECTORSIZE; SECTORSIZE=$(blockdev --getss "$1")
 
   # write standard entries to fstab
   echo "proc /proc proc defaults 0 0" > "$FOLD/fstab"
@@ -2264,7 +2264,7 @@ gather_network_information() {
   HWADDR=$(ifdata -ph "$ETHDEV" | tr [:upper:] [:lower:])
   IPADDR=$(ifdata -pa "$ETHDEV")
   # check for a RFC6598 address, and don't set the v4 vars if we have one
-  local FIRST=$(echo $IPADDR | cut -d. -f1)
+  local FIRST; FIRST=$(echo $IPADDR | cut -d. -f1)
   if [ "$FIRST" = "100" ]; then
     debug "not configuring RFC6598 address"
     V6ONLY=1
@@ -2280,7 +2280,7 @@ gather_network_information() {
   # check for our global ipv6
   DOIPV6=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:')
   if [ -n "$DOIPV6" ]; then
-    local INET6ADDR=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:' | awk '{print $2}')
+    local INET6ADDR; INET6ADDR=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:' | awk '{print $2}')
     IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
     IP6PREFLEN=$(echo "$INET6ADDR" | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
@@ -2368,11 +2368,11 @@ setup_network_config_template() {
   fi
 
   # get specified extra files from template
-  local tpl_files=$(grep -e "%%% FILE_.*_START %%%" "$tpl_net" | sed 's/%%% FILE_\(.*\)_START %%%/\1/g')
+  local tpl_files; tpl_files=$(grep -e "%%% FILE_.*_START %%%" "$tpl_net" | sed 's/%%% FILE_\(.*\)_START %%%/\1/g')
   for file in $tpl_files ; do
-    local filename="$FOLD/network_$(echo "$file" | tr [[:upper:]] [[:lower:]])"
+    local filename; filename="$FOLD/network_$(echo "$file" | tr [[:upper:]] [[:lower:]])"
     # get content of extra file
-    local content="$(sed -n "/%%% FILE_${file}_START %%%/,/%%% FILE_${file}_END %%%/p" $tpl_net)"
+    local content; content="$(sed -n "/%%% FILE_${file}_START %%%/,/%%% FILE_${file}_END %%%/p" $tpl_net)"
 
     # create extra file
     echo "$content" > "$filename"
@@ -2920,7 +2920,7 @@ get_rootpassword() {
 set_rootpassword() {
   if [ "$1" ] && [ "$2" ]; then
     grep -v "^root" "${1}" > /tmp/shadow.tmp
-    local GECOS="$(awk -F: '/^root/ {print $3":"$4":"$5":"$6":"$7":"$8":"}' ${1})"
+    local GECOS; GECOS="$(awk -F: '/^root/ {print $3":"$4":"$5":"$6":"$7":"$8":"}' ${1})"
     echo "root:$2:$GECOS" > "$1"
     cat /tmp/shadow.tmp >> "$1"
     return 0
@@ -3430,7 +3430,7 @@ function check_cpu () {
 
 #get the smallest harddrive
 function smallest_hd() {
-  local smallest_drive_space="$(blockdev --getsize64 "$DRIVE1" 2>/dev/null)"
+  local smallest_drive_space; smallest_drive_space="$(blockdev --getsize64 "$DRIVE1" 2>/dev/null)"
   local smallest_drive="$DRIVE1"
   for i in $(seq 1 $COUNT_DRIVES); do
     if [ "$smallest_drive_space" -gt "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" ]; then
@@ -3477,8 +3477,8 @@ function getUSBFlashDrives() {
 function getHDDsNotInToleranceRange() {
   # RANGE in percent relative to smallest hdd
   local RANGE=135
-  local smallest_hdd="$(smallest_hd)"
-  local smallest_hdd_size="$(blockdev --getsize64 "$smallest_hdd")"
+  local smallest_hdd; smallest_hdd="$(smallest_hd)"
+  local smallest_hdd_size; smallest_hdd_size="$(blockdev --getsize64 "$smallest_hdd")"
   local max_size=$(( $smallest_hdd_size * $RANGE / 100 ))
   debug "checking if hdd sizes are within tolerance. min: $smallest_hdd_size / max: $max_size"
   for i in $(seq 1 $COUNT_DRIVES); do
@@ -3605,11 +3605,11 @@ function part_test_size() {
     return 0
   fi
 
-  local dev=$(smallest_hd)
+  local dev; dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
     dev="$DRIVE1"
   fi
-  local DRIVE_SIZE=$(blockdev --getsize64 "$dev")
+  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$dev")
   DRIVE_SIZE=$(( $DRIVE_SIZE / 1024 / 1024 ))
 
   if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" = "1" ]; then
@@ -3650,12 +3650,12 @@ function check_dos_partitions() {
   local temp_size=0
   local result=''
   local found_all_part=''
-  local dev=$(smallest_hd)
+  local dev; dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
     dev="$DRIVE1"
   fi
 
-  local DRIVE_SIZE=$(blockdev --getsize64 "$dev")
+  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$dev")
   DRIVE_SIZE=$(( $DRIVE_SIZE / 1024 / 1024 ))
 
   if [ $DRIVE_SIZE -lt $LIMIT ]; then
@@ -3833,9 +3833,9 @@ suse_netdev_fix() {
 
 is_private_ip() {
  if [ "$1" ]; then
-   local first="$(echo "$1" | cut -d '.' -f 1)"
-   local second="$(echo "$1" | cut -d '.' -f 2)"
-   local third="$(echo "$1" | cut -d '.' -f 3)"
+   local first; first="$(echo "$1" | cut -d '.' -f 1)"
+   local second; second="$(echo "$1" | cut -d '.' -f 2)"
+   local third; third="$(echo "$1" | cut -d '.' -f 3)"
    case "$first" in
      10)
        debug "detected private ip ($first.$second.x)"
