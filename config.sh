@@ -90,5 +90,7 @@ debugoutput() {
   done
 }
 
+# see https://github.com/koalaman/shellcheck/wiki/SC1090
+# shellcheck source=/dev/null
 . "$FUNCTIONSFILE"
 
