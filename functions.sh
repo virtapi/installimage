@@ -410,7 +410,7 @@ create_config() {
       } >> "$CNF"
     fi
 
-    if [ "$RAID1" -a "$RAID0" ] ; then
+    if [ "$RAID1" ] && [ "$RAID0" ] ; then
       {
         echo "#"
         echo "## Based on your disks and which RAID level you will choose you have"
@@ -624,7 +624,7 @@ if [ "$1" ]; then
     MOUNT_POINT_SIZE[$i]=${PART_SIZE[$i]}
     #calculate new partition size if software raid is enabled and it is not /boot or swap
     if [ "$SWRAID" = "1" ]; then
-      if [ "${PART_MOUNT[$i]}" != "/boot" -a "${PART_SIZE[$i]}" != "all" -a "${PART_MOUNT[$i]}" != "swap" ]; then
+      if [ "${PART_MOUNT[$i]}" != "/boot" ] && [ "${PART_SIZE[$i]}" != "all" ] && [ "${PART_MOUNT[$i]}" != "swap" ]; then
         if [ "$SWRAIDLEVEL" = "0" ]; then
           PART_SIZE[$i]=$((${PART_SIZE[$i]}/COUNT_DRIVES))
         elif [ "$SWRAIDLEVEL" = "5" ]; then
@@ -776,13 +776,13 @@ validate_vars() {
 #  fi
 
   # test if "$SWRAID" has not 0 or 1 as parameter
-  if [ "$SWRAID" != "0" -a "$SWRAID" != "1" ]; then
+  if [ "$SWRAID" != "0" ] && [ "$SWRAID" != "1" ]; then
     graph_error "ERROR: Value for SWRAID is not correct"
     return 1
   fi
 
   # test if "$SWRAIDLEVEL" is either 0 or 1
-  if [ "$SWRAID" = "1" -a "$SWRAIDLEVEL" != "0" -a "$SWRAIDLEVEL" != "1" -a "$SWRAIDLEVEL" != "5" -a "$SWRAIDLEVEL" != "6" -a "$SWRAIDLEVEL" != "10" ]; then
+  if [ "$SWRAID" = "1" ] && [ "$SWRAIDLEVEL" != "0" ] && [ "$SWRAIDLEVEL" != "1" ] && [ "$SWRAIDLEVEL" != "5" ] && [ "$SWRAIDLEVEL" != "6" ] && [ "$SWRAIDLEVEL" != "10" ]; then
     graph_error "ERROR: Value for SWRAIDLEVEL is not correct"
     return 1
   fi
@@ -799,16 +799,16 @@ validate_vars() {
         fi
       done
       drive_array=( "${drive_array[@]}" "$drive" )
-      if [ "$format" != "0" -a "$format" != "1" ]; then
+      if [ "$format" != "0" ] && [ "$format" != "1" ]; then
         graph_error "ERROR: Value for FORMATDRIVE$i is not correct"
         return 1
       fi
-      if [ "$format" = 1 -a "$SWRAID" = 1 ] ; then
+      if [ "$format" = 1 ] && [ "$SWRAID" = 1 ] ; then
         graph_error "ERROR: FORMATDRIVE$i _AND_ SWRAID are active - use one or none of these options, not both"
         return 1
       fi
     fi
-    if [ "$SWRAID" = "1" -o "$format" = "1" -o "$i" -eq 1 ] ; then
+    if [ "$SWRAID" = "1" ] || [ "$format" = "1" ] || [ "$i" -eq 1 ] ; then
       # test if drive is a valid block device and is able to create partitions
       CHECK="$(test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null)"
       if [ -z "$CHECK" ]; then
@@ -826,20 +826,20 @@ validate_vars() {
   done
 
   # test if there is more than 1 hdd if swraid enabled
-  if [ "$SWRAID" = "1" -a $COUNT_DRIVES -le 1 ] ; then
+  if [ "$SWRAID" = "1" ] && [ $COUNT_DRIVES -le 1 ] ; then
     graph_error "ERROR: You need to select at least 2 disks for creating software raid!"
     return 1
   fi
 
   # test if enough disks for the choosen raid level
   if [ "$SWRAID" = "1" ]; then
-    if [ "$SWRAIDLEVEL" = "5" -a "$COUNT_DRIVES" -lt "3" ]; then
+    if [ "$SWRAIDLEVEL" = "5" ] && [ "$COUNT_DRIVES" -lt "3" ]; then
       graph_error "ERROR: Not enough disks for RAID level 5"
       return 1
-    elif [ "$SWRAIDLEVEL" = "6" -a "$COUNT_DRIVES" -lt "4" ]; then
+    elif [ "$SWRAIDLEVEL" = "6" ] && [ "$COUNT_DRIVES" -lt "4" ]; then
       graph_error "ERROR: Not enough disks for RAID level 6"
       return 1
-    elif [ "$SWRAIDLEVEL" = "10" -a "$COUNT_DRIVES" -lt "2" ]; then
+    elif [ "$SWRAIDLEVEL" = "10" ] && [ "$COUNT_DRIVES" -lt "2" ]; then
       graph_error "ERROR: Not enough disks for RAID level 10"
       return 1
     fi
@@ -847,7 +847,7 @@ validate_vars() {
 
   # test if a /boot partition is defined when using software RAID 0
   if [ "$SWRAID" = "1" ]; then
-    if [ "$SWRAIDLEVEL" = "0" -o "$SWRAIDLEVEL" = "5" -o "$SWRAIDLEVEL" = "6" -o "$SWRAIDLEVEL" = "10" ]; then
+    if [ "$SWRAIDLEVEL" = "0" ] || [ "$SWRAIDLEVEL" = "5" ] || [ "$SWRAIDLEVEL" = "6" ] || [ "$SWRAIDLEVEL" = "10" ]; then
       TMPCHECK=0
 
       for i in $(seq 1 "$PART_COUNT"); do
@@ -962,12 +962,12 @@ validate_vars() {
 
       # test if the filesystem is one of our supportet types (btrfs/ext2/ext3/ext4/reiserfs/xfs/swap)
       CHECK="$(echo ${PART_FS[$i]} |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$")"
-      if [ -z "$CHECK" -a "${PART_MOUNT[$i]}" != "lvm" ]; then
+      if [ -z "$CHECK" ] && [ "${PART_MOUNT[$i]}" != "lvm" ]; then
         graph_error "ERROR: Filesystem for partition $i is not correct"
         return 1
       fi
 
-      if [ "${PART_FS[$i]}" = "reiserfs" -a "$IAM" = "centos" ]; then
+      if [ "${PART_FS[$i]}" = "reiserfs" ] && [ "$IAM" = "centos" ]; then
         graph_error "ERROR: centos doesn't support reiserfs"
         return 1
       fi
@@ -979,31 +979,31 @@ validate_vars() {
 
       # we can't use bsdtar on non ext2/3/4 partitions
       CHECK=$(echo ${PART_FS[$i]} |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
-      if [ -z "$CHECK" -a "${PART_MOUNT[$i]}" != "lvm" ]; then
+      if [ -z "$CHECK" ] && [ "${PART_MOUNT[$i]}" != "lvm" ]; then
         export TAR="tar"
         echo "setting TAR to GNUtar" | debugoutput
       fi
 
-      if [ "${PART_FS[$i]}" = "btrfs" -a "$IAM" = "centos" -a "$IMG_VERSION" -lt 62 ]; then
+      if [ "${PART_FS[$i]}" = "btrfs" ] && [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -lt 62 ]; then
         graph_error "ERROR: CentOS older than 6.2 doesn't support btrfs"
         return 1
       fi
 
       # test if "all" is at the last partition entry
       ### TODO: correct this for LVM
-      if [ "${PART_SIZE[$i]}" = "all" -a "$i" -lt "$PART_COUNT" ]; then
+      if [ "${PART_SIZE[$i]}" = "all" ] && [ "$i" -lt "$PART_COUNT" ]; then
         graph_error "ERROR: Partition size \"all\" has to be on the last partition"
         return 1
       fi
 
       # Check if the partition size is a valid number
-      if [ "${PART_SIZE[$i]}" != "all" -a "$(echo "${PART_SIZE[$i]}" | sed "s/[0-9]//g")" != "" -o "${PART_SIZE[$i]}" = "0" ]; then
+      if [ "${PART_SIZE[$i]}" != "all" ] && [ "$(echo "${PART_SIZE[$i]}" | sed "s/[0-9]//g")" != "" ] || [ "${PART_SIZE[$i]}" = "0" ]; then
         graph_error "ERROR: The size of the partiton PART ${PART_MOUNT[$i]} is not a valid number"
         return 1
       fi
 
       # check if /boot partition has at least 200M
-      if [ "${PART_MOUNT[$i]}" = "/boot" -a "${PART_SIZE[$i]}" != "all" ]; then
+      if [ "${PART_MOUNT[$i]}" = "/boot" ] && [ "${PART_SIZE[$i]}" != "all" ]; then
         if [ "${MOUNT_POINT_SIZE[$i]}" -lt "200" ]; then
           graph_error "ERROR: Your /boot partition has to be at least 200M (current size: ${MOUNT_POINT_SIZE[$i]})"
           return 1
@@ -1011,7 +1011,7 @@ validate_vars() {
       fi
 
       # check if / partition has at least 1500M
-      if [ "${PART_MOUNT[$i]}" = "/" -a "${PART_SIZE[$i]}" != "all" ]; then
+      if [ "${PART_MOUNT[$i]}" = "/" ] && [ "${PART_SIZE[$i]}" != "all" ]; then
         if [ "${MOUNT_POINT_SIZE[$i]}" -lt "1500" ]; then
           graph_error "ERROR: Your / partition has to be at least 1500M (current size: ${MOUNT_POINT_SIZE[$i]})"
           return 1
@@ -1019,14 +1019,14 @@ validate_vars() {
       fi
 
       if [ "$BOOTLOADER" = "grub" ]; then
-        if [ "${PART_MOUNT[$i]}" = "/boot" -a "${PART_FS[$i]}" = "xfs" ]; then
+        if [ "${PART_MOUNT[$i]}" = "/boot" ] && [ "${PART_FS[$i]}" = "xfs" ]; then
           graph_error "ERROR: /boot partiton will not work properly with xfs"
           return 1
         fi
 
-        if [ "${PART_MOUNT[$i]}" = "/" -a "${PART_FS[$i]}" = "xfs" ]; then
+        if [ "${PART_MOUNT[$i]}" = "/" ] && [ "${PART_FS[$i]}" = "xfs" ]; then
           TMPCHECK="0"
-          if [ "$IAM" = "centos"  -a "$IMG_ARCH" = "32" ]; then
+          if [ "$IAM" = "centos" ] && [ "$IMG_ARCH" = "32" ]; then
             graph_error "ERROR: CentOS 32bit doesn't support xfs on partition /"
             return 1
           fi
@@ -1060,7 +1060,7 @@ validate_vars() {
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
-    if [ $(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 -a "$BOOTLOADER" = "lilo" ] ; then
+    if [ $(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
       graph_error "ERROR: you cannot use more than one VG with lilo - use grub as bootloader"
       return 1
     fi
@@ -1092,12 +1092,12 @@ validate_vars() {
   fi
 
   # LVM checks
-  if [ "$LVM" = "0" -a "$LVM_VG_COUNT" != "0" ] ; then
+  if [ "$LVM" = "0" ] && [ "$LVM_VG_COUNT" != "0" ] ; then
     graph_error "ERROR: There are volume groups defined, but no logical volumes are defined"
     return 1
   fi
 
-  if [ "$LVM" = "0" -a "$LVM_LV_COUNT" != "0" ] ; then
+  if [ "$LVM" = "0" ] && [ "$LVM_LV_COUNT" != "0" ] ; then
     graph_error "ERROR: There are logical volumes defined, but no volume groups are defined"
     return 1
   fi
@@ -1130,23 +1130,23 @@ validate_vars() {
       echo "setting TAR to GNUtar" | debugoutput
     fi
 
-    if [ "$lv_fs" = "reiserfs" -a "$IAM" = "centos" ]; then
+    if [ "$lv_fs" = "reiserfs" ] && [ "$IAM" = "centos" ]; then
       graph_error "ERROR: centos doesn't support reiserfs"
       return 1
     fi
 
 #   this seems to be a very old problem. Not a problem for 6.x and later
-#    if [ "$lv_fs" = "xfs" -a "$lv_mountp" = "/" -a "$IAM" = "centos" ]; then
+#    if [ "$lv_fs" = "xfs" ] && [ "$lv_mountp" = "/" ] && [ "$IAM" = "centos" ]; then
 #      graph_error "ERROR: centos doesn't support xfs on partition /"
 #      return 1
 #    fi
 
-    if [ "$lv_size" != "all" -a "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" -o "$lv_size" = "0" ]; then
+    if [ "$lv_size" != "all" ] && [ "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" ] || [ "$lv_size" = "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
       return 1
     fi
 
-    if [ "$lv_mountp" = "/" -a "$lv_size" != "all" ]; then
+    if [ "$lv_mountp" = "/" ] && [ "$lv_size" != "all" ]; then
       if [ "$lv_size" -lt "1500" ]; then
         graph_error "ERROR: Your / partition has to be at least 1500M"
         return 1
@@ -1160,7 +1160,7 @@ validate_vars() {
         vg_last_lv=$i_lv
       fi
     done
-    if [ "$lv_size" = "all" -a "$vg_last_lv" -ne "$lv_id" ] ; then
+    if [ "$lv_size" = "all" ] && [ "$vg_last_lv" -ne "$lv_id" ] ; then
       graph_error "ERROR: LV size \"all\" has to be on the last LV in VG $lv_vg."
       return 1
     fi
@@ -1188,7 +1188,7 @@ validate_vars() {
     # (e.g. for 2TB limit in CentOS workaround)
     for i in $(seq 1 "$LVM_VG_COUNT") ; do
       # check if vg has same name and is not the same vg
-      if [ "${LVM_VG_NAME[$i]}" = "$vg_name" -a "$i" -ne "$vg_id" ] ; then
+      if [ "${LVM_VG_NAME[$i]}" = "$vg_name" ] && [ "$i" -ne "$vg_id" ] ; then
         vg_add_size=0
         if [ "${LVM_VG_SIZE[$i]}" = "all" ] ; then
           vg_add_size=$(($DRIVE_SUM_SIZE - $PARTS_SUM_SIZE))
@@ -1200,7 +1200,7 @@ validate_vars() {
     done
 
     for lv_id in $(seq 1 "$LVM_LV_COUNT") ; do
-      if [ "${LVM_LV_VG[$lv_id]}" = "$vg_name" -a "${LVM_LV_SIZE[$lv_id]}" = "all" ] ; then
+      if [ "${LVM_LV_VG[$lv_id]}" = "$vg_name" ] && [ "${LVM_LV_SIZE[$lv_id]}" = "all" ] ; then
         sum_size=$(($sum_size + ${LVM_LV_SIZE[$lv_id]}))
       fi
     done
@@ -1218,7 +1218,7 @@ validate_vars() {
 
   # list all mountpoints without the 'lvm' and 'swap' keyword
   for i in $(seq 1 "$PART_COUNT"); do
-      if [ ${PART_MOUNT[$i]} != "lvm" -a ${PART_MOUNT[$i]} != "swap" ]; then
+      if [ ${PART_MOUNT[$i]} != "lvm" ] && [ ${PART_MOUNT[$i]} != "swap" ]; then
           mounts_as_string="$mounts_as_string${PART_MOUNT[$i]}\n"
       fi
   done
@@ -1264,7 +1264,7 @@ validate_vars() {
 
   if [ "$OPT_INSTALL" ]; then
     if [ $(echo "$OPT_INSTALL" | grep -i "PLESK") ]; then
-        if [ "$IAM" != "centos" -a "$IAM" != "debian" ]; then
+        if [ "$IAM" != "centos" ] && [ "$IAM" != "debian" ]; then
           graph_error "ERROR: PLESK is not available for this image"
           return 1
         fi
@@ -1672,7 +1672,7 @@ create_partitions() {
      fi
 
 
-     if [ "$PART_COUNT" -ge "4" -a "$i" -ge "4" ]; then
+     if [ "$PART_COUNT" -ge "4" ] && [ "$i" -ge "4" ]; then
        make_fstab_entry "$1" "$(($i+1))" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
      else
        make_fstab_entry "$1" "$i" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
@@ -1721,7 +1721,7 @@ create_partitions() {
 # create fstab entries
 # make_fstab_entry "DRIVE" "NUMBER" "MOUNTPOINT" "FILESYSTEM"
 make_fstab_entry() {
- if [ "$1" -a "$2" -a "$3" -a "$4" ]; then
+ if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ]; then
   ENTRY=""
 
   if [ "$4" = "swap" ] ; then
@@ -1785,7 +1785,7 @@ make_swraid() {
     METADATA="--metadata=1.2"
 
     #centos 6.x metadata
-    if [ "$IAM" = "centos" -a "$IMG_VERSION" -lt 70 ]; then
+    if [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -lt 70 ]; then
       if [ "$IMG_VERSION" -ge 60 ]; then
         METADATA="--metadata=1.0"
       else
@@ -1802,7 +1802,7 @@ make_swraid() {
       echo "Line is: \"$line\"" | debugoutput
       # we always use /dev/mdX in Ubuntu 10.04. In all other distributions we use it when we have Metadata format 0.90
       # in Ubuntu 11.04 we have to use /boot with metadata format 0.90
-      if [ -n "$(echo "$line" | grep "/boot")" -a  "$metadata_boot" == "--metadata=0.90" ] || [ "$METADATA" == "--metadata=0.90" ] ||  [ "$IAM" == "ubuntu"  -a  "$IMG_VERSION" == "1004" ] || [ "$IAM" == "suse" ] || [ "$IAM" == "centos" ]; then
+      if [ -n "$(echo "$line" | grep "/boot")" ] && [  "$metadata_boot" == "--metadata=0.90" ] || [ "$METADATA" == "--metadata=0.90" ] ||  [ "$IAM" == "ubuntu"  ] && [  "$IMG_VERSION" == "1004" ] || [ "$IAM" == "suse" ] || [ "$IAM" == "centos" ]; then
         # update fstab - replace /dev/sdaX with /dev/mdY
         echo "$line" | sed "s/$SEDHDD[[:digit:]]\{1,2\}/\/dev\/md$count/g" >> "$fstab"
       else
@@ -1855,7 +1855,7 @@ make_swraid() {
 
 
 make_lvm() {
-  if [ "$1" -a "$2" ] ; then
+  if [ "$1" ] && [ "$2" ] ; then
     fstab=$1
     disk1=$2
 
@@ -1932,7 +1932,7 @@ make_lvm() {
       if [ "$size" = "all" ] ; then
         size="$(translate_unit "$free")"
       else
-        if [ "$i" -eq "$vg_last_lv" -a "$free" -lt "$size" ] ; then
+        if [ "$i" -eq "$vg_last_lv" ] && [ "$free" -lt "$size" ] ; then
           size="$(translate_unit "$free")"
           debug "# Resize LV $lv in VG $vg to $size MiB because of not enough free space"
         fi
@@ -1959,7 +1959,7 @@ make_lvm() {
 
 
 format_partitions() {
-  if [ "$1" -a "$2" ]; then
+  if [ "$1" ] && [ "$2" ]; then
     DEV="$1"
     FS="$2"
     EXITCODE=0
@@ -1977,7 +1977,7 @@ format_partitions() {
         dd if=/dev/zero of="$DEV" bs=256 count=8 2>&1 | debugoutput
         # then write swap information
         mkswap "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
-      elif [ "$FS" = "ext2" -o "$FS" = "ext3" -o "$FS" = "ext4" ]; then
+      elif [ "$FS" = "ext2" ] || [ "$FS" = "ext3" ] || [ "$FS" = "ext4" ]; then
         mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
       elif [ "$FS" = "btrfs" ]; then
         wipefs "$DEV" | debugoutput
@@ -1994,7 +1994,7 @@ format_partitions() {
 }
 
 mount_partitions() {
-  if [ "$1" -a "$2" ]; then
+  if [ "$1" ] && [ "$2" ]; then
     fstab="$1"
     basedir="$2"
 
@@ -2047,7 +2047,7 @@ mount_partitions() {
 
       # create lock and run dir for ubuntu if /var has its own filesystem
       # otherwise network does not come up - see ticket 2008012610009793
-      if [ "$MOUNTPOINT" = "/var" -a "$IAM" = "ubuntu" ]; then
+      if [ "$MOUNTPOINT" = "/var" ] && [ "$IAM" = "ubuntu" ]; then
         mkdir -p -m 1777 "$basedir/var/lock" 2>&1 | debugoutput
         mkdir -p -m 1777 "$basedir/var/run" 2>&1 | debugoutput
       fi
@@ -2073,11 +2073,11 @@ mount_partitions() {
 # set EXTRACTFROM for next functions
 # params: IMAGE_PATH, IMAGE_PATH_TYPE, IMAGE_FILE
 get_image_info() {
-  if [ "$1" -a "$2" -a "$3" ]; then
+  if [ "$1" ] && [ "$2" ] && [ "$3" ]; then
     case $2 in
       nfs)
         mount -t "nfs" "$1" "$FOLD/nfs" 2>&1 | debugoutput ; EXITCODE=$?
-        if [ "$EXITCODE" -ne "0" -o ! -e "$FOLD/nfs/$3" ]; then
+        if [ "$EXITCODE" -ne "0" ] || [ ! -e "$FOLD/nfs/$3" ]; then
           return 1
         else
           EXTRACTFROM="$FOLD/nfs/$3"
@@ -2148,7 +2148,7 @@ get_image_url() {
 import_imagekey() {
   local PUBKEY=""
   # check if pubkey is given by the customer
-  if [ -n "$IMAGE_PUBKEY" -a -e "$IMAGE_PUBKEY" ] ; then
+  if [ -n "$IMAGE_PUBKEY" ] && [ -e "$IMAGE_PUBKEY" ] ; then
     PUBKEY="$IMAGE_PUBKEY"
   elif [ -e "$HETZNER_PUBKEY" ] ; then
     # if no special pubkey given, use the hetzner key
@@ -2196,7 +2196,7 @@ validate_image() {
 # extract image file to hdd
 extract_image() {
   local COMPRESSION=""
-  if [ "$1" -a "$2" ]; then
+  if [ "$1" ] && [ "$2" ]; then
     case "$2" in
       tar)
         COMPRESSION=""
@@ -2297,7 +2297,7 @@ gather_network_information() {
 
 # setup_network_config "ETH" "HWADDR" "IPADDR" "BROADCAST" "SUBNETMASK" "GATEWAY" "NETWORK"
 setup_network_config() {
-  if [ "$1" -a "$2" -a "$3" -a "$4" -a "$5" -a "$6" -a "$7" ]; then
+  if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ] && [ "$5" ] && [ "$6" ] && [ "$7" ]; then
     return 1
   fi
 }
@@ -2328,13 +2328,13 @@ setup_network_config_template() {
   cp "$tpl_udev_load" "$tpl_udev"
 
   # replace necessary network information
-  if [ -n "$eth" -a -n "$hwaddr" ] ; then
+  if [ -n "$eth" ] && [ -n "$hwaddr" ] ; then
     # replace network information in udev template
     template_replace "ETH" "$eth" "$tpl_udev"
     template_replace "HWADDR" "$hwaddr" "$tpl_udev"
 
     # replace network information in network template
-    if [ -n "$ipaddr" -a -n "$broadcast" -a -n "$netmask" -a -n "$gateway" -a -n "$network" ] ; then
+    if [ -n "$ipaddr" ] && [ -n "$broadcast" ] && [ -n "$netmask" ] && [ -n "$gateway" ] && [ -n "$network" ] ; then
       template_replace "ETH" "$eth" "$tpl_net"
       template_replace "HWADDR" "$hwaddr" "$tpl_net"
       template_replace "IPADDR" "$ipaddr" "$tpl_net"
@@ -2349,7 +2349,7 @@ setup_network_config_template() {
     fi
 
     # replace ipv6 information in network template if given
-    if [ -n "$ipaddr6" -a -n "$netmask6" -a -n "$gateway6" ] ; then
+    if [ -n "$ipaddr6" ] && [ -n "$netmask6" ] && [ -n "$gateway6" ] ; then
       template_replace "IPADDR6" "$ipaddr6" "$tpl_net"
       template_replace "NETMASK6" "$netmask6" "$tpl_net"
       template_replace "GATEWAY6" "$gateway6" "$tpl_net"
@@ -2475,7 +2475,7 @@ generate_resolvconf() {
 
 # set_hostname "HOSTNAME"
 set_hostname() {
-  if [ "$1" -a "$2" ]; then
+  if [ "$1" ] && [ "$2" ]; then
     local sethostname="$1"
 
     local mailname="$sethostname"
@@ -2493,7 +2493,7 @@ set_hostname() {
     check_fqdn "$sethostname"
     [ $? -eq 1 ] && shortname="$sethostname" || shortname="$(hostname -s )"
 
-    if [ -f "$hostnamefile" -o "$IAM" = "arch" ]; then
+    if [ -f "$hostnamefile" ] || [ "$IAM" = "arch" ]; then
       echo "$shortname" > "$hostnamefile"
       debug "# set new hostname '$shortname' in $hostnamefile"
     fi
@@ -2918,7 +2918,7 @@ get_rootpassword() {
 
 # set_rootpassword "$FOLD/hdd/etc/shadow" "ROOTHASH"
 set_rootpassword() {
-  if [ "$1" -a "$2" ]; then
+  if [ "$1" ] && [ "$2" ]; then
     grep -v "^root" "${1}" > /tmp/shadow.tmp
     local GECOS="$(awk -F: '/^root/ {print $3":"$4":"$5":"$6":"$7":"$8":"}' ${1})"
     echo "root:$2:$GECOS" > "$1"
@@ -3078,7 +3078,7 @@ generate_ntp_config() {
   [ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
 
-  if [ -f "$FOLD/hdd/$CFGNTP" -o -f "$FOLD/hdd/$CFGCHRONY" -o -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
+  if [ -f "$FOLD/hdd/$CFGNTP" ] || [ -f "$FOLD/hdd/$CFGCHRONY" ] || [ -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
     if [ -f "$FOLD/hdd/$CFGTIMESYNCD" ]; then
       local cfgdir="$FOLD/hdd/$CFGTIMESYNCD.d"
       local cfgparam='NTP'
@@ -3127,10 +3127,10 @@ create_hostname() {
   THIRD="$(echo "$1" | cut -d '.' -f 3)"
   FOURTH="$(echo "$1" | cut -d '.' -f 4)"
 
-  if [ -z "$FIRST" -o -z "$SECOND" -o -z "$THIRD" -o -z "$FOURTH" ]; then
+  if [ -z "$FIRST" ] || [ -z "$SECOND" ] || [ -z "$THIRD" ] || [ -z "$FOURTH" ]; then
     return 1
   fi
-  if [ "$FIRST" -eq "78" -o "$FIRST" -eq "188" -o "$FIRST" -eq "178" -o "$FIRST" -eq "46" -o "$FIRST" -eq "176" -o "$FIRST" -eq "5" -o "$FIRST" -eq "185" -o "$FIRST" -eq "136" -o "$FIRST" -eq "144" -o "$FIRST" -eq "148" -o "$FIRST" -eq "138" ]; then
+  if [ "$FIRST" -eq "78" ] || [ "$FIRST" -eq "188" ] || [ "$FIRST" -eq "178" ] || [ "$FIRST" -eq "46" ] || [ "$FIRST" -eq "176" ] || [ "$FIRST" -eq "5" ] || [ "$FIRST" -eq "185" ] || [ "$FIRST" -eq "136" ] || [ "$FIRST" -eq "144" ] || [ "$FIRST" -eq "148" ] || [ "$FIRST" -eq "138" ]; then
     GENERATEDHOSTNAME="static.$FOURTH.$THIRD.$SECOND.$FIRST.clients.your-server.de"
   else
     GENERATEDHOSTNAME="static.$FIRST-$SECOND-$THIRD-$FOURTH.clients.your-server.de"
@@ -3191,7 +3191,7 @@ install_plesk() {
     plesk_version="$latest_sub"
   fi
 
-#  if [ "$IMAGENAME" == "CentOS-57-64-minimal" -o "$IMAGENAME" == "CentOS-58-64-minimal" -o "$IMAGENAME" == "CentOS-60-64-minimal" -o "$IMAGENAME" == "CentOS-62-64-minimal" -o "$IMAGENAME" == "CentOS-63-64-minimal" ]; then
+#  if [ "$IMAGENAME" == "CentOS-57-64-minimal" ] || [ "$IMAGENAME" == "CentOS-58-64-minimal" ] || [ "$IMAGENAME" == "CentOS-60-64-minimal" ] || [ "$IMAGENAME" == "CentOS-62-64-minimal" ] || [ "$IMAGENAME" == "CentOS-63-64-minimal" ]; then
   if [ "$IAM" == 'centos' ]; then
     execute_chroot_command "yum -y install mysql mysql-server"
     # we should install rails here as well, but this is a bit tricky
@@ -3201,7 +3201,7 @@ install_plesk() {
     sed -i "s|$IMAGENAME|$IMAGENAME.yourdomain.localdomain $IMAGENAME|" $FOLD/hdd/etc/hosts
   fi
 
-  if [ "$IAM" == "debian" -a "$IMG_VERSION" -ge 70 ]; then
+  if [ "$IAM" == "debian" ] && [ "$IMG_VERSION" -ge 70 ]; then
     # create folder /run/lock since it doesn't exist after the installation of debian7 and needed for plesk installation
     execute_chroot_command "mkdir -p /run/lock"
   fi
@@ -3314,7 +3314,7 @@ install_robot_script() {
 
 #report_statistic "SERVER" "IMAGENAME" "SWRAID" "LVM"
 report_statistic() {
-  if [ "$1" -a "$2" -a "$3" -a "$4" -a "$5" ]; then
+  if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ] && [ "$5" ]; then
     REPORTSRV="$1"
 
     STANDARDIMAGE="$(ls -1 "$IMAGESPATH" |grep "$2")"
@@ -3327,9 +3327,9 @@ report_statistic() {
 
     REPORTSWR="$3"
     REPORTLVM="$4"
-    if [ "$5" = "lilo" -o "$5" = "LILO" ]; then
+    if [ "$5" = "lilo" ] || [ "$5" = "LILO" ]; then
       BLCODE="0"
-    elif [ "$5" = "grub" -o "$5" = "GRUB" ]; then
+    elif [ "$5" = "grub" ] || [ "$5" = "GRUB" ]; then
       BLCODE="1"
     fi
     ERROREXITCODE="$6"
@@ -3614,7 +3614,7 @@ function part_test_size() {
 
   if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" = "1" ]; then
     # use only GPT if not CentOS or OpenSuSE newer than 12.2
-    if [ "$IAM" != "centos" ] || [ "$IAM" == "centos" -a "$IMG_VERSION" -ge 70 ]; then
+    if [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ]; then
       if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
         echo "SuSE older than 12.2. cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
       else
@@ -3634,7 +3634,7 @@ function part_test_size() {
 function check_dos_partitions() {
 
   echo "check_dos_partitions" | debugoutput
-  if [ "$FORCE_GPT" = "2" ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" -a "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
+  if [ "$FORCE_GPT" = "2" ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
     if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
       echo "SuSE version older than 12.2, no grub2 support" | debugoutput
     else
@@ -3842,7 +3842,7 @@ is_private_ip() {
        return 0
        ;;
      100)
-       if [ "$second" -ge 64 -a "$second" -lt 128 ]; then
+       if [ "$second" -ge 64 ] && [ "$second" -lt 128 ]; then
          debug "detected private ip ($first.$second.x)"
          return 0
        else
@@ -3850,7 +3850,7 @@ is_private_ip() {
        fi
        ;;
      172)
-       if [ "$second" -ge 16 -a "$second" -lt 32 ]; then
+       if [ "$second" -ge 16 ] && [ "$second" -lt 32 ]; then
          debug "detected private ip ($first.$second.x)"
          return 0
        else

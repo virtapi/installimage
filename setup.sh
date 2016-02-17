@@ -72,7 +72,7 @@ if [ "$OPT_AUTOMODE" ] ; then
   for i in $(seq 1 20) ; do
     echo -n "."
     read -t1 -n1 anykey
-    if [ "$anykey" = "x" -o "$anykey" = "X" ] ; then break ; fi
+    if [ "$anykey" = "x" ] || [ "$anykey" = "X" ] ; then break ; fi
   done
   echo
 
@@ -168,7 +168,7 @@ else
       for i in $(seq 1 $COUNT_DRIVES) ; do
         ask_format="$(eval echo \$FORMAT_DRIVE$i)"
         ask_drive="$(eval echo \$DRIVE$i)"
-        if [ "$SWRAID" = "1" -o "$ask_format" = "1" -o $i -eq 1 ]; then
+        if [ "$SWRAID" = "1" ] || [ "$ask_format" = "1" ] || [ $i -eq 1 ]; then
           dialog --backtitle "$DIATITLE" --title "Confirmation" --colors --yesno "\n\Z1WARNING!: DATA ON THE FOLLOWING DRIVE WILL BE DELETED:\n\n $ask_drive\n\nDo you want to continue?\Zn\n" 0 0
           if [ $? -ne 0 ]; then
             debug "# Confirmation for drive $ask_drive NOT accepted"
@@ -185,7 +185,7 @@ else
 
 
   debug "# executing installfile..."
-  if [ -f $INSTALLFILE -a "$ACCEPTED" = "true" -a "$VALIDATED" = "true" -a "$IMAGENAME" ] ; then
+  if [ -f $INSTALLFILE ] && [ "$ACCEPTED" = "true" ] && [ "$VALIDATED" = "true" ] && [ "$IMAGENAME" ] ; then
      . "$INSTALLFILE" ; EXITCODE=$?
   else
     debug "=> FAILED"

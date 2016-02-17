@@ -92,7 +92,7 @@ generate_config_mdadm() {
     if [ "$SUSEVERSION" -ge 132 ] ; then
       echo >> "$FOLD/hdd$MDADMCONF"
     fi
-#    if [ "$SUSEVERSION" = "11.0" -o "$SUSEVERSION" = "11.2" -o "$SUSEVERSION" = "11.3" -o "$SUSEVERSION" = "11.4" -o "$SUSEVERSION" = "12.1"  -o "$SUSEVERSION" = "12.2" ]; then
+#    if [ "$SUSEVERSION" = "11.0" ] || [ "$SUSEVERSION" = "11.2" ] || [ "$SUSEVERSION" = "11.3" ] || [ "$SUSEVERSION" = "11.4" ] || [ "$SUSEVERSION" = "12.1"  ] || [ "$SUSEVERSION" = "12.2" ]; then
     if [ "$SUSEVERSION" -ge 110 ]; then
       # Suse 11.2 argues about failing opening of /dev/md/<number>, so do a --examine instead of --details
       execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; declare -i EXITCODE=$?

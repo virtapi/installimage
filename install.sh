@@ -60,7 +60,7 @@ status_warn() {
 }
 
 status_donefailed() {
-  if [ "$1" -a $1 -eq 0 ]; then
+  if [ "$1" ] && [ $1 -eq 0 ]; then
     status_done
   else
     status_failed
@@ -122,7 +122,7 @@ unmount_all
 stop_lvm_raid
 
 for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" -o "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
+  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" ] || [ "$SWRAID" = "1" ] || [ $part_inc -eq 1 ] ; then
     TARGETDISK="$(eval echo \$DRIVE${part_inc})"
     debug "# Deleting partitions on $TARGETDISK"
     delete_partitions "$TARGETDISK" || status_failed
@@ -148,7 +148,7 @@ inc_step
 status_busy "Creating partitions and /etc/fstab"
 
 for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
+  if [ "$SWRAID" = "1" ] || [ $part_inc -eq 1 ] ; then
     TARGETDISK="$(eval echo \$DRIVE${part_inc})"
     debug "# Creating partitions on $TARGETDISK"
     create_partitions "$TARGETDISK" || status_failed
@@ -257,7 +257,7 @@ inc_step
 status_busy "Validating image before starting extraction"
 validate_image
 VALIDATE_EXIT=$?
-if [ -n "$FORCE_SIGN" -o -n "$OPT_FORCE_SIGN" ] && [ $VALIDATE_EXIT -gt 0 ] ; then
+if [ -n "$FORCE_SIGN" ] || [ -n "$OPT_FORCE_SIGN" ] && [ $VALIDATE_EXIT -gt 0 ] ; then
   debug "FORCE_SIGN set, but validation failed!"
   status_failed
 fi
@@ -366,7 +366,7 @@ if [ -n "$OPT_SSHKEYS_URL" ] ; then
     status_donefailed $?
 fi
 
-if [ "$OPT_USE_SSHKEYS" = "1" -a -z "$FORCE_PASSWORD" ]; then
+if [ "$OPT_USE_SSHKEYS" = "1" ] && [ -z "$FORCE_PASSWORD" ]; then
   status_busy_nostep "  Disabling root password"
   set_rootpassword "$FOLD/hdd/etc/shadow" "*"
   status_donefailed $?
@@ -397,14 +397,14 @@ inc_step
 status_busy "Installing bootloader $BOOTLOADER"
 
 debug "# Generating config for $BOOTLOADER"
-if [ "$BOOTLOADER" = "grub" -o "$BOOTLOADER" = "GRUB" ]; then
+if [ "$BOOTLOADER" = "grub" ] || [ "$BOOTLOADER" = "GRUB" ]; then
   generate_config_grub "$VERSION" || status_failed
 else
   generate_config_lilo "$VERSION" || status_failed
 fi
 
 debug "# Writing bootloader $BOOTLOADER into MBR"
-if [ "$BOOTLOADER" = "grub" -o "$BOOTLOADER" = "GRUB" ]; then
+if [ "$BOOTLOADER" = "grub" ] || [ "$BOOTLOADER" = "GRUB" ]; then
   write_grub "NIL" || status_failed
 else
   write_lilo "NIL" || status_failed
