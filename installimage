@@ -33,7 +33,7 @@ echo 3 >/proc/sys/vm/drop_caches
 
 
 # realconfig
-SCRIPTPATH="`dirname $0`"
+SCRIPTPATH="$(dirname $0)"
 REALCONFIG="$SCRIPTPATH/config.sh"
 
 # copy our config file and read global variables and functions

@@ -2,7 +2,7 @@
 
 
 NEW_HNAME="$(hostname -f)"
-NEW_ADDRESS=`/sbin/ifconfig eth0 | grep "inet addr:" | head -1 | awk '{print $2}'| cut -d: -f2`
+NEW_ADDRESS=$(/sbin/ifconfig eth0 | grep "inet addr:" | head -1 | awk '{print $2}'| cut -d: -f2)
 NEW_DC="$(hostname -f | cut -d. -f2)"
 
 if echo $NEW_DC | grep -Eq 'cpt[1234]|jnb[12]'; then
@@ -73,7 +73,7 @@ rm -rf /home/kdcadd
 echo "...Updating /etc/fstab"
 rm /etc/fstab
 
-linktarget=`basename "$(readlink /initrd.img)" | sed s,initrd.img-,,`
+linktarget=$(basename "$(readlink /initrd.img)" | sed s,initrd.img-,,)
 
 mdadm --examine --scan > /etc/mdadm/mdadm.conf 2>/dev/null
 mdadm --examine --scan > /etc/mdadm/generated.conf 2>/dev/null
@@ -133,11 +133,11 @@ if echo $NEW_HNAME | grep -q ftpbackup; then
     echo "/dev/mapper/vg--bak-bak                /ftpbackup            ext4        defaults,usrquota        0       0" >> /etc/fstab
 
     echo "add to konsoleh_genie database"
-    PASSWD=`grep -A 3 livedb.konsoleh.co.za  /usr/local/hetzner/bin/config/connections.yml | grep password| awk {'print $2'}`
-    MSQLT=$(/usr/bin/mysql -uhetzner -hlivedb.konsoleh.co.za -p`echo $PASSWD` konsoleh_genie -s -N -e "SELECT ftpb_server, (total_space - used_space) / quota FROM ftp_backup_servers;" | cut -f1 | grep  $NEW_HNAME)
+    PASSWD=$(grep -A 3 livedb.konsoleh.co.za  /usr/local/hetzner/bin/config/connections.yml | grep password| awk {'print $2'})
+    MSQLT=$(/usr/bin/mysql -uhetzner -hlivedb.konsoleh.co.za -p$(echo $PASSWD) konsoleh_genie -s -N -e "SELECT ftpb_server, (total_space - used_space) / quota FROM ftp_backup_servers;" | cut -f1 | grep  $NEW_HNAME)
 
-    if  [ "`echo $MSQLT| grep -c $NEW_HNAME`" -eq 0 ] ;then
-      /usr/bin/mysql -uhetzner -hlivedb.konsoleh.co.za -p`echo $PASSWD` konsoleh_genie -e "INSERT INTO ftp_backup_servers (datacentre ,ftpb_server ,total_space ,used_space ,quota) values ('$NEW_DC' ,'$NEW_HNAME' ,'3000' ,'0' ,'50');"
+    if  [ "$(echo $MSQLT| grep -c $NEW_HNAME)" -eq 0 ] ;then
+      /usr/bin/mysql -uhetzner -hlivedb.konsoleh.co.za -p$(echo $PASSWD) konsoleh_genie -e "INSERT INTO ftp_backup_servers (datacentre ,ftpb_server ,total_space ,used_space ,quota) values ('$NEW_DC' ,'$NEW_HNAME' ,'3000' ,'0' ,'50');"
     fi
 
 # fi

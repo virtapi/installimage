@@ -2,7 +2,7 @@
 
 
 NEW_HNAME="$(hostname -f)"
-NEW_ADDRESS=`/sbin/ifconfig eth0 | grep "inet addr:" | head -1 | awk '{print $2}'| cut -d: -f2`
+NEW_ADDRESS=$(/sbin/ifconfig eth0 | grep "inet addr:" | head -1 | awk '{print $2}'| cut -d: -f2)
 NEW_DC="$(hostname -f | cut -d. -f2)"
 
 if echo $NEW_DC | grep -Eq 'cpt[1234]|jnb[12]'; then
@@ -73,7 +73,7 @@ rm -rf /home/kdcadd
 echo "...Updating /etc/fstab"
 rm /etc/fstab
 
-linktarget=`basename "$(readlink /initrd.img)" | sed s,initrd.img-,,`
+linktarget=$(basename "$(readlink /initrd.img)" | sed s,initrd.img-,,)
 
 mdadm --examine --scan > /etc/mdadm/mdadm.conf 2>/dev/null
 mdadm --examine --scan > /etc/mdadm/generated.conf 2>/dev/null
