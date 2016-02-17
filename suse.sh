@@ -203,7 +203,7 @@ generate_config_grub() {
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
   local -i i=0
-  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
     local j; disk="$((i - 1))"
     local disk; disk="$(eval echo "\$DRIVE"$i)"
     echo "(hd$j) $disk" >> "$DMAPFILE"
@@ -267,7 +267,7 @@ generate_config_grub() {
     # the opensuse mkinitrd uses this file to determine where to write the bootloader...
     GRUBINSTALLDEV_FILE="$FOLD/hdd/etc/default/grub_installdevice"
     [ -f "$GRUBINSTALLDEV_FILE" ] && rm "$GRUBINSTALLDEV_FILE"
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       local disk; disk="$(eval echo "\$DRIVE"$i)"
       echo "$disk" >> "$GRUBINSTALLDEV_FILE"
     done
@@ -287,7 +287,7 @@ write_grub() {
   if [ "$SUSEVERSION" -lt 122 ]; then
     execute_chroot_command "rm -rf /etc/lilo.conf"
 
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ $i -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
@@ -295,7 +295,7 @@ write_grub() {
     done
   else
     # only install grub2 in mbr of all other drives if we use swraid
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" declare -i EXITCODE="$?"

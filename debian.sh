@@ -178,7 +178,7 @@ generate_config_grub() {
   #
   # only install grub2 in mbr of all other drives if we use swraid
   #
-  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk; disk="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"

@@ -195,7 +195,7 @@ generate_config_grub() {
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
   # only install grub2 in mbr of all other drives if we use swraid
-  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk
       disk="$(eval echo "\$DRIVE"$i)"

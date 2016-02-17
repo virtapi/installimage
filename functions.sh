@@ -32,7 +32,7 @@ IMG_VERSION=0
 BOOTLOADER=""
 GOVERNOR=""
 SFDISKPARTS=""
-COUNT_DRIVES="0"
+COUNT_DRIVES=0
 LAST_PART_START=""
 LAST_PART_END=""
 DISK_SIZE_SECTORS=""
@@ -601,7 +601,7 @@ if [ "$1" ]; then
   done
 
   # get count of drives
-  COUNT_DRIVES="$((used_disks-1))"
+  COUNT_DRIVES=$((used_disks-1))
 
   # is RAID activated?
   SWRAID="$(grep -m1 -e ^SWRAID "$1" |awk '{print \$2}')"
