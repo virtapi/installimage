@@ -78,7 +78,7 @@ export NOCOL="\033[00m"
 
 # write log entries in debugfile - single line as second argument
 debug() {
-  line="$@"
+  line="$*"
   echo "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
 }
 
