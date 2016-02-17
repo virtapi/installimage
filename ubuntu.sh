@@ -79,7 +79,7 @@ generate_config_mdadm() {
         "$FOLD/hdd/etc/initramfs-tools/conf.d/mdadm"
     fi
 
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 

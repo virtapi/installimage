@@ -27,7 +27,7 @@ setup_network_config() {
       UDEVFILE="/dev/null"
     fi
     # Delete network udev rules
-#    rm $FOLD/hdd/etc/udev/rules.d/*-persistent-net.rules 2>&1 | debugoutput
+#    rm "$FOLD"/hdd/etc/udev/rules.d/*-persistent-net.rules 2>&1 | debugoutput
 
     echo "### $COMPANY - installimage" > $UDEVFILE
     echo "# device: $1" >> $UDEVFILE
@@ -99,7 +99,7 @@ generate_config_mdadm() {
     else
       execute_chroot_command "mdadm --detail --scan >> $MDADMCONF"; declare -i EXITCODE=$?
     fi
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 

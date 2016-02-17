@@ -120,17 +120,17 @@ generate_menu() {
     TEMPVAR=$(basename "$TEMPVAR" .tar.bz)
     TEMPVAR=$(basename "$TEMPVAR" .tar.bz2)
     TEMPVAR=$(basename "$TEMPVAR" .tar)
-    MENULIST=$MENULIST"$TEMPVAR . "
+    MENULIST="$MENULIST$TEMPVAR . "
   done
   # add "back to mainmenu" entry
-  MENULIST=$MENULIST'back . '
+  MENULIST="$MENULIST"'back . '
 
   # show menu and get result
   dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 "$MENULIST" 2>"$FOLD/submenu.chosen"
   IMAGENAME=$(cat "$FOLD/submenu.chosen")
 
   # create proxmox post-install file if needed
-  case $IMAGENAME in
+  case "$IMAGENAME" in
     Proxmox-Virtualization-Environment*)
       case "$IMAGENAME" in
         Proxmox-Virtualization-Environment-on-Debian-Wheezy) export PROXMOX_VERSION="3" ;;
@@ -240,11 +240,11 @@ create_config() {
       # available raidlevels
       local raid_levels="0 1 5 6 10"
       # set default raidlevel
-      local default_level=$DEFAULTTWODRIVESWRAIDLEVEL
+      local default_level="$DEFAULTTWODRIVESWRAIDLEVEL"
       if [ $COUNT_DRIVES -eq 3 ] ; then
-        default_level=$DEFAULTTHREEDRIVESWRAIDLEVEL
+        default_level="$DEFAULTTHREEDRIVESWRAIDLEVEL"
       elif [ $COUNT_DRIVES -gt 3 ] ; then
-        default_level=$DEFAULTFOURDRIVESWRAIDLEVEL
+        default_level="$DEFAULTFOURDRIVESWRAIDLEVEL"
       fi
 
       local set_level=""
@@ -333,7 +333,7 @@ create_config() {
     local small_hdd="$(smallest_hd)"
     local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
     RAID0=$(($small_hdd_size*$COUNT_DRIVES))
-    RAID1=$small_hdd_size
+    RAID1="$small_hdd_size"
     if [ $COUNT_DRIVES -ge 3 ] ; then
       RAID5=$(($RAID0-$small_hdd_size))
     fi
@@ -462,7 +462,7 @@ create_config() {
     # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
     if isVServer; then
 #      DEFAULTPARTS=${DEFAULTPARTS//ext4/ext3}
-      DEFAULTPARTS=$DEFAULTPARTS_VSERVER
+      DEFAULTPARTS="$DEFAULTPARTS_VSERVER"
     fi
 
     # use /var instead of /home for all partition when installing plesk
@@ -540,7 +540,7 @@ getdrives() {
   local i=1
 
   #cast drives into an array
-  DRIVES=( $DRIVES )
+  DRIVES=( "$DRIVES" )
 
   for drive in ${DRIVES[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
@@ -694,12 +694,12 @@ if [ "$1" ]; then
   [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
   IMAGE_PATH="$(dirname "$IMAGE")/"
   IMAGE_FILE="$(basename "$IMAGE")"
-  case $IMAGE_PATH in
+  case "$IMAGE_PATH" in
     https:*|http:*|ftp:*) IMAGE_PATH_TYPE="http" ;;
     /*) IMAGE_PATH_TYPE="local" ;;
     *)  IMAGE_PATH_TYPE="nfs"   ;;
   esac
-  case $IMAGE_FILE in
+  case "$IMAGE_FILE" in
     *.tar) IMAGE_FILE_TYPE="tar" ;;
     *.tar.gz|*.tgz) IMAGE_FILE_TYPE="tgz" ;;
     *.tar.bz|*.tbz|*.tbz2|*.tar.bz2) IMAGE_FILE_TYPE="tbz" ;;
@@ -761,34 +761,34 @@ validate_vars() {
 
   whoami "$IMAGE_FILE"
 
-  # test if $DRIVE1 is a valid block device and is able to create partitions
+  # test if "$DRIVE1" is a valid block device and is able to create partitions
   CHECK="$(test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null)"
   if [ -z "$CHECK" ]; then
     graph_error "ERROR: Value for DRIVE1 is not correct: $DRIVE1 "
     return 1
   fi
 
-  # test if $DRIVE1 is not busy
+  # test if "$DRIVE1" is not busy
 #  CHECK="$(hdparm -z $DRIVE1 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
 #  if [ "$CHECK" ]; then
 #    graph_error "ERROR: DRIVE1 is busy - cannot access device $DRIVE1 "
 #    return 1
 #  fi
 
-  # test if $SWRAID has not 0 or 1 as parameter
+  # test if "$SWRAID" has not 0 or 1 as parameter
   if [ "$SWRAID" != "0" -a "$SWRAID" != "1" ]; then
     graph_error "ERROR: Value for SWRAID is not correct"
     return 1
   fi
 
-  # test if $SWRAIDLEVEL is either 0 or 1
+  # test if "$SWRAIDLEVEL" is either 0 or 1
   if [ "$SWRAID" = "1" -a "$SWRAIDLEVEL" != "0" -a "$SWRAIDLEVEL" != "1" -a "$SWRAIDLEVEL" != "5" -a "$SWRAIDLEVEL" != "6" -a "$SWRAIDLEVEL" != "10" ]; then
     graph_error "ERROR: Value for SWRAIDLEVEL is not correct"
     return 1
   fi
 
   # check for valid drives
-  local drive_array=( $DRIVE1 )
+  local drive_array=( "$DRIVE1" )
   for i in $(seq 1 $COUNT_DRIVES) ; do
     local format="$(eval echo \$FORMAT_DRIVE$i)"
     local drive="$(eval echo \$DRIVE$i)"
@@ -873,7 +873,7 @@ validate_vars() {
     DRIVE_SUM_SIZE="$(blockdev --getsize64 "$smallest_hdd")"
     # this variable is used later when determining what disk to use as reference
     # when drives of different sizes are in a system
-    SMALLEST_HDD_SIZE=$DRIVE_SUM_SIZE
+    SMALLEST_HDD_SIZE="$DRIVE_SUM_SIZE"
     SMALLEST_HDD_SIZE=$(($SMALLEST_HDD_SIZE / 1024 / 1024))
     echo "Size of smallest drive is $DRIVE_SUM_SIZE" | debugoutput
     if [ "$SWRAIDLEVEL" = "0" ]; then
@@ -1222,7 +1222,7 @@ validate_vars() {
           mounts_as_string="$mounts_as_string${PART_MOUNT[$i]}\n"
       fi
   done
-  # append all logical volume mountpoints to $mounts_as_string
+  # append all logical volume mountpoints to "$mounts_as_string"
   for i in $(seq 1 "$LVM_LV_COUNT"); do
       mounts_as_string="$mounts_as_string${LVM_LV_MOUNT[$i]}\n"
   done
@@ -1393,7 +1393,7 @@ unmount_all() {
     fi
   done < /proc/mounts
 
-  return $unmount_errors
+  return "$unmount_errors"
 }
 
 #
@@ -1434,7 +1434,7 @@ delete_partitions() {
   # re-read partition table
   partprobe 2>/dev/null
 
-  return $EXITCODE
+  return "$EXITCODE"
  fi
 }
 
@@ -1491,7 +1491,7 @@ function get_end_of_partition {
   local smallest_hdd=$(smallest_hd)
   local smallest_hdd_space="$(blockdev --getsize64 "$smallest_hdd")"
   if [ "$SWRAID" -eq "1" ] && [ "$DEVSIZE" -gt "$smallest_hdd_space" ]; then
-    DEV=$smallest_hdd
+    DEV="$smallest_hdd"
   fi
 
   local LAST=$(blockdev --getsize64 "$DEV")
@@ -1537,7 +1537,7 @@ create_partitions() {
     echo "sysfs /sys sysfs defaults 0 0" >> "$FOLD/fstab"
   fi
   #copy defaults to tempfstab for softwareraid
-  ### cp $FOLD/fstab $FOLD/fstab.md >>/dev/null 2>&1
+  ### cp "$FOLD"/fstab $FOLD/fstab.md >>/dev/null 2>&1
 
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
   dmsetup remove_all 2>&1 | debugoutput
@@ -1714,7 +1714,7 @@ create_partitions() {
   dmraid -a no 2>&1 | debugoutput
   dmsetup remove_all 2>&1 | debugoutput
 
- return $EXITCODE
+ return "$EXITCODE"
  fi
 }
 
@@ -1793,7 +1793,7 @@ make_swraid() {
       fi
     fi
 
-    local metadata_boot=$METADATA
+    local metadata_boot="$METADATA"
     [ "$IAM" == "ubuntu" -a "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
 
     while read -r line ; do
@@ -1821,14 +1821,14 @@ make_swraid() {
           components="$components $TARGETDISK$PARTNUM"
         done
 
-        local array_metadata=$METADATA
-        local array_raidlevel=$SWRAIDLEVEL
+        local array_metadata="$METADATA"
+        local array_raidlevel="$SWRAIDLEVEL"
         local can_assume_clean=''
 
         # lilo and GRUB can't boot from a RAID0/5/6 or 10 partition, so make /boot always RAID1
         if [ "$(echo "$line" | grep "/boot")" ]; then
           array_raidlevel="1"
-          array_metadata=$metadata_boot
+          array_metadata="$metadata_boot"
         # make swap partiton RAID1 for all levels except RAID0
         elif [ "$(echo "$line" | grep "swap")" ] && [ "$SWRAIDLEVEL" != "0" ]; then
           array_raidlevel="1"
@@ -2149,11 +2149,11 @@ import_imagekey() {
   local PUBKEY=""
   # check if pubkey is given by the customer
   if [ -n "$IMAGE_PUBKEY" -a -e "$IMAGE_PUBKEY" ] ; then
-    PUBKEY=$IMAGE_PUBKEY
+    PUBKEY="$IMAGE_PUBKEY"
   elif [ -e "$HETZNER_PUBKEY" ] ; then
     # if no special pubkey given, use the hetzner key
     echo "Using hetzner standard pubkey: $HETZNER_PUBKEY" | debugoutput
-    PUBKEY=$HETZNER_PUBKEY
+    PUBKEY="$HETZNER_PUBKEY"
   fi
   if [ -n "$PUBKEY" ] ; then
     # import public key
@@ -2217,7 +2217,7 @@ extract_image() {
     if [ "$TAR" = "tar" ] || [ ! -x /usr/bin/bsdtar ]; then
       tar --anchored --numeric-owner --exclude "sys" --exclude "proc" --exclude "dev" $COMPRESSION -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" 2>&1 | debugoutput ; EXITCODE=$?
     else
-      bsdtar --numeric-owner --exclude '^sys' --exclude '^proc' --exclude '^dev' $COMPRESSION -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" 2>&1 | debugoutput ; EXITCODE=$?
+      bsdtar --numeric-owner --exclude '^sys' --exclude '^proc' --exclude '^dev' "$COMPRESSION" -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" 2>&1 | debugoutput ; EXITCODE=$?
     fi
     # remove image after extraction if we got it via wget (http(s)/ftp)
     [ "$1" = "http" ] && rm -f "$EXTRACTFROM"
@@ -2317,12 +2317,12 @@ setup_network_config_template() {
   local netmask6="$9"
   local gateway6="${10}"
 
-  # copy network template of distro to $FOLD
+  # copy network template of distro to "$FOLD"
   local tpl_net_load="$SCRIPTPATH/templates/network/$IAM.tpl"
   local tpl_net="$FOLD/network"
   cp "$tpl_net_load" "$tpl_net"
 
-  # copy udev template of distro to $FOLD
+  # copy udev template of distro to "$FOLD"
   local tpl_udev_load="$SCRIPTPATH/templates/network/udev.tpl"
   local tpl_udev="$FOLD/udev"
   cp "$tpl_udev_load" "$tpl_udev"
@@ -2423,7 +2423,7 @@ function template_replace() {
 # generate_resolvconf
 #
 # Generate /etc/resolv.conf by adding the nameservers defined in the array
-# $NAMESERVER in a random order.
+# "$NAMESERVER" in a random order.
 #
 generate_resolvconf() {
   if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -ge 122 ]; then
@@ -2445,7 +2445,7 @@ generate_resolvconf() {
 #    debug "#DNS $nameservers"
 #    sed -i -e \
 #      "s/^NETCONFIG_DNS_STATIC_SERVERS=\".*\"/NETCONFIG_DNS_STATIC_SERVERS=\"$nameservers\"/" \
-#      $FOLD/hdd/etc/sysconfig/network/config
+#      "$FOLD"/hdd/etc/sysconfig/network/config
 #    execute_chroot_command "netconfig update -f"
   fi
 #  else
@@ -2593,7 +2593,7 @@ execute_chroot_command() {
   if [ "$1" ]; then
     debug "# chroot_command: $1"
     chroot "$FOLD/hdd/" /bin/bash -c "$1" 2>&1 | debugoutput ; EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -2601,7 +2601,7 @@ execute_chroot_command() {
 execute_chroot_command_wo_debug() {
   if [ "$1" ]; then
     chroot "$FOLD/hdd/" /bin/bash -c "$1" 2>&1; EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -2613,7 +2613,7 @@ copy_mtab() {
       return 0
     else
       execute_chroot_command "grep -v swap /etc/fstab > /etc/mtab" ; EXITCODE=$?
-      return $EXITCODE
+      return "$EXITCODE"
     fi
   fi
 }
@@ -2621,13 +2621,13 @@ copy_mtab() {
 
 generate_new_sshkeys() {
   if [ "$1" ]; then
-#    rm -rf $FOLD/hdd/etc/ssh/ssh_host_* 2>&1 | debugoutput
+#    rm -rf "$FOLD"/hdd/etc/ssh/ssh_host_* 2>&1 | debugoutput
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_k* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t rsa1 -b 1024 -f /etc/ssh/ssh_host_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
-       return $EXITCODE
+       return "$EXITCODE"
      fi
     else
       debug "skipping rsa1 key gen"
@@ -2637,7 +2637,7 @@ generate_new_sshkeys() {
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_dsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
-        return $EXITCODE
+        return "$EXITCODE"
       fi
     else
       debug "skipping dsa key gen"
@@ -2647,7 +2647,7 @@ generate_new_sshkeys() {
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_rsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
-        return $EXITCODE
+        return "$EXITCODE"
       fi
     else
       debug "skipping rsa key gen"
@@ -2663,7 +2663,7 @@ generate_new_sshkeys() {
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
-        return $EXITCODE
+        return "$EXITCODE"
       fi
     else
       debug "skipping ecdsa key gen"
@@ -2677,7 +2677,7 @@ generate_new_sshkeys() {
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
-        return $EXITCODE
+        return "$EXITCODE"
       fi
     else
       debug "skipping ed25519 key gen"
@@ -2720,11 +2720,11 @@ set_ntp_time() {
   (ntpd -gq -4 2>&1 | debugoutput) &
   ntp_pid=$!
   # disconnect process from bash to hide kill message
-  disown $ntp_pid
+  disown "$ntp_pid"
 
   # wait 15 seconds and check if ntp still running
   while [ $count -lt 15 ] ; do
-    kill -0 $ntp_pid 2>/dev/null
+    kill -0 "$ntp_pid" 2>/dev/null
     # if not running - stop waiting
     [ $? -ne 0 ] && break
     let count=count+1
@@ -2770,13 +2770,13 @@ execute_postmount_script() {
     fi
 
     debug "# Found post-mount script $script; executing it..."
-    $script ; EXITCODE=$?
+    "$script" ; EXITCODE=$?
 
     if [ $EXITCODE -ne 0 ]; then
       debug "# Post-mount script didn't exit successfully (exit code = $EXITCODE)"
     fi
 
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -2824,7 +2824,7 @@ execute_postinstall_script() {
       debug "# Post-installation script didn't exit successfully (exit code = $EXITCODE)"
     fi
 
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -2869,7 +2869,7 @@ generate_sysctlconf() {
   if [ -d "$FOLD/hdd/etc/sysctl.d" ]; then
    sysctl_conf="$FOLD/hdd/etc/sysctl.d/99-hetzner.conf"
   fi
-    cat << EOF > $sysctl_conf
+    cat << EOF > "$sysctl_conf"
 ### Hetzner Online GmbH installimage
 # sysctl config
 #net.ipv4.ip_forward=1
@@ -2933,7 +2933,7 @@ set_rootpassword() {
 fetch_ssh_keys() {
    if [ "$1" ]; then
      local key_url="$1"
-     case $key_url in
+     case "$key_url" in
        https:*|http:*|ftp:*)
          curl -s -m 10 "$key_url" > "$FOLD/authorized_keys" 2>&1 | debugoutput
        ;;
@@ -2973,7 +2973,7 @@ copy_ssh_keys() {
 set_ssh_rootlogin() {
   if [ "$1" ]; then
      local permit="$1"
-     case $permit in
+     case "$permit" in
        yes|no|without-password|forced-commands-only)
          sed -i "$FOLD/hdd/etc/ssh/sshd_config" -e "s/^\(#\)\?PermitRootLogin.*/PermitRootLogin $1/"
        ;;
@@ -3060,7 +3060,7 @@ write_lilo() {
   if [ "$1" ]; then
     execute_chroot_command "yes |/sbin/lilo -F" | debugoutput
     EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -3104,7 +3104,7 @@ generate_ntp_config() {
   return 0
 }
 
-# check_fqdn $DOMAIN - return 0 when the domain is ok
+# check_fqdn "$DOMAIN" - return 0 when the domain is ok
 check_fqdn() {
 
   CHECKFQDN=""
@@ -3151,7 +3151,7 @@ check_plesk_subversion() {
   # test if pleskinstaller is already downloaded
   if [ ! -x "$FOLD/hdd/pleskinstaller" ] ; then
     wget "http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME" -O "$FOLD/hdd/pleskinstaller" 2>&1 | debugoutput
-    chmod a+x $FOLD/hdd/pleskinstaller >> /dev/null
+    chmod a+x "$FOLD"/hdd/pleskinstaller >> /dev/null
   fi
 
   output="$(execute_chroot_command_wo_debug "/pleskinstaller --select-product-id plesk --show-releases" 2>&1)"
@@ -3213,7 +3213,7 @@ install_plesk() {
   execute_chroot_command "/pleskinstaller  --select-product-id plesk --select-release-id $plesk_version $COMPONENTLIST"; EXITCODE=$?
   rm -rf "$FOLD/hdd/pleskinstaller" >/dev/null 2>&1
 
-  return $EXITCODE
+  return "$EXITCODE"
 
 }
 
@@ -3239,7 +3239,7 @@ install_omsa() {
     execute_chroot_command "mkdir -p /run/lock"
     execute_chroot_command "aptitude update >/dev/null"
     execute_chroot_command "aptitude --without-recommends -y install srvadmin-base srvadmin-idracadm srvadmin-idrac7"; EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   elif [ "$IAM" = "centos" ]; then
     execute_chroot_command "yum -y install perl"
     execute_chroot_command "wget -q -O - http://linux.dell.com/repo/hardware/latest/bootstrap.cgi | bash"
@@ -3334,7 +3334,7 @@ report_statistic() {
     fi
     ERROREXITCODE="$6"
     wget --no-check-certificate --timeout=20 "https://$REPORTSRV/report/image/$REPORTIMG/$REPORTSWR/$REPORTLVM/$BLCODE/$ERROREXITCODE" -O /tmp/wget.tmp >> /dev/null 2>&1; EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -3411,7 +3411,7 @@ exit_function() {
 
   report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
   report_id="$(report_config)"
-  report_debuglog $report_id
+  report_debuglog "$report_id"
   cleanup
 }
 
@@ -3431,7 +3431,7 @@ function check_cpu () {
 #get the smallest harddrive
 function smallest_hd() {
   local smallest_drive_space="$(blockdev --getsize64 "$DRIVE1" 2>/dev/null)"
-  local smallest_drive=$DRIVE1
+  local smallest_drive="$DRIVE1"
   for i in $(seq 1 $COUNT_DRIVES); do
     if [ "$smallest_drive_space" -gt "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" ]; then
       smallest_drive_space="$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")"
@@ -3446,7 +3446,7 @@ function smallest_hd() {
 
 function largest_hd() {
   LARGEST_DRIVE_SPACE="$(blockdev --getsize64 "$DRIVE1")"
-  LARGEST_DRIVE=$DRIVE1
+  LARGEST_DRIVE="$DRIVE1"
   for i in $(seq 1 $COUNT_DRIVES); do
     if [ "$LARGEST_DRIVE_SPACE" -lt "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" ]; then
       LARGEST_DRIVE_SPACE="$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")"
@@ -3607,7 +3607,7 @@ function part_test_size() {
 
   local dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
-    dev=$DRIVE1
+    dev="$DRIVE1"
   fi
   local DRIVE_SIZE=$(blockdev --getsize64 "$dev")
   DRIVE_SIZE=$(( $DRIVE_SIZE / 1024 / 1024 ))
@@ -3652,7 +3652,7 @@ function check_dos_partitions() {
   local found_all_part=''
   local dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
-    dev=$DRIVE1
+    dev="$DRIVE1"
   fi
 
   local DRIVE_SIZE=$(blockdev --getsize64 "$dev")
@@ -3713,7 +3713,7 @@ function check_dos_partitions() {
   else
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE" | bc)
     if [ "$PART_ALL_SIZE" -gt "$LIMIT" ]; then
-      PART_ALL_SIZE=$LIMIT
+      PART_ALL_SIZE="$LIMIT"
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
   fi
@@ -3745,7 +3745,7 @@ set_udev_rules() {
   # this will probably fail if we ever have predictable networknames
   ETHCOUNT="$(find /sys/class/net/* -type l -name 'eth*' | wc -l)"
   if [ "$ETHCOUNT" -gt "1" ]; then
-    cp $UDEVPFAD/70-persistent-net.rules "$FOLD/hdd$UDEVPFAD/"
+    cp "$UDEVPFAD"/70-persistent-net.rules "$FOLD/hdd$UDEVPFAD/"
     #Testeinbau
     if [ "$IAM" = "centos" ]; then
       # need to remove these parts of the rule for centos,

@@ -28,7 +28,7 @@ if [ "$OPT_AUTOMODE" ] ; then
 
   # create config
   debug "# AUTOMATIC MODE: create config"
-  create_config $IMAGENAME ; EXITCODE=$?
+  create_config "$IMAGENAME" ; EXITCODE=$?
   if [ $EXITCODE != 0 ] ; then
     debug "=> FAILED"
     cleanup
@@ -50,7 +50,7 @@ if [ "$OPT_AUTOMODE" ] ; then
       VALIDATED="true"
     else
       debug "=> FAILED"
-      mcedit $FOLD/install.conf
+      mcedit "$FOLD"/install.conf
     fi
   done
 
@@ -78,7 +78,7 @@ if [ "$OPT_AUTOMODE" ] ; then
 
   # start install
   debug "# AUTOMATIC MODE: start installation"
-  . $INSTALLFILE ; EXITCODE=$?
+  . "$INSTALLFILE" ; EXITCODE=$?
   [ $EXITCODE != 0 ] && debug "=> FAILED"
 
 else
@@ -99,7 +99,7 @@ else
       while [ -z "$IMAGENAME" -o "$IMAGENAME" = "back" ]; do
         dialog --backtitle "$DIATITLE" --title "o/s list" --no-cancel --menu "choose o/s" 0 0 0 $OSMENULIST "exit" "" 2>$FOLD/mainmenu.chosen
         MAINMENUCHOSEN=$(cat $FOLD/mainmenu.chosen)
-        case $MAINMENUCHOSEN in
+        case "$MAINMENUCHOSEN" in
           "exit")
             debug "=> user exited from menu"
             cleanup
@@ -109,7 +109,7 @@ else
             IMAGENAME="custom"
           ;;
           *)
-            generate_menu $MAINMENUCHOSEN
+            generate_menu "$MAINMENUCHOSEN"
           ;;
         esac
       done
@@ -118,7 +118,7 @@ else
     debug "# chosen image: [ $IMAGENAME ]"
 
     debug "# copy & create config..."
-    create_config $IMAGENAME; EXITCODE=$?
+    create_config "$IMAGENAME"; EXITCODE=$?
     if [ $EXITCODE != 0 ] ; then
       debug "=> FAILED"
       cleanup
@@ -142,8 +142,8 @@ else
     CANCELLED="false"
     while [ "$VALIDATED" = "false" ]; do
       debug "# starting mcedit..."
-      whoami $IMAGENAME
-      mcedit $FOLD/install.conf; EXITCODE=$?
+      whoami "$IMAGENAME"
+      mcedit "$FOLD"/install.conf; EXITCODE=$?
       [ $EXITCODE != 0 ] && debug "=> FAILED"
       debug "# validating vars..."
       validate_vars "$FOLD/install.conf"; EXITCODE=$?
@@ -186,7 +186,7 @@ else
 
   debug "# executing installfile..."
   if [ -f $INSTALLFILE -a "$ACCEPTED" = "true" -a "$VALIDATED" = "true" -a "$IMAGENAME" ] ; then
-     . $INSTALLFILE ; EXITCODE=$?
+     . "$INSTALLFILE" ; EXITCODE=$?
   else
     debug "=> FAILED"
     echo -e "\n\033[01;31mERROR: Cant find files\033[00m"

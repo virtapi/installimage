@@ -23,7 +23,7 @@ inc_step() {
 
 status_busy() {
   local step="$CURSTEP"
-  test $CURSTEP -lt 10 && step=" $CURSTEP"
+  test "$CURSTEP" -lt 10 && step=" $CURSTEP"
   echo -n "  $step/$TOTALSTEPS  :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
   debug "# $@"
 }
@@ -34,7 +34,7 @@ status_busy_nostep() {
 
 status_none() {
   local step="$CURSTEP"
-  test $CURSTEP -lt 10 && step=" $CURSTEP"
+  test "$CURSTEP" -lt 10 && step=" $CURSTEP"
   echo "  $step/$TOTALSTEPS  :  $@"
 }
 
@@ -83,7 +83,7 @@ gather_network_information
 # Read configuration
 #
 status_busy_nostep "Reading configuration"
-read_vars $FOLD/install.conf
+read_vars "$FOLD"/install.conf
 status_donefailed $?
 
 #
@@ -97,11 +97,11 @@ status_donefailed $?
 # change sizes of DOS partitions
 check_dos_partitions "no_output"
 
-whoami $IMAGE_FILE
+whoami "$IMAGE_FILE"
 status_busy_nostep "Loading $IAM specific functions "
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
-  . $SCRIPTPATH/$IAM.sh 2>&1 > /dev/null
+  . "$SCRIPTPATH"/$IAM.sh 2>&1 > /dev/null
   status_done
 else
   status_failed
@@ -151,7 +151,7 @@ for part_inc in $(seq 1 $COUNT_DRIVES) ; do
   if [ "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
     TARGETDISK="$(eval echo \$DRIVE${part_inc})"
     debug "# Creating partitions on $TARGETDISK"
-    create_partitions $TARGETDISK || status_failed
+    create_partitions "$TARGETDISK" || status_failed
   fi
 done
 
@@ -180,7 +180,7 @@ if [ "$LVM" = "1" ]; then
   if [ $LVM_EXIT -eq 2 ] ; then
     status_failed "LVM thin-pool detected! Can't remove automatically!"
   else
-    status_donefailed $LVM_EXIT
+    status_donefailed "$LVM_EXIT"
   fi
 fi
 
@@ -247,7 +247,7 @@ IMPORT_EXIT=$?
 if [ $IMPORT_EXIT -eq 2 ] ; then
   status_warn "No public key found!"
 else
-  status_donefailed $IMPORT_EXIT
+  status_donefailed "$IMPORT_EXIT"
 fi
 
 #
@@ -266,7 +266,7 @@ if [ $VALIDATE_EXIT -eq 3 ] ; then
 elif [ $VALIDATE_EXIT -eq 2 ] ; then
   status_warn "No detached signature file found!"
 else
-  status_donefailed $VALIDATE_EXIT
+  status_donefailed "$VALIDATE_EXIT"
 fi
 
 #
@@ -476,7 +476,7 @@ fi
 #
 ### report SSH fingerprints to URL where we got the pubkeys from (or not)
 if [ -n "$OPT_SSHKEYS_URL" ] ; then
-  case $OPT_SSHKEYS_URL in
+  case "$OPT_SSHKEYS_URL" in
     https:*|http:*)
       debug "# Reporting SSH fingerprints..."
       curl -s -m 10 -X POST -H "Content-Type: application/json" -d @"$FOLD/ssh_fingerprints" $OPT_SSHKEYS_URL -o /dev/null
@@ -497,7 +497,7 @@ report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$E
 # Report debug.txt to rz_admin
 #
 report_id="$(report_config)"
-report_debuglog $report_id
+report_debuglog "$report_id"
 
 #
 # Save installimage configuration and debug file on the new system
@@ -516,10 +516,10 @@ report_debuglog $report_id
   echo "#"
   echo
   grep -v "^#" $FOLD/install.conf | grep -v "^$"
-) > $FOLD/hdd/installimage.conf
-cat /root/debug.txt > $FOLD/hdd/installimage.debug
-chmod 640 $FOLD/hdd/installimage.conf
-chmod 640 $FOLD/hdd/installimage.debug
+) > "$FOLD"/hdd/installimage.conf
+cat /root/debug.txt > "$FOLD"/hdd/installimage.debug
+chmod 640 "$FOLD"/hdd/installimage.conf
+chmod 640 "$FOLD"/hdd/installimage.debug
 
 echo
 echo_bold "                  INSTALLATION COMPLETE"

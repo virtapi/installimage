@@ -11,7 +11,7 @@
 
 # check command line params / options
 while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
-  case $OPTION in
+  case "$OPTION" in
 
     # help
     h)
@@ -68,9 +68,9 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # config file  (file.name)
     c)
       if [ -e "$CONFIGSPATH/$OPTARG" ] ; then
-        OPT_CONFIGFILE=$CONFIGSPATH/$OPTARG
+        OPT_CONFIGFILE="$CONFIGSPATH"/$OPTARG
       elif [ -e "$OPTARG" ] ; then
-        OPT_CONFIGFILE=$OPTARG
+        OPT_CONFIGFILE="$OPTARG"
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
         debug "$msg"
@@ -93,9 +93,9 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # post-install file  (file.name)
     x)
       if [ -e "$POSTINSTALLPATH/$OPTARG" ] ; then
-        OPT_POSTINSTALLFILE=$POSTINSTALLPATH/$OPTARG
+        OPT_POSTINSTALLFILE="$POSTINSTALLPATH"/$OPTARG
       elif [ -e "$OPTARG" ] ; then
-        OPT_POSTINSTALLFILE=$OPTARG
+        OPT_POSTINSTALLFILE="$OPTARG"
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
         debug "$msg"
@@ -112,25 +112,25 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # hostname  (host.domain.tld)
     n)
-      OPT_HOSTNAME=$OPTARG
+      OPT_HOSTNAME="$OPTARG"
       if [ -e /autosetup ]; then
 	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
       fi
     ;;
 
     # bootloader  (lilo|grub)
-    b) OPT_BOOTLOADER=$OPTARG ;;
+    b) OPT_BOOTLOADER="$OPTARG" ;;
 
     # raid  (on|off|true|false|yes|no|0|1)
     r)
-      case $OPTARG in
+      case "$OPTARG" in
         off|false|no|0) OPT_SWRAID=0 ;;
         on|true|yes|1)  OPT_SWRAID=1 ;;
       esac
     ;;
 
     # raidlevel  (0|1)
-    l) OPT_SWRAIDLEVEL=$OPTARG ;;
+    l) OPT_SWRAIDLEVEL="$OPTARG" ;;
 
     # image
     # e.g.: file.tar.gz | http://domain.tld/file.tar.gz
@@ -152,7 +152,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # partitions
     # e.g.: swap:swap:4G,/boot:ext2:256M,/:ext3:all | /boot:ext2:256M,lvm:vg0:all
     p)
-      OPT_PARTITIONS=$OPTARG
+      OPT_PARTITIONS="$OPTARG"
       OPT_PARTS=''
       OLD_IFS="$IFS"
       IFS=","
@@ -169,7 +169,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # logical volumes
     # e.g.: vg0:swap:swap:swap:4G,vg0:root:/:ext3:20G,vg0:tmp:/tmp:ext3:5G
     v)
-      OPT_VOLUMES=$OPTARG
+      OPT_VOLUMES="$OPTARG"
       OPT_LVS=''
       OLD_IFS="$IFS"
       IFS=","
@@ -186,7 +186,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # drives
     # e.g.: sda,sdb | sda
     d)
-      OPT_DRIVES=$OPTARG
+      OPT_DRIVES="$OPTARG"
       # shellcheck disable=SC2001
       sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
       i=1
@@ -198,7 +198,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # format second drive  (on|off|true|false|yes|no|0|1)
     f)
-      case $OPTARG in
+      case "$OPTARG" in
         off|false|no|0) export OPT_FORMATDRIVE2=0 ;;
         on|true|yes|1)  export OPT_FORMATDRIVE2=1 ;;
       esac
@@ -215,7 +215,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
     R)
-      export ROBOTURL=$OPTARG
+      export ROBOTURL="$OPTARG"
       ;;
 
     # force signature validating of the image file

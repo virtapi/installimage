@@ -189,9 +189,9 @@ set_rootpassword() {
 set_ssh_rootlogin() {
   if [ "$1" ]; then
      local permit="$1"
-     case $permit in
+     case "$permit" in
        yes|no|without-password|forced-commands-only)
-        cat << EOF >> $CLOUDINIT
+        cat << EOF >> "$CLOUDINIT"
 write_files:
   - path: /etc/ssh/sshd_config
     permissions: 0600
@@ -201,7 +201,7 @@ write_files:
       UsePrivilegeSeparation sandbox
       Subsystem sftp internal-sftp
 
-      PermitRootLogin $permit
+      PermitRootLogin "$permit"
       PasswordAuthentication yes
 EOF
        ;;
@@ -215,12 +215,12 @@ EOF
   fi
 }
 
-# copy_ssh_keys $OPT_SSHKEYS_URL
+# copy_ssh_keys "$OPT_SSHKEYS_URL"
 copy_ssh_keys() {
   if [ "$1" ]; then
     local key_url="$1"
     echo "ssh_authorized_keys:" >> "$CLOUDINIT"
-    case $key_url in
+    case "$key_url" in
       https:*|http:*|ftp:*)
         wget "$key_url" -O "$FOLD/authorized_keys"
         while read -r line; do
@@ -265,7 +265,7 @@ echo "ID_NET_NAME_SIMPLE=eth'$(('${IFINDEX}' - 2))'"
 EOF
     chmod a+x "$scriptfile"
     scriptfile="$scriptpath/rename-interfaces.sh"
-    cat << EOF >> $scriptfile
+    cat << EOF >> "$scriptfile"
 #! /bin/bash
 
 INTERFACES=\$(ip link show | gawk -F ':' '/^[0-9]+/ { print \$2 }' | tr -d ' ' | sed 's/lo//')
@@ -284,7 +284,7 @@ add_coreos_oem_cloudconfig() {
     local cloudconfig="$mntpath/cloud-config.yml"
     echo "#cloud-config" > "$cloudconfig"
     if ! isVServer; then
-      cat << EOF >> $cloudconfig
+      cat << EOF >> "$cloudconfig"
 write_files:
   - path: /run/udev/rules.d/79-netname.rules
     permissions: 444
@@ -321,7 +321,7 @@ coreos:
       bug-report-url: https://github.com/coreos/bugs/issues
 EOF
     else
-      cat << EOF >> $cloudconfig
+      cat << EOF >> "$cloudconfig"
     oem:
       id: vserver
       name: Hetzner vServer

@@ -61,7 +61,7 @@ generate_config_mdadm() {
     echo "DEVICES /dev/[hs]d*" > "$FOLD/hdd$MDADMCONF"
     echo "MAILADDR root" >> "$FOLD/hdd$MDADMCONF"
     execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; EXITCODE=$?
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -84,7 +84,7 @@ generate_new_ramdisk() {
     execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base udev autodetect modconf block mdadm lvm2 filesystems keyboard fsck\"/"'
     execute_chroot_command "mkinitcpio -p linux"; EXITCODE=$?
 
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -127,7 +127,7 @@ generate_config_grub() {
   fi
   uuid_bugfix
 
-  return $EXITCODE
+  return "$EXITCODE"
 }
 
 

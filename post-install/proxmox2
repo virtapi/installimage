@@ -66,7 +66,7 @@ EOF
 
 
 #/usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' install proxmox-ve-$PROXMOX_KERNEL_VERSION
-aptitude --without-recommends -y install postfix proxmox-ve-$PROXMOX_KERNEL_VERSION
+aptitude --without-recommends -y install postfix proxmox-ve-"$PROXMOX_KERNEL_VERSION"
 update-grub
 service postfix stop
 service apache2 stop

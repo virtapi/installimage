@@ -13,22 +13,22 @@ DEBUGFILE=/root/debug.txt
 
 # set up standard env
 export SCRIPTPATH; SCRIPTPATH=$(dirname "$0")
-export DISABLEDFILE=$SCRIPTPATH"/disabled"
-export SETUPFILE=$SCRIPTPATH"/setup.sh"
-export AUTOSETUPFILE=$SCRIPTPATH"/autosetup.sh"
+export DISABLEDFILE="$SCRIPTPATH/disabled"
+export SETUPFILE="$SCRIPTPATH/setup.sh"
+export AUTOSETUPFILE="$SCRIPTPATH/autosetup.sh"
 export AUTOSETUPCONFIG="/autosetup"
-export INSTALLFILE=$SCRIPTPATH"/install.sh"
-export FUNCTIONSFILE=$SCRIPTPATH"/functions.sh"
-export GETOPTIONSFILE=$SCRIPTPATH"/get_options.sh"
-export STANDARDCONFIG=$SCRIPTPATH"/standard.conf"
-export CONFIGSPATH=$SCRIPTPATH"/configs"
-export POSTINSTALLPATH=$SCRIPTPATH"/post-install"
-export IMAGESPATH=$SCRIPTPATH"/../images/"
-export OLDIMAGESPATH=$SCRIPTPATH"/../images.old/"
+export INSTALLFILE="$SCRIPTPATH/install.sh"
+export FUNCTIONSFILE="$SCRIPTPATH/functions.sh"
+export GETOPTIONSFILE="$SCRIPTPATH/get_options.sh"
+export STANDARDCONFIG="$SCRIPTPATH/standard.conf"
+export CONFIGSPATH="$SCRIPTPATH/configs"
+export POSTINSTALLPATH="$SCRIPTPATH/post-install"
+export IMAGESPATH="$SCRIPTPATH/../images/"
+export OLDIMAGESPATH="$SCRIPTPATH/../images.old/"
 export IMAGESPATHTYPE="local"
 export IMAGESEXT="tar.gz"
 export IMAGEFILETYPE="tgz"
-export HETZNER_PUBKEY=$SCRIPTPATH"/gpg/public-key.asc"
+export HETZNER_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
 export STATSSERVER="rz-admin.hetzner.de"
@@ -56,12 +56,12 @@ export V6ONLY="0"
 # dialog settings
 export DIATITLE='Hetzner Online GmbH'
 OSMENULIST='Debian (official) '
-OSMENULIST=$OSMENULIST'Ubuntu (official) '
-OSMENULIST=$OSMENULIST'CentOS (official) '
-OSMENULIST=$OSMENULIST'openSUSE (official) '
-OSMENULIST=$OSMENULIST'Archlinux (!!NO_SUPPORT!!) '
-OSMENULIST=$OSMENULIST'Virtualization (!!NO_SUPPORT!!) '
-OSMENULIST=$OSMENULIST'old_images (!!NO_SUPPORT!!) '
+OSMENULIST="$OSMENULIST"'Ubuntu (official) '
+OSMENULIST="$OSMENULIST"'CentOS (official) '
+OSMENULIST="$OSMENULIST"'openSUSE (official) '
+OSMENULIST="$OSMENULIST"'Archlinux (!!NO_SUPPORT!!) '
+OSMENULIST="$OSMENULIST"'Virtualization (!!NO_SUPPORT!!) '
+OSMENULIST="$OSMENULIST"'old_images (!!NO_SUPPORT!!) '
 export OSMENULIST=$OSMENULIST'custom_image (blanco_config_for_user_images) '
 
 export PROXMOX3_BASE_IMAGE="Debian-78-wheezy-64-minimal"

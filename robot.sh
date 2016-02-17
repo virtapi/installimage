@@ -4,7 +4,7 @@ URL=?
 n=0
 
 while [ $n -lt 3 ]; do
-  wget --timeout=10 --no-check-certificate -O /dev/null $URL &>/dev/null
+  wget --timeout=10 --no-check-certificate -O /dev/null "$URL" &>/dev/null
   test $? -eq 0 && break
   let n++
   sleep 5

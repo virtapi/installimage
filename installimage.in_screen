@@ -24,7 +24,7 @@ case $1 in
     shift
     until false ; do
 
-      $INSTALLIMAGE $@ ; EXITCODE=$?
+      "$INSTALLIMAGE" $@ ; EXITCODE=$?
 
       if [ $EXITCODE -eq 0 ] ; then
         echo -e "\n\n\n===>  Erfolgreich beendet.\n"

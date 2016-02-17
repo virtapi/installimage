@@ -10,7 +10,7 @@ if echo $NEW_DC | grep -Eq 'cpt[1234]|jnb[12]'; then
   OLD_HNAME="masterbuild64.jnb2.host-h.net"
   OLD_DOMAIN="jnb2.host-h.net"
   OLD_SHNAME="masterbuild64"
-elif echo $NEW_DC | grep -Eq 'nur4|flk1'; then
+elif echo "$NEW_DC" | grep -Eq 'nur4|flk1'; then
   OLD_ADDRESS="196.22.132.40"
   OLD_HNAME="masterbuild64wheezy.jnb1.host-h.net"
   OLD_DOMAIN="jnb1.host-h.net"
@@ -49,7 +49,7 @@ echo "...Updating /etc/hosts"
 sed -i -e "s/$OLD_ADDRESS/$NEW_ADDRESS/g" /etc/hosts
 
 echo "...Activating new hostname"
-hostname $NEW_HNAME
+hostname "$NEW_HNAME"
 
 echo "...Updating /etc/hostname"
 sed -i -e "s:$OLD_HNAME:$NEW_HNAME:" /etc/hostname
@@ -78,8 +78,8 @@ linktarget=$(basename "$(readlink /initrd.img)" | sed s,initrd.img-,,)
 mdadm --examine --scan > /etc/mdadm/mdadm.conf 2>/dev/null
 mdadm --examine --scan > /etc/mdadm/generated.conf 2>/dev/null
 
-update-initramfs -d -k $linktarget
-update-initramfs -c -k $linktarget
+update-initramfs -d -k "$linktarget"
+update-initramfs -c -k "$linktarget"
 
 boot_device=$(mount | awk '$3 == "/boot" {print $1}')
 cat << EOF > /etc/fstab
@@ -90,7 +90,7 @@ EOF
 
 echo "...Disabling count- and interval-based fsck"
 for fsname in root tmp usr usrhome var vartmp; do
-	/sbin/tune2fs -c 0 -i 0 /dev/mapper/vg-$fsname >/dev/null
+	/sbin/tune2fs -c 0 -i 0 /dev/mapper/vg-"$fsname" >/dev/null
 done
 
 echo ""
@@ -99,7 +99,7 @@ rm -f /etc/udev/rules.d/*-net.rules
 
 if echo $NEW_HNAME | grep -Eq '\.(cpt[1234]|jnb[12]|nur4|flk1)\.'; then
 	geo_domain=$(echo $NEW_HNAME  | awk -F \. '{print $2}').host-h.net
-elif echo $NEW_HNAME | grep -Eq '\.(dur1\.|hetzner\.africa)'; then
+elif echo "$NEW_HNAME" | grep -Eq '\.(dur1\.|hetzner\.africa)'; then
 	geo_domain=cpt1.host-h.net
 else
 	geo_domain=""
@@ -124,7 +124,7 @@ echo "Generating host certificate for puppet via Certmeister"
 echo "Removing uptrack uuid file"
 rm -f /var/lib/uptrack/uuid
 
-if echo $NEW_HNAME | grep -q ftpbackup; then
+if echo "$NEW_HNAME" | grep -q ftpbackup; then
 #  echo  "Installing needed entries for ftpbackupserver.. (y/n)"
 #  read ans
 #  if [ "$ans" == "y" ];then

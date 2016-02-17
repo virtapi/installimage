@@ -75,7 +75,7 @@ EOF
 
 
 #/usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' install proxmox-ve-$PROXMOX_KERNEL_VERSION
-aptitude --without-recommends -y install postfix proxmox-ve-$PROXMOX_KERNEL_VERSION
+aptitude --without-recommends -y install postfix proxmox-ve-"$PROXMOX_KERNEL_VERSION"
 if [ -f /etc/apt/sources.list.d/pve-enterprise.list ]; then
 	echo ""
 echo "----- Removing Proxmox Enterprise Repo -----"

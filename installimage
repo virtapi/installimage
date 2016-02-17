@@ -83,15 +83,15 @@ fi
 # Unmount all partitions and print an error message if it fails
 unmount_all ; EXITCODE=$?
 if [ $EXITCODE -ne 0 ] ; then
-  echo -e "$RED""\nERROR unmounting device(s):$NOCOL\n$unmount_output\n"
-  echo "$RED""Cannot continue, device(s) seem to be in use.$NOCOL"
+  echo -e "$RED\nERROR unmounting device(s):$NOCOL\n$unmount_output\n"
+  echo "$REDCannot continue, device(s) seem to be in use.$NOCOL"
   echo -e "Please unmount used devices manually or reboot the rescuesystem and retry.\n"
   exit 1
 fi
 stop_lvm_raid ; EXITCODE=$?
 if [ $EXITCODE -ne 0 ] ; then
-  echo -e "$RED""\nERROR stopping LVM and/or RAID device(s):$NOCOL\n$unmount_output\n"
-  echo "$RED""Cannot continue, device(s) seem to be in use.$NOCOL"
+  echo -e "$RED\nERROR stopping LVM and/or RAID device(s):$NOCOL\n$unmount_output\n"
+  echo "$REDCannot continue, device(s) seem to be in use.$NOCOL"
   echo -e "Please stop used lvm/raid manually or reboot the rescuesystem and retry.\n"
   exit 1
 fi
