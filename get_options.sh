@@ -85,7 +85,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
         echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
         echo ""
         echo -n "PASSWORD:  "
-        read -s imagepasswd
+        read -r -s imagepasswd
         sed -i /autosetup -e "s/PASSWD/$imagepasswd/"
       fi
     ;;
