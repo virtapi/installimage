@@ -214,7 +214,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
     R)
-      ROBOTURL=$OPTARG
+      export ROBOTURL=$OPTARG
       ;;
 
     # force signature validating of the image file
