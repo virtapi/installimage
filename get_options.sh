@@ -187,6 +187,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: sda,sdb | sda
     d)
       OPT_DRIVES=$OPTARG
+      # shellcheck disable=SC2001
       sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
       i=1
       for optdrive in $sel_drives ; do
