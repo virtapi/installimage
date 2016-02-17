@@ -257,13 +257,13 @@ create_config() {
         fi
 
         # no raidlevel 5 if less then 3 hdds
-        [ "$level" -eq 5 -a "$COUNT_DRIVES" -lt 3 ] && continue
+        [ "$level" -eq 5 ] && [ "$COUNT_DRIVES" -lt 3 ] && continue
 
         # no raidlevel 6 if less then 4 hdds
-        [ "$level" -eq 6 -a "$COUNT_DRIVES" -lt 4 ] && continue
+        [ "$level" -eq 6 ] && [ "$COUNT_DRIVES" -lt 4 ] && continue
 
         # no raidlevel 10 if less then 2 hdds
-        [ "$level" -eq 10 -a "$COUNT_DRIVES" -lt 2 ] && continue
+        [ "$level" -eq 10 ] && [ "$COUNT_DRIVES" -lt 2 ] && continue
 
         # create list of all possible raidlevels
         if [ -z "$avail_level" ] ; then
@@ -283,9 +283,9 @@ create_config() {
     if [ "$IAM" = "arch" ] ||
       [ "$IAM" = "coreos" ] ||
       [ "$IAM" = "centos" ] ||
-      [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
-      [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
-      [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
+      [ "$IAM" = "ubuntu" ] && [ "$IMG_VERSION" -ge 1204 ] ||
+      [ "$IAM" = "debian" ] && [ "$IMG_VERSION" -ge 70 ] ||
+      [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -ge 122 ]; then
       NOLILO="true"
     else
       NOLILO=''
@@ -687,7 +687,7 @@ if [ "$1" ]; then
 
 
   # is LVM activated?
-  [ "$LVM_VG_COUNT" != "0" -a "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
+  [ "$LVM_VG_COUNT" != "0" ] && [ "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
 
 
   IMAGE="$(grep -m1 -e ^IMAGE "$1" | awk '{print \$2}')"
@@ -1077,9 +1077,9 @@ validate_vars() {
     if [ "$IAM" = "arch" ] ||
        [ "$IAM" = "coreos" ] ||
        [ "$IAM" = "centos" ] ||
-       [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
-       [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
-       [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
+       [ "$IAM" = "ubuntu" ] && [ "$IMG_VERSION" -ge 1204 ] ||
+       [ "$IAM" = "debian" ] && [ "$IMG_VERSION" -ge 70 ] ||
+       [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -ge 122 ]; then
          graph_error "ERROR: Image doesn't support lilo"
          return 1
     fi
@@ -1794,7 +1794,7 @@ make_swraid() {
     fi
 
     local metadata_boot="$METADATA"
-    [ "$IAM" == "ubuntu" -a "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
+    [ "$IAM" == "ubuntu" ] && [ "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
 
     while read -r line ; do
       PARTNUM="$(next_partnum $count)"
@@ -2655,10 +2655,10 @@ generate_new_sshkeys() {
 
     # create ecdsa keys for Ubuntu 11.04, Opensuse 12.1, Debian 7.0, CentOS 7.0 and any version above
 #    if [ "$IAM" = "arch" ] ||
-#       [ "$IAM" = "ubuntu"  -a  "$IMG_VERSION" -ge 1104 ] ||
-#       [ "$IAM" = "suse"  -a  "$IMG_VERSION" -ge 121 ] ||
-#       [ "$IAM" = "debian" -a  "$IMG_VERSION" -ge 70 ] ||
-#       [ "$IAM" = "centos" -a "$IMG_VERSION" -ge 70 ]; then
+#       [ "$IAM" = "ubuntu"  ] && [  "$IMG_VERSION" -ge 1104 ] ||
+#       [ "$IAM" = "suse"  ] && [  "$IMG_VERSION" -ge 121 ] ||
+#       [ "$IAM" = "debian" ] && [  "$IMG_VERSION" -ge 70 ] ||
+#       [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -ge 70 ]; then
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ecdsa_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' >/dev/null"; EXITCODE=$?
@@ -2670,9 +2670,9 @@ generate_new_sshkeys() {
     fi
 
 #    if [ "$IAM" = "arch" ] ||
-#       [ "$IAM" = "debian"  -a  "$IMG_VERSION" -ge 80 ] ||
-#       [ "$IAM" = "ubuntu"  -a  "$IMG_VERSION" -ge 1404 ] ||
-#       [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 132 ]; then
+#       [ "$IAM" = "debian" ] && [  "$IMG_VERSION" -ge 80 ] ||
+#       [ "$IAM" = "ubuntu" ] && [  "$IMG_VERSION" -ge 1404 ] ||
+#       [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -ge 132 ]; then
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25519_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
