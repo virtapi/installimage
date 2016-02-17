@@ -85,7 +85,7 @@ debug() {
 
 # write log entries in debugfile - multiple lines at once
 debugoutput() {
-  while read line ; do
+  while read -r line ; do
     echo "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
   done
 }
