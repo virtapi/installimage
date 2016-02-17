@@ -540,7 +540,7 @@ getdrives() {
   local i=1
 
   #cast drives into an array
-  DRIVES=( "$DRIVES" )
+  DRIVES=( $DRIVES )
 
   for drive in ${DRIVES[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
@@ -788,7 +788,7 @@ validate_vars() {
   fi
 
   # check for valid drives
-  local drive_array=( "$DRIVE1" )
+  local drive_array=( $DRIVE1 )
   for i in $(seq 1 $COUNT_DRIVES) ; do
     local format="$(eval echo \$FORMAT_DRIVE$i)"
     local drive="$(eval echo \$DRIVE$i)"
