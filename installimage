@@ -116,7 +116,7 @@ fi
 if [ -e "$AUTOSETUPCONFIG" ] ; then
 
   # start autosetup
-  AUTOSETUP="true"
+  export AUTOSETUP="true"
   cp "$AUTOSETUPCONFIG" "$FOLD/install.conf"
   [ "$OPT_CONFIGFILE" ] && mv "$AUTOSETUPCONFIG" "$AUTOSETUPCONFIG.bak-$(date +%Y%m%d-%H%M%S)"
   debug "# executing autosetup ..."
