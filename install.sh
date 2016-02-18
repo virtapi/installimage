@@ -14,6 +14,7 @@ CURSTEP=0
 
 # read global variables and functions
 clear
+# shellcheck disable=SC1091
 . /tmp/install.vars
 
 
@@ -60,7 +61,7 @@ status_warn() {
 }
 
 status_donefailed() {
-  if [ "$1" ] && [ $1 -eq 0 ]; then
+  if [ "$1" ] && [ "$1" -eq 0 ]; then
     status_done
   else
     status_failed
@@ -102,7 +103,7 @@ status_busy_nostep "Loading $IAM specific functions "
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
   # shellcheck disable=SC1090
-  . "$SCRIPTPATH"/$IAM.sh 2>&1 > /dev/null
+  . "$SCRIPTPATH"/"$IAM".sh 2>&1 > /dev/null
   status_done
 else
   status_failed
@@ -122,8 +123,8 @@ status_busy "Deleting partitions"
 unmount_all
 stop_lvm_raid
 
-for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" ] || [ "$SWRAID" = "1" ] || [ $part_inc -eq 1 ] ; then
+for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
+  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" ] || [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
     TARGETDISK="$(eval echo \$DRIVE${part_inc})"
     debug "# Deleting partitions on $TARGETDISK"
     delete_partitions "$TARGETDISK" || status_failed
@@ -148,8 +149,8 @@ status_done
 inc_step
 status_busy "Creating partitions and /etc/fstab"
 
-for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$SWRAID" = "1" ] || [ $part_inc -eq 1 ] ; then
+for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
+  if [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
     TARGETDISK="$(eval echo \$DRIVE${part_inc})"
     debug "# Creating partitions on $TARGETDISK"
     create_partitions "$TARGETDISK" || status_failed
@@ -191,10 +192,10 @@ fi
 #
 inc_step
 status_none "Formatting partitions"
-grep "^/dev/" $FOLD/fstab > /tmp/fstab.tmp
+grep "^/dev/" "$FOLD"/fstab > /tmp/fstab.tmp
 while read -r line ; do
-  DEV="$(echo $line |cut -d " " -f 1)"
-  FS="$(echo $line |cut -d " " -f 3)"
+  DEV="$(echo "$line" |cut -d " " -f 1)"
+  FS="$(echo "$line" |cut -d " " -f 3)"
   status_busy_nostep "  formatting $DEV with $FS"
   format_partitions "$DEV" "$FS"
   status_donefailed $?
@@ -422,7 +423,7 @@ if [ "$OPT_INSTALL" ]; then
   status_none "Installing additional software"
   opt_install_items="$(echo $OPT_INSTALL | sed s/,/\\n/g)"
   for opt_item in $opt_install_items; do
-    opt_item=$(echo $opt_item | tr [:upper:] [:lower:])
+    opt_item=$(echo "$opt_item" | tr [:upper:] [:lower:])
     case "$opt_item" in
       plesk*)
         status_busy_nostep "  Installing PLESK Control Panel"
@@ -480,7 +481,7 @@ if [ -n "$OPT_SSHKEYS_URL" ] ; then
   case "$OPT_SSHKEYS_URL" in
     https:*|http:*)
       debug "# Reporting SSH fingerprints..."
-      curl -s -m 10 -X POST -H "Content-Type: application/json" -d @"$FOLD/ssh_fingerprints" $OPT_SSHKEYS_URL -o /dev/null
+      curl -s -m 10 -X POST -H "Content-Type: application/json" -d @"$FOLD/ssh_fingerprints" "$OPT_SSHKEYS_URL" -o /dev/null
     ;;
     *)
       debug "# cannot POST SSH fingerprints to non-HTTP URLs"
@@ -516,7 +517,7 @@ report_debuglog "$report_id"
   echo "# http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
   echo "#"
   echo
-  grep -v "^#" $FOLD/install.conf | grep -v "^$"
+  grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
 ) > "$FOLD"/hdd/installimage.conf
 cat /root/debug.txt > "$FOLD"/hdd/installimage.debug
 chmod 640 "$FOLD"/hdd/installimage.conf
