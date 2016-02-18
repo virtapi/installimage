@@ -12,7 +12,7 @@
 # This file isn't ready for production!
 #
 
-IMAGE_PUBKEY="$SCRIPTPATH/gpg/coreos-pubkey.asc"
+export IMAGE_PUBKEY="$SCRIPTPATH/gpg/coreos-pubkey.asc"
 
 # create partitons on the given drive
 # create_partitions "DRIVE"
@@ -127,7 +127,10 @@ printf 'write_files:
 
 set_hostname() {
   if [ -f "$CLOUDINIT" ]; then
-    echo "hostname: $1\n" >> "$CLOUDINIT"
+    {
+      echo "hostname: $1"
+      echo ""
+    } >> "$CLOUDINIT"
     return 0
   else
     return 1
@@ -139,24 +142,29 @@ setup_cpufreq() {
 }
 
 generate_resolvconf() {
-    echo "write_files:" >> "$CLOUDINIT"
-    echo "  - path: /etc/resolv.conf\n    permissions: 0644\n    owner: root\n    content: |" >> "$CLOUDINIT"
+  {
+    echo "write_files:"
+    echo "  - path: /etc/resolv.conf"
+    echo "    permissions: 0644"
+    echo "    owner: root"
+    echo "    content: |"
 
     # IPV4
     if [ "$V6ONLY" -eq 1 ]; then
       debug "# skipping IPv4 DNS resolvers"
     else
       for index in $(shuf --input-range=0-$(( ${#NAMESERVER[*]} - 1 )) | tr '\n' ' ') ; do
-        echo "      nameserver ${NAMESERVER[$index]}" >> "$CLOUDINIT"
+        echo "      nameserver ${NAMESERVER[$index]}"
       done
     fi
 
     # IPv6
     if [ -n "$DOIPV6" ]; then
       for index in $(shuf --input-range=0-$(( ${#DNSRESOLVER_V6[*]} - 1 )) | tr '\n' ' ') ; do
-        echo "      nameserver ${DNSRESOLVER_V6[$index]}" >> "$CLOUDINIT"
+        echo "      nameserver ${DNSRESOLVER_V6[$index]}"
       done
     fi
+  } >> "$CLOUDINIT"
   return 0
 }
 
