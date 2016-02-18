@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC2125
 URL=?
 n=0
 
