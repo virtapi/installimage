@@ -183,7 +183,7 @@ create_config() {
 
     # first drive
     {
-      echo "\n" >> "$CNF"
+      echo "" >> "$CNF"
       echo "## ===================="
       echo "##  HARD DISK DRIVE(S):"
       echo "## ===================="
@@ -227,12 +227,16 @@ create_config() {
 
     # software-raid
     if [ $COUNT_DRIVES -gt 1 ]; then
-      echo -e "\n" >> "$CNF"
+      {
+        echo "" >> "$CNF"
 
-      echo "## ===============" >> "$CNF"
-      echo "##  SOFTWARE RAID:" >> "$CNF"
-      echo -e "## ===============\n" >> "$CNF"
-      echo -e "## activate software RAID?  < 0 | 1 >\n" >> "$CNF"
+        echo "## ==============="
+        echo "##  SOFTWARE RAID:"
+        echo "## ==============="
+        echo ""
+        echo "## activate software RAID?  < 0 | 1 >"
+        echo ""
+      } >> "$CNF"
 
       case "$OPT_SWRAID" in
         0) echo "SWRAID 0" >> "$CNF" ;;
@@ -296,10 +300,14 @@ create_config() {
       NOLILO=''
     fi
 
-    echo -e "\n" >> "$CNF"
-    echo "## ============" >> "$CNF"
-    echo "##  BOOTLOADER:" >> "$CNF"
-    echo -e "## ============\n" >> "$CNF"
+    {
+      echo ""
+      echo "## ============"
+      echo "##  BOOTLOADER:"
+      echo "## ============"
+      echo ""
+    } >> "$CNF"
+
     if [ "$NOLILO" ]; then
       echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> "$CNF"
       echo "BOOTLOADER grub" >> "$CNF"
@@ -316,11 +324,16 @@ create_config() {
     # hostname
     get_active_eth_dev
     gather_network_information
-    echo -e "\n" >> "$CNF"
-    echo "## ==========" >> "$CNF"
-    echo "##  HOSTNAME:" >> "$CNF"
-    echo -e "## ==========\n" >> "$CNF"
-    echo -e "## which hostname should be set?\n## \n" >> "$CNF"
+    {
+      echo ""
+      echo "## =========="
+      echo "##  HOSTNAME:"
+      echo "## =========="
+      echo "## which hostname should be set?"
+      echo "##"
+      echo ""
+    } >> "$CNF"
+
     # set default hostname to image name
     DEFAULT_HOSTNAME="$1"
     # or to proxmox if chosen
@@ -336,7 +349,7 @@ create_config() {
     ## Calculate how much hardisk space at raid level 0,1,5,6,10
     RAID0=0
     local small_hdd; small_hdd="$(smallest_hd)"
-    local small_hdd_size="$(($(blockdev --getsize64 $small_hdd)/1024/1024/1024))"
+    local small_hdd_size="$(($(blockdev --getsize64 "$small_hdd")/1024/1024/1024))"
     RAID0=$((small_hdd_size*COUNT_DRIVES))
     RAID1="$small_hdd_size"
     if [ $COUNT_DRIVES -ge 3 ] ; then
@@ -423,7 +436,7 @@ create_config() {
         echo "# RAID  0: ~$RAID0"
         echo "# RAID  1: ~$RAID1"
       } >> "$CNF"
-      [ "$RAID5" ] && echo "# RAID  5: ~$RAID5" >> $CNF
+      [ "$RAID5" ] && echo "# RAID  5: ~$RAID5" >> "$CNF"
       if [ "$RAID6" ]; then
         {
           echo "# RAID  6: ~$RAID6"
@@ -440,8 +453,8 @@ create_config() {
     # check if there are 3TB disks inside and use other default scheme
     local LIMIT=2096128
     local THREE_TB=2861588
-    local DRIVE_SIZE; DRIVE_SIZE="$(sfdisk -s $(smallest_hd) 2>/dev/null)"
-    DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
+    local DRIVE_SIZE; DRIVE_SIZE="$(sfdisk -s "$(smallest_hd)" 2>/dev/null)"
+    DRIVE_SIZE="$(echo "$DRIVE_SIZE" / 1024 | bc)"
 
     # adjust swap dynamically according to RAM
     # RAM < 2 GB : SWAP=2 * RAM
@@ -472,28 +485,28 @@ create_config() {
 
     # use /var instead of /home for all partition when installing plesk
     if [ "$OPT_INSTALL" ]; then
-      if [ $(echo $OPT_INSTALL | grep -i "PLESK") ]; then
+      if [ "$(echo "$OPT_INSTALL" | grep -i 'PLESK')" ]; then
         DEFAULTPARTS_BIG="${DEFAULTPARTS_BIG//home/var}"
       fi
     fi
 
     if [ "$IAM" = "coreos" ]; then
-      echo "## NOTICE: This image does not support custom partition sizes." >>$CNF
-      echo "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
+      echo "## NOTICE: This image does not support custom partition sizes." >> "$CNF"
+      echo "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >> "$CNF"
     fi
 
-    if [ $DRIVE_SIZE -gt $LIMIT ]; then
-      if [ $DRIVE_SIZE -gt $THREE_TB ]; then
-        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS_LARGE" >>$CNF
+    if [ "$DRIVE_SIZE" -gt "$LIMIT" ]; then
+      if [ "$DRIVE_SIZE" -gt "$THREE_TB" ]; then
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >> "$CNF" || echo "$DEFAULTPARTS_LARGE" >> "$CNF"
       else
-        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS_BIG" >>$CNF
+        [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >> "$CNF" || echo "$DEFAULTPARTS_BIG" >> "$CNF"
       fi
     else
-      [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >>$CNF || echo "$DEFAULTPARTS" >>$CNF
+      [ "$OPT_PARTS" ] && echo "$OPT_PARTS" >> "$CNF" || echo "$DEFAULTPARTS" >> "$CNF"
     fi
 
-    [ "$OPT_LVS" ] && echo "$OPT_LVS" >>$CNF
-    echo "" >> $CNF
+    [ "$OPT_LVS" ] && echo "$OPT_LVS" >> "$CNF"
+    echo "" >> "$CNF"
 
     # image
     {
@@ -571,6 +584,7 @@ if [ "$1" ]; then
   # special hidden configure option: create RAID1 and 10 with assume clean to
   # avoid initial resync
   RAID_ASSUME_CLEAN="$(grep -m1 -e ^RAID_ASSUME_CLEAN "$1" |awk '{print \$2}')"
+  export RAID_ASSUME_CLEAN
 
   # special hidden configure option: GPT usage
   # if set to 1, use GPT even on disks smaller than 2TiB
@@ -580,16 +594,18 @@ if [ "$1" ]; then
   # another special hidden configure option: force image validation
   # if set to 1: force validation
   FORCE_SIGN="$(grep -m1 -e ^FORCE_SIGN "$1" |awk '{print \$2}')"
+  export FORCE_SIGN
 
   # hidden configure option:
   # if set to 1: force setting root password even if ssh keys are
   # provided
   FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD "$1" |awk '{print \$2}')"
+  export FORCE_PASSWORD
 
   # get all disks from configfile
   local used_disks=1
   for i in $(seq 1 $COUNT_DRIVES) ; do
-    disk="$(grep -m1 -e ^DRIVE$i $1 | awk '{print $2}')"
+    disk="$(grep -m1 -e ^DRIVE"$i" "$1" | awk '{print $2}')"
     if [ -n "$disk" ] ; then
       export DRIVE$i
       eval DRIVE$i="$disk"
@@ -597,7 +613,7 @@ if [ "$1" ]; then
     else
       unset DRIVE$i
     fi
-    format_disk="$(grep -m1 -e ^FORMATDRIVE$i "$1" | awk '{print $2}')"
+    format_disk="$(grep -m1 -e ^FORMATDRIVE"$i" "$1" | awk '{print $2}')"
     export FORMAT_DRIVE$i
     eval FORMAT_DRIVE$i="0"
     if [ -n "$format_disk" ] ; then
@@ -621,7 +637,7 @@ if [ "$1" ]; then
   PART_LINES="$(grep -e '^PART ' "$1")"
   echo "$PART_LINES" > /tmp/part_lines.tmp
   i=0
-  while read PART_LINE ; do
+  while read -r PART_LINE ; do
     i=$((i+1))
     PART_MOUNT[$i]="$(echo "$PART_LINE" | awk '{print \$2}')"
     PART_FS[$i]="$(echo "$PART_LINE" | awk '{print \$3}')"
@@ -725,7 +741,8 @@ if [ "$1" ]; then
   if [ "$GOVERNOR" = "" ]; then GOVERNOR="ondemand"; fi
 
   SYSTEMDEVICE="$DRIVE1"
-  SYSTEMREALDEVICE="$DRIVE1"
+  # this var appear to be unused. keep it for safety
+  #SYSTEMREALDEVICE="$DRIVE1"
 
 fi
 }
@@ -797,7 +814,7 @@ validate_vars() {
   for i in $(seq 1 $COUNT_DRIVES) ; do
     local format; format="$(eval echo \$FORMAT_DRIVE$i)"
     local drive; drive="$(eval echo \$DRIVE$i)"
-    if [ $i -gt 1 ] ; then
+    if [ "$i" -gt 1 ] ; then
       for j in $(seq 0 $((${#drive_array[@]} - 1))); do
         if [ ${drive_array[$j]} = "$drive" ]; then
           graph_error "Duplicate DRIVE definition. $drive used for DRIVE$(($j+1)) and DRIVE$i"
@@ -894,7 +911,7 @@ validate_vars() {
   fi
 
   DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE / 1024 / 1024))
-  for i in $(seq 1 $PART_COUNT); do
+  for i in $(seq 1 "$PART_COUNT"); do
     if [ "${PART_SIZE[$i]}" = "all" ]; then
       # make sure that the all partition has at least 1G available
       DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE - 1024))
@@ -926,7 +943,7 @@ validate_vars() {
   fi
 
   # Check if /boot or / is mounted on one of the first three partitions.
-  if [ $PART_COUNT -gt 3 ]; then
+  if [ "$PART_COUNT" -gt 3 ]; then
     tmp=0
 
     for i in $(seq 1 "$PART_COUNT"); do
@@ -942,7 +959,7 @@ validate_vars() {
     fi
 
     if [ "$tmp" -eq 0 ]; then
-      for i in $(seq 4 $PART_COUNT); do
+      for i in $(seq 4 "$PART_COUNT"); do
         if [ "${PART_MOUNT[$i]}" = "/" ]; then
           graph_error "ERROR: / must be mounted on a primary partition"
           return 1
@@ -1065,7 +1082,7 @@ validate_vars() {
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
-    if [ $(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
+    if [ "$(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l)" -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
       graph_error "ERROR: you cannot use more than one VG with lilo - use grub as bootloader"
       return 1
     fi
@@ -1107,7 +1124,7 @@ validate_vars() {
     return 1
   fi
 
-  for lv_id in $(seq 1 $LVM_LV_COUNT) ; do
+  for lv_id in $(seq 1 "$LVM_LV_COUNT") ; do
     lv_size="${LVM_LV_SIZE[$lv_id]}"
     lv_mountp="${LVM_LV_MOUNT[$lv_id]}"
     lv_fs="${LVM_LV_FS[$lv_id]}"
@@ -1268,7 +1285,7 @@ validate_vars() {
   fi
 
   if [ "$OPT_INSTALL" ]; then
-    if [ $(echo "$OPT_INSTALL" | grep -i "PLESK") ]; then
+    if [ "$(echo "$OPT_INSTALL" | grep -i "PLESK")" ]; then
         if [ "$IAM" != "centos" ] && [ "$IAM" != "debian" ]; then
           graph_error "ERROR: PLESK is not available for this image"
           return 1
@@ -1332,7 +1349,7 @@ graph_error() {
 
   # set var if user hit "Cancel"
   if [ "$EXITCODE" -eq "1" ]; then
-    CANCELLED="true"
+    export CANCELLED="true"
   fi
 }
 
@@ -1361,13 +1378,13 @@ whoami() {
     CoreOS*|coreos*)
       IAM="coreos"
       CLOUDINIT="$FOLD/cloud-config"
-      echo -e "#cloud-config\n" > $CLOUDINIT
+      echo -e "#cloud-config\n" > "$CLOUDINIT"
     ;;
   esac
  fi
 
  IMG_VERSION="$(echo "$1" | cut -d "-" -f 2)"
- [ -z "$IMG_VERSION" -o "$IMG_VERSION" = "" -o "$IMG_VERSION" = "h.net.tar.gz" ]  && IMG_VERSION="0"
+ [ -z "$IMG_VERSION" ] || [ "$IMG_VERSION" = "" ] || [ "$IMG_VERSION" = "h.net.tar.gz" ]  && IMG_VERSION="0"
  IMG_ARCH="$(echo "$1" | sed 's/.*-\(32\|64\)-.*/\1/')"
 
  IMG_FULLNAME="$(ls -1 "$IMAGESPATH" | grep "$1" | grep -v ".sig")"
@@ -1456,7 +1473,7 @@ function get_end_of_extended() {
   local LIMIT=2199023255040
   # get sector limit
   local SECTORLIMIT=$(((LIMIT / SECTORSIZE) - 1))
-  local STARTSEC; STARTSEC=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
+  local STARTSEC; STARTSEC=$(sgdisk --first-aligned-in-largest "$1" | tail -n1)
 
   for i in $(seq 1 3); do
     sum=$(echo "$sum + ${PART_SIZE[$i]}" | bc)
@@ -1537,9 +1554,11 @@ create_partitions() {
   # add fstab entries for devpts, sys and shm in CentOS as they are not
   # automatically mounted by init skripts like in Debian/Ubuntu and OpenSUSE
   if [ "$IAM" = "centos" ]; then
-    echo "devpts /dev/pts devpts gid=5,mode=620 0 0" >> "$FOLD/fstab"
-    echo "tmpfs /dev/shm tmpfs defaults 0 0" >> "$FOLD/fstab"
-    echo "sysfs /sys sysfs defaults 0 0" >> "$FOLD/fstab"
+    {
+      echo "devpts /dev/pts devpts gid=5,mode=620 0 0"
+      echo "tmpfs /dev/shm tmpfs defaults 0 0"
+      echo "sysfs /sys sysfs defaults 0 0"
+    } >> "$FOLD/fstab"
   fi
   #copy defaults to tempfstab for softwareraid
   ### cp "$FOLD"/fstab $FOLD/fstab.md >>/dev/null 2>&1
@@ -1950,9 +1969,11 @@ make_lvm() {
 
     # create fstab-entries
     for i in $(seq 1 "$LVM_LV_COUNT") ; do
-      echo -n "/dev/${LVM_LV_VG[$i]}/${LVM_LV_NAME[$i]}  " >> "$fstab"
-      echo -n "${LVM_LV_MOUNT[$i]}  ${LVM_LV_FS[$i]}  " >> "$fstab"
-      echo    "defaults 0 0" >> "$fstab"
+      {
+        echo -n "/dev/${LVM_LV_VG[$i]}/${LVM_LV_NAME[$i]}  "
+        echo -n "${LVM_LV_MOUNT[$i]}  ${LVM_LV_FS[$i]}  "
+        echo    "defaults 0 0"
+      } >> "$fstab"
     done
 
   else
@@ -2026,11 +2047,11 @@ mount_partitions() {
     # wheezy rescue: /dev/shm links to /run/shm
     if [ -L "$basedir"/dev/shm ] ; then
       shmlink="$(readlink "$basedir"/dev/shm)"
-      mkdir -p ${basedir}${shmlink} 2>&1 | debugoutput
+      mkdir -p "${basedir}${shmlink}" 2>&1 | debugoutput
       if [ -e "$shmlink" ] ; then
-        mount -o bind "$shmlink" ${basedir}${shmlink} 2>&1 | debugoutput ; EXITCODE=$?
+        mount -o bind "$shmlink" "${basedir}${shmlink}" 2>&1 | debugoutput ; EXITCODE=$?
       else
-        mount -o bind /dev/shm ${basedir}${shmlink} 2>&1 | debugoutput ; EXITCODE=$?
+        mount -o bind /dev/shm "${basedir}${shmlink}" 2>&1 | debugoutput ; EXITCODE=$?
       fi
       [ "$EXITCODE" -ne "0" ] && return 1
     else
@@ -2043,7 +2064,7 @@ mount_partitions() {
     mount -o bind /sys "$basedir"/sys 2>&1 | debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    grep -v " / \|swap" "$fstab" | grep "^/dev/" > $fstab.tmp
+    grep -v " / \|swap" "$fstab" | grep "^/dev/" > "$fstab".tmp
 
     while read -r line ; do
       DEVICE="$(echo "$line" | cut -d " " -f 1)"
