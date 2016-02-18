@@ -1392,7 +1392,7 @@ unmount_all() {
       unmount_errors=$((unmount_errors + EXITCODE))
     fi
   done < /proc/mounts
-
+  echo "$unmount_output"
   return "$unmount_errors"
 }
 
