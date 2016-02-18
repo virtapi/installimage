@@ -32,7 +32,7 @@ case $1 in
         echon "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
         for i in $(seq 1 $TIMEOUT) ; do
           echo -n "."
-          read -n1 -t1 key
+          read -r -n1 -t1 key
           if [ "$key" ] ; then
             echo -e "\n\nEs wird nicht neu gestartet.\n\n"
             exec /bin/bash
