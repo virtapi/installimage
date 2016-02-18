@@ -31,11 +31,15 @@ IAM=""
 IMG_VERSION=0
 BOOTLOADER=""
 GOVERNOR=""
-SFDISKPARTS=""
+# this var is probably not used anymore. keep it for safety
+#SFDISKPARTS=""
 COUNT_DRIVES=0
-LAST_PART_START=""
-LAST_PART_END=""
-DISK_SIZE_SECTORS=""
+# this var is probably not used anymore. keep it for safety
+#LAST_PART_START=""
+# this var is probably not used anymore. keep it for safety
+#LAST_PART_END=""
+# this var is probably not used anymore. keep it for safety
+#DISK_SIZE_SECTORS=""
 
 SYSTEMROOTDEVICE=""
 SYSTEMBOOTDEVICE=""
@@ -63,7 +67,8 @@ PLESK_STD_VERSION="PLESK_12_0_18"
 
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
-MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
+# this var is probably not used anymore. keep it for safety
+# MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
 
 # functions
 # show text in a different color
@@ -2244,16 +2249,6 @@ function get_active_eth_dev() {
       break
     fi
   done
-}
-
-# gather_network_information
-gather_network_information_old() {
-  HWADDR="$(ifconfig $ETHDEV |grep HWaddr |tr -s ' ' |cut -d " " -f5 |tr [:upper:] [:lower:])"
-  IPADDR="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f3 |cut -d ":" -f2)"
-  BROADCAST="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f4 |cut -d ":" -f2)"
-  SUBNETMASK="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f5 |cut -d ":" -f2)"
-  GATEWAY="$(route -n |tr -s ' ' |grep " UG .*. $ETHDEV" |cut -d " " -f2 | head -n1)"
-  NETWORK="$(route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1)"
 }
 
 # gather_network_information "$ETHDEV"
