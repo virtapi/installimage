@@ -30,6 +30,7 @@ case $1 in
         echo -e "\n\n\n===>  Erfolgreich beendet.\n"
         echo "Der Computer wird in $TIMEOUT Sekunden neu gestartet !"
         echon "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
+        # shellcheck disable=SC2034
         for i in $(seq 1 $TIMEOUT) ; do
           echo -n "."
           read -r -n1 -t1 key
