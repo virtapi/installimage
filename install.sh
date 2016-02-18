@@ -101,6 +101,7 @@ whoami "$IMAGE_FILE"
 status_busy_nostep "Loading $IAM specific functions "
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
+  # shellcheck disable=SC1090
   . "$SCRIPTPATH"/$IAM.sh 2>&1 > /dev/null
   status_done
 else

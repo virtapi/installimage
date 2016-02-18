@@ -78,6 +78,7 @@ if [ "$OPT_AUTOMODE" ] ; then
 
   # start install
   debug "# AUTOMATIC MODE: start installation"
+  # shellcheck disable=SC1090
   . "$INSTALLFILE" ; EXITCODE=$?
   [ $EXITCODE != 0 ] && debug "=> FAILED"
 
@@ -186,6 +187,7 @@ else
 
   debug "# executing installfile..."
   if [ -f $INSTALLFILE ] && [ "$ACCEPTED" = "true" ] && [ "$VALIDATED" = "true" ] && [ "$IMAGENAME" ] ; then
+    # shellcheck disable=SC1090
      . "$INSTALLFILE" ; EXITCODE=$?
   else
     debug "=> FAILED"

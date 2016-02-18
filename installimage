@@ -20,6 +20,7 @@ esac
 
 clear
 wd=$(pwd)
+export wd
 
 # important: set pipefile bash option, see bash manual
 set -o pipefail
@@ -38,6 +39,7 @@ REALCONFIG="$SCRIPTPATH/config.sh"
 
 # copy our config file and read global variables and functions
 cp -a "$REALCONFIG" /tmp/install.vars
+# shellcheck disable=SC1091
 . /tmp/install.vars
 FOLD="$(mktemp -d /installimage.XXXXX)"
 
@@ -53,6 +55,7 @@ if [ $# -lt 1 ] && [ ! -e "$AUTOSETUPCONFIG" ] ; then
   # shellcheck disable=SC2162
   read -n1 -t1
 fi
+# shellcheck disable=SC1090
 . "$GETOPTIONSFILE"
 
 
@@ -78,6 +81,7 @@ debug "-------------------------------------"
 # generate new config file with our parameters and the template config from the nfs-server
 debug "# make clean config"
 if [ -f /tmp/install.vars ]; then
+  # shellcheck disable=SC1091
   . /tmp/install.vars
 else
   debug "=> FAILED"
@@ -117,6 +121,7 @@ if [ -e "$AUTOSETUPCONFIG" ] ; then
   [ "$OPT_CONFIGFILE" ] && mv "$AUTOSETUPCONFIG" "$AUTOSETUPCONFIG.bak-$(date +%Y%m%d-%H%M%S)"
   debug "# executing autosetup ..."
   if [ -f "$AUTOSETUPFILE" ] ; then
+    # shellcheck disable=SC1090
      . "$AUTOSETUPFILE" ; EXITCODE=$?
   else
     echo -e "${RED}\nERROR: $AUTOSETUPFILE does not exist${NOCOL}"
@@ -128,6 +133,7 @@ else
   # start the menu
   debug "# executing setupfile"
   if [ -f "$SETUPFILE" ] ; then
+    # shellcheck disable=SC1090
      . "$SETUPFILE" ; EXITCODE=$?
   else
     debug "=> FAILED, $SETUPFILE does not exist"
