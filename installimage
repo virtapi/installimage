@@ -46,21 +46,24 @@ echo > "$DEBUGFILE"
 
 
 # get command line options
-if [ $# -lt 1 -a ! -e "$AUTOSETUPCONFIG" ] ; then
+if [ $# -lt 1 ] && [ ! -e "$AUTOSETUPCONFIG" ] ; then
   echo -e "\n${YELLOW}run  'installimage -h'  to get help for command line arguments."
   echo -e "${GREEN}starting interactive mode ...${NOCOL}\n"
   # press any key or sleep 1 sec ...
+  # shellcheck disable=SC2162
   read -n1 -t1
 fi
 . "$GETOPTIONSFILE"
 
 
 # deleting possible existing files and create dirs
-umount -l "$FOLD/*" >> /dev/null 2>&1
-rm -rf "$FOLD" >> /dev/null 2>&1
-mkdir -p "$FOLD/nfs" >> /dev/null 2>&1
-mkdir -p "$FOLD/hdd" >> /dev/null 2>&1
-cd "$FOLD"
+{
+  umount -l "$FOLD/*"
+  rm -rf "$FOLD"
+  mkdir -p "$FOLD/nfs"
+  mkdir -p "$FOLD/hdd"
+} >/dev/null 2>&1
+cd "$FOLD" || exit
 myip=$(ifdata -pa eth0)
 debug "# starting installimage on  [ $myip ]"
 
@@ -83,16 +86,24 @@ fi
 # Unmount all partitions and print an error message if it fails
 unmount_all ; EXITCODE=$?
 if [ $EXITCODE -ne 0 ] ; then
-  echo -e "$RED\nERROR unmounting device(s):$NOCOL\n$unmount_output\n"
+  echo ""
+  echo "$RED""ERROR unmounting device(s):$NOCOL"
+  echo "$unmount_output"
+  echo ""
   echo "$RED""Cannot continue, device(s) seem to be in use.$NOCOL"
-  echo -e "Please unmount used devices manually or reboot the rescuesystem and retry.\n"
+  echo "Please unmount used devices manually or reboot the rescuesystem and retry."
+  echo ""
   exit 1
 fi
 stop_lvm_raid ; EXITCODE=$?
 if [ $EXITCODE -ne 0 ] ; then
-  echo -e "$RED\nERROR stopping LVM and/or RAID device(s):$NOCOL\n$unmount_output\n"
+  echo ""
+  echo "$RED""ERROR stopping LVM and/or RAID device(s):$NOCOL"
+  echo "$unmount_output"
+  echo ""
   echo "$RED""Cannot continue, device(s) seem to be in use.$NOCOL"
-  echo -e "Please stop used lvm/raid manually or reboot the rescuesystem and retry.\n"
+  echo "Please stop used lvm/raid manually or reboot the rescuesystem and retry."
+  echo ""
   exit 1
 fi
 
@@ -102,8 +113,8 @@ if [ -e "$AUTOSETUPCONFIG" ] ; then
 
   # start autosetup
   AUTOSETUP="true"
-  cp  "$AUTOSETUPCONFIG"  "$FOLD/install.conf"
-  [ "$OPT_CONFIGFILE" ] && mv  "$AUTOSETUPCONFIG"  "$AUTOSETUPCONFIG".bak-$(date +%Y%m%d-%H%M%S)
+  cp "$AUTOSETUPCONFIG" "$FOLD/install.conf"
+  [ "$OPT_CONFIGFILE" ] && mv "$AUTOSETUPCONFIG" "$AUTOSETUPCONFIG.bak-$(date +%Y%m%d-%H%M%S)"
   debug "# executing autosetup ..."
   if [ -f "$AUTOSETUPFILE" ] ; then
      . "$AUTOSETUPFILE" ; EXITCODE=$?
