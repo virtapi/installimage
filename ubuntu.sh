@@ -222,7 +222,7 @@ run_os_specific_functions() {
 }
 
 randomize_mdadm_checkarray_cronjob_time() {
-  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && [ "$(grep checkarray "$FOLD/hdd/etc/cron.d/mdadm")" ]; then
+  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && grep -q checkarray "$FOLD/hdd/etc/cron.d/mdadm"; then
     declare -i hour minute day
     hour="$(((RANDOM % 4) + 1))"
     minute="$(((RANDOM % 59) + 1))"
