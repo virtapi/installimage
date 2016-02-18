@@ -269,7 +269,7 @@ generate_config_grub() {
 
     # disable pcie active state power management. does not work as it should,
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
-    [ "$(lspci -n | grep '8086:10d3')" ] && ASPM='pcie_aspm=off' || ASPM=''
+    lspci -n | grep -q '8086:10d3' && ASPM='pcie_aspm=off' || ASPM=''
 
     if [ "$IMG_VERSION" -ge 60 ]; then
       echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $ASPM" >> "$BFILE" 2>> "$DEBUGFILE"
@@ -350,9 +350,8 @@ run_os_specific_functions() {
   fi
 
   # selinux autorelabel if enabled
-  if [ "$(egrep "SELINUX=enforcing" $FOLD/hdd/etc/sysconfig/selinux)" ] ; then
+  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux)" &&
     touch "$FOLD/hdd/.autorelabel"
-  fi
 
   return 0
 
@@ -369,8 +368,8 @@ setup_cpanel() {
 #
 randomize_cpanel_mysql_passwords() {
   CPHULKDCONF="$FOLD/hdd/var/cpanel/hulkd/password"
-  CPHULKDPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c16)
-  ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
+  CPHULKDPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  ROOTPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
   MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
   UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
   echo "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
@@ -384,7 +383,11 @@ randomize_cpanel_mysql_passwords() {
   rm "$CPHULKDCONF.old"
 
   # write password file
-  echo "[client]\nuser=root\npass=$ROOTPASS" > "$FOLD/hdd/root/.my.cnf"
+  {
+    echo "[client]"
+    echo "user=root"
+    echo "pass=$ROOTPASS"
+  } > "$FOLD/hdd/root/.my.cnf"
 
   return "$EXITCODE"
 }
