@@ -103,7 +103,6 @@ stop_lvm_raid ; EXITCODE=$?
 if [ $EXITCODE -ne 0 ] ; then
   echo ""
   echo "$RED""ERROR stopping LVM and/or RAID device(s):$NOCOL"
-  echo "$unmount_output"
   echo ""
   echo "$RED""Cannot continue, device(s) seem to be in use.$NOCOL"
   echo "Please stop used lvm/raid manually or reboot the rescuesystem and retry."
