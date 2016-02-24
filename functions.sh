@@ -1867,7 +1867,8 @@ make_swraid() {
         fi
         echo "Array RAID Level is: \"$array_raidlevel\" - $can_assume_clean" | debugoutput
         echo "Array metadata is: \"$array_metadata\"" | debugoutput
-
+        # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
+        # shellcheck disable=SC2069
         yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "$components" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
 
         count="$((count+1))"
@@ -2011,6 +2012,8 @@ format_partitions() {
         wipefs "$DEV" | debugoutput
         mkfs -t "$FS" "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
       else
+        # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
+        # shellcheck disable=SC2069
         mkfs -t "$FS" -q -f "$DEV" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
       fi
     else
@@ -2753,10 +2756,14 @@ set_ntp_time() {
   # if process is still running
   if [ $count -eq 15 ] ; then
     debug "ntp still running - kill it"
+    # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
+    # shellcheck disable=SC2069
     kill -9 "$ntp_pid" 2>&1 1>/dev/null
   fi
 
   # write time to hwclock
+  # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
+  # shellcheck disable=SC2069
   hwclock -w 2>&1 | debugoutput
 
   # start ntp daemon again
