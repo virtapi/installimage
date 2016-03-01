@@ -95,6 +95,8 @@ generate_menu() {
   # shellcheck disable=SC2153
   FINALIMAGEPATH="$IMAGESPATH"
   if [ "$1" = "openSUSE" ]; then
+    # this got removed in newser versions
+    # shellcheck disable=SC1083
     RAWLIST=$(ls -1 "$IMAGESPATH"/{,old_}{"$1",suse}* 2>/dev/null)
   elif [ "$1" = "Virtualization" ]; then
     RAWLIST=""
