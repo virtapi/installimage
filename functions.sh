@@ -134,7 +134,9 @@ generate_menu() {
   MENULIST="$MENULIST"'back . '
 
   # show menu and get result
-  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 "$MENULIST" 2>"$FOLD/submenu.chosen"
+  # don't quote MENULISt here because it has to expand
+  # shellcheck disable=SC2086
+  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2>"$FOLD/submenu.chosen"
   IMAGENAME=$(cat "$FOLD/submenu.chosen")
 
   # create proxmox post-install file if needed
