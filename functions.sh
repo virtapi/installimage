@@ -1021,6 +1021,7 @@ validate_vars() {
       fi
 
       # Check if the partition size is a valid number
+      # shellcheck disable=SC2015 disable=SC2001
       if [ "${PART_SIZE[$i]}" != "all" ] && [ "$(echo "${PART_SIZE[$i]}" | sed "s/[0-9]//g")" != "" ] || [ "${PART_SIZE[$i]}" = "0" ]; then
         graph_error "ERROR: The size of the partiton PART ${PART_MOUNT[$i]} is not a valid number"
         return 1
@@ -1164,7 +1165,7 @@ validate_vars() {
 #      graph_error "ERROR: centos doesn't support xfs on partition /"
 #      return 1
 #    fi
-
+    # shellcheck disable=SC2001 disable=SC2015
     if [ "$lv_size" != "all" ] && [ "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" ] || [ "$lv_size" = "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
       return 1
@@ -1297,7 +1298,7 @@ validate_vars() {
 
   if [ "$BOOTLOADER" == "grub" ]; then
     # check dos partition sizes for centos
-    local result; result="$(check_dos_partitions)"
+    local result; result="$(check_dos_partitions '')"
 
     if [ -n "$result" ]; then
       if [ "$result" == "PART_OVERSIZED" ]; then
@@ -1341,7 +1342,7 @@ graph_error() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
         --no-label "Cancel" --yesno \
-        "$@\n\nYou will be dropped back to the editor to fix the problem." 0 0
+        "$*\n\nYou will be dropped back to the editor to fix the problem." 0 0
     EXITCODE=$?
   else
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
@@ -1363,7 +1364,7 @@ graph_error() {
 graph_notice() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "NOTICE" --msgbox \
-        "$@\n\n" 0 0
+        "$*\n\n" 0 0
   fi
 }
 
@@ -1387,8 +1388,10 @@ whoami() {
 
  IMG_VERSION="$(echo "$1" | cut -d "-" -f 2)"
  [ -z "$IMG_VERSION" ] || [ "$IMG_VERSION" = "" ] || [ "$IMG_VERSION" = "h.net.tar.gz" ]  && IMG_VERSION="0"
+ # shellcheck disable=SC2001
  IMG_ARCH="$(echo "$1" | sed 's/.*-\(32\|64\)-.*/\1/')"
 
+ # shellcheck disable=SC2010
  IMG_FULLNAME="$(ls -1 "$IMAGESPATH" | grep "$1" | grep -v ".sig")"
  IMG_EXT="${IMG_FULLNAME#*.}"
 
@@ -1761,7 +1764,6 @@ make_fstab_entry() {
   echo "$ENTRY" >> "$FOLD/fstab"
 
   if [ "$3" = "/" ]; then
-    SYSTEMREALROOTDEVICE="$1$2"
     if [ -z "$SYSTEMREALBOOTDEVICE" ]; then
       SYSTEMREALBOOTDEVICE="$1$2"
     fi
@@ -1894,6 +1896,7 @@ make_lvm() {
         let inc_dev=inc_dev+1
       done
     else
+      # shellcheck disable=SC2012
       for inc_dev in $(seq 1 "$(ls -1 "${DRIVE1}"[0-9]* | wc -l)") ; do
         dev[$inc_dev]="$disk1$(next_partnum $((inc_dev-1)))"
       done
@@ -1901,6 +1904,7 @@ make_lvm() {
 
     # remove all Logical Volumes and Volume Groups
     debug "# Removing all Logical Volumes and Volume Groups"
+    # shellcheck disable=SC2034
     vgs --noheadings 2> /dev/null | while read -r vg pvs; do
       lvremove -f "$vg" 2>&1 | debugoutput
       vgremove -f "$vg" 2>&1 | debugoutput
@@ -2079,7 +2083,10 @@ mount_partitions() {
       # create lock and run dir for ubuntu if /var has its own filesystem
       # otherwise network does not come up - see ticket 2008012610009793
       if [ "$MOUNTPOINT" = "/var" ] && [ "$IAM" = "ubuntu" ]; then
+        # this is expected
+        # shellcheck disable=SC2174
         mkdir -p -m 1777 "$basedir/var/lock" 2>&1 | debugoutput
+        # shellcheck disable=SC2174
         mkdir -p -m 1777 "$basedir/var/run" 2>&1 | debugoutput
       fi
 
@@ -2305,8 +2312,7 @@ gather_network_information() {
     export IP6ADDR; IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
     export IP6PREFLEN; IP6PREFLEN=$(echo "$INET6ADDR" | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
-    # TODO: extend awk and remove the grep
-    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route | grep "default\ via" |  awk '{print $3}')
+    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route default |  awk '{print $3}')
   else
     if [ "$V6ONLY" -eq 1 ]; then
       debug "no valid IPv6 adress, but v6 only because of RFC6598 IPv4 address"
@@ -2713,6 +2719,7 @@ generate_new_sshkeys() {
         key_json="\"key_type\": \"${key_type}\""
         if [ -f "$FOLD/hdd/$file" ]; then
           execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
+          # shellcheck disable=SC2034
           while read -r bits fingerprint name type ; do
             key_json="${key_json}, \"key_bits\": \"${bits}\", \"key_fingerprint\": \"${fingerprint}\", \"key_name\": \"${name}\""
           done <<< "$(cat "$FOLD/hdd/tmp/${key_type}")"
@@ -3099,11 +3106,12 @@ generate_ntp_config() {
   local CFG="$CFGNTP"
 
   # find out versions
-  local debian_version=0
-  local ubuntu_version=0
+  # we currently don't need debian_version and ubuntu_version
+  #local debian_version=0
+  #local ubuntu_version=0
   local suse_version=0
-  [ "$IAM" == debian ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
-  [ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
+  #[ "$IAM" == 'debian' ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
+  #[ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
 
   if [ -f "$FOLD/hdd/$CFGNTP" ] || [ -f "$FOLD/hdd/$CFGCHRONY" ] || [ -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
@@ -3344,12 +3352,13 @@ install_robot_script() {
 report_statistic() {
   if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ] && [ "$5" ]; then
     REPORTSRV="$1"
-
+    # shellcheck disable=SC2010
     STANDARDIMAGE="$(ls -1 "$IMAGESPATH" |grep "$2")"
 
     if [ ! "$STANDARDIMAGE" ]; then
       REPORTIMG="Custom"
     else
+      # shellcheck disable=SC2001
       REPORTIMG="$(echo "$2" |sed 's/\./___/g')"
     fi
 
@@ -3493,6 +3502,7 @@ function getUSBFlashDrives() {
     DEV=$(eval echo "\$DRIVE$i")
     # remove string '/dev/'
     DEV=$(echo "$DEV" | sed -e 's/\/dev\///')
+    # shellcheck disable=SC2010
     if ls -l "/sys/block/$DEV/" | grep -q usb; then
       echo "/dev/${DEV}"
     fi
@@ -3552,7 +3562,7 @@ function hdinfo() {
 
   case "$vendor" in
     LSI)
-      logical_nr="$(ls "/sys/block/$withoutdev/device/scsi_device/" | cut -d: -f3)"
+      logical_nr="$(find "/sys/block/$withoutdev/device/scsi_device/*" -maxdepth 0 -type d | cut -d: -f3)"
       name="$(megacli -ldinfo -L"$logical_nr" -aall | grep Name | cut -d: -f2)"
       [ -z "$name" ] && name="no name"
       echo "# LSI RAID (LD $logical_nr): $name"
@@ -3568,7 +3578,7 @@ function hdinfo() {
       echo "# Adaptec RAID (LD $logical_nr): $name"
       ;;
     AMCC)
-      logical_nr="$(ls "/sys/block/$withoutdev/device/scsi_device/" | cut -d: -f4)"
+      logical_nr="$(find "/sys/block/$withoutdev/device/scsi_device/*" -maxdepth 0 -type d | cut -d: -f4)"
       echo "# 3ware RAID (LD $logical_nr)"
       ;;
     ATA)
@@ -3661,6 +3671,7 @@ function part_test_size() {
 
 function check_dos_partitions() {
   echo "check_dos_partitions" | debugoutput
+  # shellcheck disable=SC2015
   if [ "$FORCE_GPT" = "2" ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
     if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
       echo "SuSE version older than 12.2, no grub2 support" | debugoutput
@@ -3862,7 +3873,6 @@ is_private_ip() {
  if [ "$1" ]; then
    local first; first="$(echo "$1" | cut -d '.' -f 1)"
    local second; second="$(echo "$1" | cut -d '.' -f 2)"
-   local third; third="$(echo "$1" | cut -d '.' -f 3)"
    case "$first" in
      10)
        debug "detected private ip ($first.$second.x)"
