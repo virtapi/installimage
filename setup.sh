@@ -100,8 +100,12 @@ else
       # display the image menu
       IMAGENAME=""
       debug "# starting menu..."
+      debug "$OSMENULIST"
+      debug "$DIATITLE"
+      debug "$FOLD"
       while [ -z "$IMAGENAME" ] || [ "$IMAGENAME" = "back" ]; do
-        dialog --backtitle "$DIATITLE" --title "o/s list" --no-cancel --menu "choose o/s" 0 0 0 "$OSMENULIST" "exit" "" 2> "$FOLD/mainmenu.chosen"
+        # shellcheck disable=SC2086
+        dialog --backtitle "$DIATITLE" --title "o/s list" --no-cancel --menu "choose o/s" 0 0 0 $OSMENULIST "exit" "" 2> "$FOLD/mainmenu.chosen"
         MAINMENUCHOSEN=$(cat "$FOLD/mainmenu.chosen")
         case "$MAINMENUCHOSEN" in
           "exit")
