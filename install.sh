@@ -25,22 +25,22 @@ inc_step() {
 status_busy() {
   local step="$CURSTEP"
   test "$CURSTEP" -lt 10 && step=" $CURSTEP"
-  echo -n "  $step/$TOTALSTEPS  :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
-  debug "# $@"
+  echo -n "  $step/$TOTALSTEPS  :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
+  debug "# $*"
 }
 
 status_busy_nostep() {
-  echo -n "         :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
+  echo -n "         :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
 }
 
 status_none() {
   local step="$CURSTEP"
   test "$CURSTEP" -lt 10 && step=" $CURSTEP"
-  echo "  $step/$TOTALSTEPS  :  $@"
+  echo "  $step/$TOTALSTEPS  :  $*"
 }
 
 status_none_nostep() {
-  echo "         :  $@"
+  echo "         :  $*"
 }
 
 status_done() {
@@ -49,7 +49,7 @@ status_done() {
 
 status_failed() {
   echo "$STATUS_POSITION${RED}failed$NOCOL"
-  [ $# -gt 0 ] && echo "${RED}         :  $@${NOCOL}"
+  [ $# -gt 0 ] && echo "${RED}         :  $*${NOCOL}"
   debug "=> FAILED"
   exit_function
   exit 1
@@ -57,7 +57,7 @@ status_failed() {
 
 status_warn() {
   echo "$STATUS_POSITION${YELLOW} warn"
-  echo "         :  $@${NOCOL}"
+  echo "         :  $*${NOCOL}"
 }
 
 status_donefailed() {
