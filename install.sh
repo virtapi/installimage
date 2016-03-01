@@ -124,8 +124,8 @@ unmount_all
 stop_lvm_raid
 
 for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
-  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" ] || [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
-    TARGETDISK="$(eval echo \$DRIVE${part_inc})"
+  if [ "$(eval echo "\$FORMAT_DRIVE${part_inc}")" = "1" ] || [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
+    TARGETDISK="$(eval echo "\$DRIVE${part_inc}")"
     debug "# Deleting partitions on $TARGETDISK"
     delete_partitions "$TARGETDISK" || status_failed
   fi
@@ -151,7 +151,7 @@ status_busy "Creating partitions and /etc/fstab"
 
 for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
   if [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
-    TARGETDISK="$(eval echo \$DRIVE${part_inc})"
+    TARGETDISK="$(eval echo "\$DRIVE${part_inc}")"
     debug "# Creating partitions on $TARGETDISK"
     create_partitions "$TARGETDISK" || status_failed
   fi
@@ -421,9 +421,9 @@ status_done
 if [ "$OPT_INSTALL" ]; then
   inc_step
   status_none "Installing additional software"
-  opt_install_items="$(echo $OPT_INSTALL | sed s/,/\\n/g)"
+  opt_install_items="$(echo "$OPT_INSTALL" | sed s/,/\\n/g)"
   for opt_item in $opt_install_items; do
-    opt_item=$(echo "$opt_item" | tr [:upper:] [:lower:])
+    opt_item=$(echo "$opt_item" | tr "[:upper:]" "[:lower:]")
     case "$opt_item" in
       plesk*)
         status_busy_nostep "  Installing PLESK Control Panel"
