@@ -12,6 +12,8 @@
 # This file isn't ready for production!
 #
 
+# SRCIPTPATH will be exported in config.sh
+# shellcheck disable=SC2153
 export IMAGE_PUBKEY="$SCRIPTPATH/gpg/coreos-pubkey.asc"
 
 # create partitons on the given drive
