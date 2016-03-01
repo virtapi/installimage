@@ -421,6 +421,7 @@ status_done
 if [ "$OPT_INSTALL" ]; then
   inc_step
   status_none "Installing additional software"
+  # shellcheck disable=SC2001
   opt_install_items="$(echo "$OPT_INSTALL" | sed s/,/\\n/g)"
   for opt_item in $opt_install_items; do
     opt_item=$(echo "$opt_item" | tr "[:upper:]" "[:lower:]")
