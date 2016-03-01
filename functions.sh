@@ -588,23 +588,23 @@ if [ "$1" ]; then
 
   # special hidden configure option: create RAID1 and 10 with assume clean to
   # avoid initial resync
-  RAID_ASSUME_CLEAN="$(grep -m1 -e ^RAID_ASSUME_CLEAN "$1" |awk '{print \$2}')"
+  RAID_ASSUME_CLEAN="$(grep -m1 -e ^RAID_ASSUME_CLEAN "$1" |awk '{print $2}')"
   export RAID_ASSUME_CLEAN
 
   # special hidden configure option: GPT usage
   # if set to 1, use GPT even on disks smaller than 2TiB
   # if set to 2, always use GPT, even if the OS does not support it
-  FORCE_GPT="$(grep -m1 -e ^FORCE_GPT "$1" |awk '{print \$2}')"
+  FORCE_GPT="$(grep -m1 -e ^FORCE_GPT "$1" |awk '{print $2}')"
 
   # another special hidden configure option: force image validation
   # if set to 1: force validation
-  FORCE_SIGN="$(grep -m1 -e ^FORCE_SIGN "$1" |awk '{print \$2}')"
+  FORCE_SIGN="$(grep -m1 -e ^FORCE_SIGN "$1" |awk '{print $2}')"
   export FORCE_SIGN
 
   # hidden configure option:
   # if set to 1: force setting root password even if ssh keys are
   # provided
-  FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD "$1" |awk '{print \$2}')"
+  FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD "$1" |awk '{print $2}')"
   export FORCE_PASSWORD
 
   # get all disks from configfile
@@ -630,7 +630,7 @@ if [ "$1" ]; then
   COUNT_DRIVES=$((used_disks-1))
 
   # is RAID activated?
-  SWRAID="$(grep -m1 -e ^SWRAID "$1" |awk '{print \$2}')"
+  SWRAID="$(grep -m1 -e ^SWRAID "$1" |awk '{print $2}')"
   [ "$SWRAID" = "" ] && SWRAID="0"
 
   # Software RAID Level
@@ -644,8 +644,8 @@ if [ "$1" ]; then
   i=0
   while read -r PART_LINE ; do
     i=$((i+1))
-    PART_MOUNT[$i]="$(echo "$PART_LINE" | awk '{print \$2}')"
-    PART_FS[$i]="$(echo "$PART_LINE" | awk '{print \$3}')"
+    PART_MOUNT[$i]="$(echo "$PART_LINE" | awk '{print $2}')"
+    PART_FS[$i]="$(echo "$PART_LINE" | awk '{print $3}')"
     PART_SIZE[$i]="$(translate_unit "$(echo "$PART_LINE" | awk '{ print $4 }')")"
     MOUNT_POINT_SIZE[$i]=${PART_SIZE[$i]}
     #calculate new partition size if software raid is enabled and it is not /boot or swap
@@ -681,7 +681,7 @@ if [ "$1" ]; then
     LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n"$i" | tail -n1)"
     #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print \$2}')"
     LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n"$i" | tail -n1 | cut -d: -f1)
-    LVM_VG_NAME[$i]="$(echo "$LVM_VG_LINE" | awk '{print \$3}')"
+    LVM_VG_NAME[$i]="$(echo "$LVM_VG_LINE" | awk '{print $3}')"
     LVM_VG_SIZE[$i]="$(translate_unit "$(echo "$LVM_VG_LINE" | awk '{print $4}')")"
 
     if [ "${LVM_VG_SIZE[$i]}" != "all" ] ; then
@@ -694,11 +694,11 @@ if [ "$1" ]; then
   LVM_LV_ALL="$(grep -e "^LV " "$1")"
   for i in $(seq 1 "$LVM_LV_COUNT"); do
     LVM_LV_LINE="$(echo "$LVM_LV_ALL" | head -n"$i" | tail -n1)"
-    LVM_LV_VG[$i]="$(echo "$LVM_LV_LINE" | awk '{print \$2}')"
+    LVM_LV_VG[$i]="$(echo "$LVM_LV_LINE" | awk '{print $2}')"
     LVM_LV_VG_SIZE[$i]="$(echo "$LVM_VG_ALL" | grep "${LVM_LV_VG[$i]}" | awk '{print $4}')"
-    LVM_LV_NAME[$i]="$(echo "$LVM_LV_LINE" | awk '{print \$3}')"
-    LVM_LV_MOUNT[$i]="$(echo "$LVM_LV_LINE" | awk '{print \$4}')"
-    LVM_LV_FS[$i]="$(echo "$LVM_LV_LINE" | awk '{print \$5}')"
+    LVM_LV_NAME[$i]="$(echo "$LVM_LV_LINE" | awk '{print $3}')"
+    LVM_LV_MOUNT[$i]="$(echo "$LVM_LV_LINE" | awk '{print $4}')"
+    LVM_LV_FS[$i]="$(echo "$LVM_LV_LINE" | awk '{print $5}')"
     LVM_LV_SIZE[$i]="$(translate_unit "$(echo "$LVM_LV_LINE" | awk '{ print $6 }')")"
     # we only add LV sizes to PART_SUM_SIZE if the appropiate volume group has
     # "all" as size (otherwise we would count twice: SIZE of VG + SIZE of LVs of VG)
@@ -716,7 +716,7 @@ if [ "$1" ]; then
   [ "$LVM_VG_COUNT" != "0" ] && [ "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
 
 
-  IMAGE="$(grep -m1 -e ^IMAGE "$1" | awk '{print \$2}')"
+  IMAGE="$(grep -m1 -e ^IMAGE "$1" | awk '{print $2}')"
   # shellcheck disable=SC2154
   [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
   IMAGE_PATH="$(dirname "$IMAGE")/"
@@ -735,7 +735,7 @@ if [ "$1" ]; then
     *.bin.bz2|*.bin.bz) IMAGE_FILE_TYPE="bbz" ;;
   esac
 
-  BOOTLOADER="$(grep -m1 -e ^BOOTLOADER "$1" |awk '{print \$2}')"
+  BOOTLOADER="$(grep -m1 -e ^BOOTLOADER "$1" |awk '{print $2}')"
   if [ "$BOOTLOADER" = "" ]; then
     BOOTLOADER=$(echo "$DEFAULTLOADER" | awk '{ print $2 }')
   fi
@@ -743,7 +743,7 @@ if [ "$1" ]; then
 
   NEWHOSTNAME=$(grep -m1 -e ^HOSTNAME "$1" | awk '{print $2}')
 
-  GOVERNOR="$(grep -m1 -e ^GOVERNOR "$1" |awk '{print \$2}')"
+  GOVERNOR="$(grep -m1 -e ^GOVERNOR "$1" |awk '{print $2}')"
   if [ "$GOVERNOR" = "" ]; then GOVERNOR="ondemand"; fi
 
   SYSTEMDEVICE="$DRIVE1"
