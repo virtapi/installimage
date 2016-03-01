@@ -271,7 +271,7 @@ add_coreos_oem_scripts() {
 #! /bin/bash
 
 IFINDEX='$1'
-echo "ID_NET_NAME_SIMPLE=eth'$(('${IFINDEX}' - 2))'"
+echo "ID_NET_NAME_SIMPLE=eth'$(( IFINDEX - 2))'"
 EOF
     chmod a+x "$scriptfile"
     scriptfile="$scriptpath/rename-interfaces.sh"
