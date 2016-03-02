@@ -51,7 +51,7 @@ $ installimage ...
 ---
 
 ## Issues
-[Github Issues](https://www.github.com/virtapi/installimage/)
+[Github Issues](https://www.github.com/virtapi/installimage/issues)
 
 ---
 
