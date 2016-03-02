@@ -25,13 +25,13 @@ set softtabstop=2
 ```
 
 ## Multiline Output to File
-Group the output of multiple commands with braces and redirect this once into a file. Here is a bad example:
+Group the output of multiple commands with braces and redirect this once into a file. Also do not redict STDERR to a debugfile, this is useless for echos (`} > "$NETWORKFILE" 2>> "$DEBUGFILE"`).Here is a bad example:
 ```bash
 echo "### $COMPANY - installimage" > "$CONFIGFILE"
 echo "# Loopback device:" >> "$CONFIGFILE"
 echo "auto lo" >> "$CONFIGFILE"
 echo "iface lo inet loopback" >> "$CONFIGFILE"
-echo "" >> "$CONFIGFILE"
+echo "" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 ```
 
 The `{` and the `}` have to be in own lines and the content between them indented by two spaces. Here is another bad example:
