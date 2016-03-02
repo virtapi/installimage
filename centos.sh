@@ -19,57 +19,68 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
-    echo -e "### $COMPANY - installimage" > $UDEVFILE
-    echo -e "# device: $1" >> $UDEVFILE
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
     local upper_mac="${2^^*}"
 
     NETWORKFILE="$FOLD/hdd/etc/sysconfig/network"
-    echo -e "### $COMPANY - installimage" > "$NETWORKFILE" 2>> "$DEBUGFILE"
-    echo -e "# general networking" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
-    echo -e "NETWORKING=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# general networking"
+      echo "NETWORKING=yes"
+    } > "$NETWORKFILE"
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-$1"
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network-scripts/route-$1"
 
-    echo -e "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    echo "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
+    echo "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     if ! is_private_ip "$3"; then
-      echo -e "# Note for customers who want to create bridged networking for virtualisation:" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "# Gateway is set in separate file" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "# Do not forget to change interface in file route-$1 and rename this file" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "# Note for customers who want to create bridged networking for virtualisation:"
+        echo "# Gateway is set in separate file"
+        echo "# Do not forget to change interface in file route-$1 and rename this file"
+      } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     fi
-    echo -e "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "# device: $1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "DEVICE=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "BOOTPROTO=none" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo -e "ONBOOT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-
+    {
+      echo "#"
+      echo "# device: $1"
+      echo "DEVICE=$1"
+      echo "BOOTPROTO=none"
+      echo "ONBOOT=yes"
+    } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo -e "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
       if is_private_ip "$3"; then
-        echo -e "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo -e "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
       else
-        echo -e "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo -e "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        echo "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 
-        echo -e "### $COMPANY - installimage" > "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "# routing for eth0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "ADDRESS0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "NETMASK0=0.0.0.0" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
-        echo -e "GATEWAY0=$6" >> "$ROUTEFILE" 2>> "$DEBUGFILE"
+        {
+          echo "### $COMPANY - installimage"
+          echo "# routing for eth0"
+          echo "ADDRESS0=0.0.0.0"
+          echo "NETMASK0=0.0.0.0"
+          echo "GATEWAY0=$6"
+        } > "$ROUTEFILE" 2>> "$DEBUGFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      echo -e "NETWORKING_IPV6=yes" >> "$NETWORKFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6INIT=yes" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6ADDR=$8/$9" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6_DEFAULTGW=${10}" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo -e "IPV6_DEFAULTDEV=$1" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "NETWORKING_IPV6=yes"
+        echo "IPV6INIT=yes"
+        echo "IPV6ADDR=$8/$9"
+        echo "IPV6_DEFAULTGW=${10}"
+        echo "IPV6_DEFAULTDEV=$1"
+      } >> "$NETWORKFILE" 2>> "$DEBUGFILE"
     fi
 
     # set duplex/speed
@@ -79,7 +90,7 @@ setup_network_config() {
 
     # remove all hardware info from image (CentOS 5)
     if [ -f "$FOLD/hdd/etc/sysconfig/hwconf" ]; then
-      echo -e "" > "$FOLD/hdd/etc/sysconfig/hwconf"
+      echo "" > "$FOLD/hdd/etc/sysconfig/hwconf"
     fi
 
     return 0
@@ -109,38 +120,44 @@ generate_new_ramdisk() {
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
       # So we only add aliases for the controller
-      echo -e "### $COMPANY - installimage" > "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo -e "# load all modules" >> "$MODULESFILE" 2>> "$DEBUGFILE"
-      echo -e "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      {
+        echo "### $COMPANY - installimage"
+        echo "# load all modules"
+        echo ""
+        echo "# hdds"
+      } > "$MODULESFILE" 2>> "$DEBUGFILE"
 
-      echo -e "# hdds" >> "$MODULESFILE" 2>> "$DEBUGFILE"
       HDDDEV=""
       for hddmodule in $MODULES; do
         if [ "$hddmodule" != "powernow-k8" ] && [ "$hddmodule" != "via82cxxx" ] && [ "$hddmodule" != "atiixp" ]; then
-          echo -e "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
           HDDDEV="$((HDDDEV + 1))"
         fi
       done
-      echo -e "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
     elif [ "$IMG_VERSION" -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
       local -r blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-      echo -e "### $COMPANY - installimage" > "$blacklist_conf"
-      echo -e "### silence any onboard speaker" >> "$blacklist_conf"
-      echo -e "blacklist pcspkr" >> "$blacklist_conf"
-      echo -e "### i915 driver blacklisted due to various bugs" >> "$blacklist_conf"
-      echo -e "### especially in combination with nomodeset" >> "$blacklist_conf"
-      echo -e "blacklist i915" >> "$blacklist_conf"
+      {
+        echo "### $COMPANY - installimage"
+        echo "### silence any onboard speaker"
+        echo "blacklist pcspkr"
+        echo "### i915 driver blacklisted due to various bugs"
+        echo "### especially in combination with nomodeset"
+        echo "blacklist i915"
+      } > "$blacklist_conf"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
       declare -r DRACUTFILE="$FOLD/hdd/etc/dracut.conf.d/hetzner.conf"
-      echo 'add_dracutmodules+="mdraid lvm"' >> "$DRACUTFILE"
-      echo 'add_drivers+="raid1 raid10 raid0 raid456"' >> "$DRACUTFILE"
-      echo 'mdadmconf="yes"' >> "$DRACUTFILE"
-      echo 'lvmconf="yes"' >> "$DRACUTFILE"
-      echo 'hostonly="no"' >> "$DRACUTFILE"
-      echo 'early_microcode="no"' >> "$DRACUTFILE"
+      {
+        echo 'add_dracutmodules+="mdraid lvm"'
+        echo 'add_drivers+="raid1 raid10 raid0 raid456"'
+        echo 'mdadmconf="yes"'
+        echo 'lvmconf="yes"'
+        echo 'hostonly="no"'
+        echo 'early_microcode="no"'
+      } >> "$DRACUTFILE"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
@@ -170,20 +187,22 @@ setup_cpufreq() {
     else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
       local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
-      echo -e "" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "#!/bin/sh" > "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "### $COMPANY - installimage" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "# cpu frequency scaling" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      echo -e "# this gets started by /etc/rc.sysinit" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      {
+        echo "#!/bin/sh"
+        echo "### $COMPANY - installimage"
+        echo "# cpu frequency scaling"
+        echo "# this gets started by /etc/rc.sysinit"
+      } > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+
       if [ "$(check_cpu)" = "intel" ]; then
         debug "# Setting: cpufreq modprobe to intel"
-        echo -e "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-        echo -e "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       else
         debug "# Setting: cpufreq modprobe to amd"
-        echo -e "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       fi
-      echo -e "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
       chmod a+x "$CPUFREQCONF" >> "$DEBUGFILE"
 
     return 0
@@ -209,9 +228,9 @@ generate_config_grub() {
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
   local -i i=0
-  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-    local j="$((i - 1))"
-    local disk="$(eval echo "\$DRIVE"$i)"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    local j; j="$((i - 1))"
+    local disk; disk="$(eval echo "\$DRIVE"$i)"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
@@ -227,29 +246,30 @@ generate_config_grub() {
     #execute_chroot_command "grub-install --no-floppy $DRIVE1 2>&1"; declare -i EXITCODE="$?"
 
     BFILE="$FOLD/hdd/boot/grub/grub.conf"
-
-    rm -rf "$FOLD/hdd/boot/grub/*" >> /dev/null 2>&1
-
-    echo "#" > "$BFILE" 2>> "$DEBUGFILE"
-    echo "# $COMPANY - installimage" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "# GRUB bootloader configuration file" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "#" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-
-    PARTNUM=`echo "$SYSTEMBOOTDEVICE" | rev | cut -c1`
+    PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
 
     if [ "$SWRAID" = "0" ]; then
       PARTNUM="$((PARTNUM - 1))"
     fi
 
-    echo "timeout 5" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "default 0" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "title CentOS ($1)" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "root (hd0,$PARTNUM)" >> "$BFILE" 2>> "$DEBUGFILE"
+    rm -rf "$FOLD/hdd/boot/grub/*" >> /dev/null 2>&1
+
+    {
+      echo "#"
+      echo "# $COMPANY - installimage"
+      echo "# GRUB bootloader configuration file"
+      echo "#"
+      echo ''
+      echo "timeout 5"
+      echo "default 0"
+      echo >> "$BFILE"
+      echo "title CentOS ($1)"
+      echo "root (hd0,$PARTNUM)"
+    } > "$BFILE" 2>> "$DEBUGFILE"
+
     # disable pcie active state power management. does not work as it should,
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
-    [ "$(lspci -n | grep '8086:10d3')" ] && ASPM='pcie_aspm=off' || ASPM=''
+    lspci -n | grep -q '8086:10d3' && ASPM='pcie_aspm=off' || ASPM=''
 
     if [ "$IMG_VERSION" -ge 60 ]; then
       echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $ASPM" >> "$BFILE" 2>> "$DEBUGFILE"
@@ -293,16 +313,16 @@ generate_config_grub() {
 write_grub() {
   if [ "$IMG_VERSION" -ge 70 ] ; then
     # only install grub2 in mbr of all other drives if we use swraid
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" declare -i EXITCODE=$?
       fi
     done
   else
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ $i -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
       fi
     done
@@ -330,9 +350,8 @@ run_os_specific_functions() {
   fi
 
   # selinux autorelabel if enabled
-  if [ "$(egrep "SELINUX=enforcing" $FOLD/hdd/etc/sysconfig/selinux)" ] ; then
+  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux)" &&
     touch "$FOLD/hdd/.autorelabel"
-  fi
 
   return 0
 
@@ -349,11 +368,11 @@ setup_cpanel() {
 #
 randomize_cpanel_mysql_passwords() {
   CPHULKDCONF="$FOLD/hdd/var/cpanel/hulkd/password"
-  CPHULKDPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c16)
-  ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
-  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\""$CPHULKDPASS"\") WHERE user='cphulkd'; \
-  UPDATE mysql.user SET password=PASSWORD(\""$ROOTPASS"\") WHERE user='root';\nFLUSH PRIVILEGES;"
-  echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
+  CPHULKDPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  ROOTPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
+  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
+  UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
+  echo "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
   debug "changing mysql passwords"
   execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; declare -i EXITCODE=$?
   execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; declare -i EXITCODE=$?
@@ -364,7 +383,11 @@ randomize_cpanel_mysql_passwords() {
   rm "$CPHULKDCONF.old"
 
   # write password file
-  echo -e "[client]\nuser=root\npass=$ROOTPASS" > "$FOLD/hdd/root/.my.cnf"
+  {
+    echo "[client]"
+    echo "user=root"
+    echo "pass=$ROOTPASS"
+  } > "$FOLD/hdd/root/.my.cnf"
 
   return "$EXITCODE"
 }
@@ -396,3 +419,5 @@ modify_wwwacct() {
   execute_chroot_command "echo \"NS2 ${NS2}\" >> $WWWACCT"
   execute_chroot_command "echo \"NS3 ${NS3}\" >> $WWWACCT"
 }
+
+# vim: ai:ts=2:sw=2:et

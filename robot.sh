@@ -1,10 +1,11 @@
 #!/bin/bash
 
+# shellcheck disable=SC2125
 URL=?
 n=0
 
 while [ $n -lt 3 ]; do
-  wget --timeout=10 --no-check-certificate -O /dev/null $URL &>/dev/null
+  wget --timeout=10 --no-check-certificate -O /dev/null "$URL" &>/dev/null
   test $? -eq 0 && break
   let n++
   sleep 5
@@ -22,3 +23,5 @@ else
 fi
 
 rm -f /robot.sh
+
+# vim: ai:ts=2:sw=2:et
