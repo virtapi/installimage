@@ -9,6 +9,8 @@
 + [Escaping](#escaping)
 + [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
 + [Multiple Parameter Validation](#multiple-parameter-validation)
++ [Brackets Notation](#brackets-notation)
++ [Comments in Files](#comments-in-files)
 + [Inspiration](#inspiration)
 
 ---
@@ -23,13 +25,13 @@ set softtabstop=2
 ```
 
 ## Multiline Output to File
-Group the output of multiple commands with braces and redirect this once into a file. Here is a bad example:
+Group the output of multiple commands with braces and redirect this once into a file. Also do not redict STDERR to a debugfile, this is useless for echos (`} > "$NETWORKFILE" 2>> "$DEBUGFILE"`).Here is a bad example:
 ```bash
 echo "### $COMPANY - installimage" > "$CONFIGFILE"
 echo "# Loopback device:" >> "$CONFIGFILE"
 echo "auto lo" >> "$CONFIGFILE"
 echo "iface lo inet loopback" >> "$CONFIGFILE"
-echo "" >> "$CONFIGFILE"
+echo "" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 ```
 
 The `{` and the `}` have to be in own lines and the content between them indented by two spaces. Here is another bad example:
@@ -38,8 +40,10 @@ The `{` and the `}` have to be in own lines and the content between them indente
 echo "# Loopback device:"
 echo "auto lo"
 echo "iface lo inet loopback"
-echo "" } > "$CONFIGFILE"
+echo "" } > "$CONFIGFILE" 2>> "$DEBUGFILE"
 ```
+
+Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
 
 This good example is:
 ```bash
@@ -98,6 +102,20 @@ good example:
 ```bash
 if [ -n "$1" ] && [ -n "$2" ]; then
 ```
+
+## Brackets Notation
+We want to avoid useless whitespace in general, for example in brackets. here is a bad awk example:
+```bash
+awk '{ print $2 }'
+```
+
+and the correct one:
+```bash
+awk '{print $2}'
+```
+
+## Comments in Files
+There are two kinds of comments, those that contain higher level descriptions should be easily and clearly visible --> Empty comment line before and after. Commented code lines are without any empty comment lines.
 
 ## Inspiration
 This is loosely based on:
