@@ -1025,8 +1025,8 @@ validate_vars() {
       fi
 
       # Check if the partition size is a valid number
-      # shellcheck disable=SC2015 disable=SC2001
-      if [ "${PART_SIZE[$i]}" != "all" ] && [ "$(echo "${PART_SIZE[$i]}" | sed "s/[0-9]//g")" != "" ] || [ "${PART_SIZE[$i]}" = "0" ]; then
+      # shellcheck disable=SC2015
+      if [ "${PART_SIZE[$i]}" != "all" ] && [ ! -z "${PART_SIZE[$i]//[0-9]}" ] || [ "${PART_SIZE[$i]}" = "0" ]; then
         graph_error "ERROR: The size of the partiton PART ${PART_MOUNT[$i]} is not a valid number"
         return 1
       fi
@@ -1169,8 +1169,8 @@ validate_vars() {
 #      graph_error "ERROR: centos doesn't support xfs on partition /"
 #      return 1
 #    fi
-    # shellcheck disable=SC2001 disable=SC2015
-    if [ "$lv_size" != "all" ] && [ "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" ] || [ "$lv_size" = "0" ]; then
+    # shellcheck disable=SC2015
+    if [ "$lv_size" != "all" ] && [ ! -z "${lv_size//[0-9]}" ] || [ "$lv_size" = "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
       return 1
     fi
