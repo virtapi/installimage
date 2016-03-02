@@ -9,6 +9,7 @@
 + [Escaping](#escaping)
 + [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
 + [Multiple Parameter Validation](#multiple-parameter-validation)
++ [Brackets Notation](#brackets-notation)
 + [Inspiration](#inspiration)
 
 ---
@@ -97,6 +98,17 @@ if [ "$1" -a "$2" ]; then
 good example:
 ```bash
 if [ -n "$1" ] && [ -n "$2" ]; then
+```
+
+## Brackets Notation
+We want to avoid useless whitespace in general, for example in brackets. here is a bad awk example:
+```bash
+awk '{ print $2 }'
+```
+
+and the correct one:
+```bash
+awk '{print $2}'
 ```
 
 ## Inspiration
