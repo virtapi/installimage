@@ -104,9 +104,12 @@ else
       debug "$DIATITLE"
       debug "$FOLD"
       while [ -z "$IMAGENAME" ] || [ "$IMAGENAME" = "back" ]; do
+        OLDIFS="$IFS"
+        IFS=$'\n'
         # we want $OSMENULIST to expand here
         # shellcheck disable=SC2086
-        dialog --backtitle "$DIATITLE" --title "o/s list" --no-cancel --menu "choose o/s" 0 0 0 $OSMENULIST "exit" "" 2> "$FOLD/mainmenu.chosen"
+        dialog --backtitle "$DIATITLE" --title "o/s list" --no-cancel --menu "choose o/s" 0 0 0 ${OSMENULIST[*]} "exit" "" 2> "$FOLD/mainmenu.chosen"
+        IFS="$OLDIFS"
         MAINMENUCHOSEN=$(cat "$FOLD/mainmenu.chosen")
         case "$MAINMENUCHOSEN" in
           "exit")
@@ -114,7 +117,7 @@ else
             cleanup
             exit 1
           ;;
-          "custom_image")
+          "custom image")
             IMAGENAME="custom"
           ;;
           *)
