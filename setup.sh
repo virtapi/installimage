@@ -53,7 +53,7 @@ if [ "$OPT_AUTOMODE" ] ; then
       VALIDATED="true"
     else
       debug "=> FAILED"
-      mcedit "$FOLD"/install.conf
+      mcedit "$FOLD/install.conf"
     fi
   done
 
@@ -152,7 +152,7 @@ else
     while [ "$VALIDATED" = "false" ]; do
       debug "# starting mcedit..."
       whoami "$IMAGENAME"
-      mcedit "$FOLD"/install.conf; EXITCODE=$?
+      mcedit "$FOLD/install.conf"; EXITCODE=$?
       [ $EXITCODE != 0 ] && debug "=> FAILED"
       debug "# validating vars..."
       validate_vars "$FOLD/install.conf"; EXITCODE=$?
