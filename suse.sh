@@ -234,7 +234,7 @@ generate_config_grub() {
       echo 'title Linux (openSUSE)'
       echo "root (hd0,$PARTNUM)"
       echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317"
-    } >> "$BFILE" 2>> "$DEBUGFILE"
+    } >> "$BFILE"
 
     if [ -f "$FOLD/hdd/boot/initrd-$1" ]; then
       echo "initrd /boot/initrd-$1" >> "$BFILE" 2>> "$DEBUGFILE"
