@@ -84,7 +84,7 @@ gather_network_information
 # Read configuration
 #
 status_busy_nostep "Reading configuration"
-read_vars "$FOLD"/install.conf
+read_vars "$FOLD/install.conf"
 status_donefailed $?
 
 #
@@ -103,7 +103,7 @@ status_busy_nostep "Loading $IAM specific functions "
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
   # shellcheck disable=SC1090 disable=SC2069
-  . "$SCRIPTPATH"/"$IAM".sh 2>&1 > /dev/null
+  . "$SCRIPTPATH/$IAM".sh 2>&1 > /dev/null
   status_done
 else
   status_failed
@@ -192,7 +192,7 @@ fi
 #
 inc_step
 status_none "Formatting partitions"
-grep "^/dev/" "$FOLD"/fstab > /tmp/fstab.tmp
+grep "^/dev/" "$FOLD/fstab" > /tmp/fstab.tmp
 while read -r line ; do
   DEV="$(echo "$line" |cut -d " " -f 1)"
   FS="$(echo "$line" |cut -d " " -f 3)"
@@ -520,9 +520,9 @@ report_debuglog "$report_id"
   echo
   grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
 ) > "$FOLD"/hdd/installimage.conf
-cat /root/debug.txt > "$FOLD"/hdd/installimage.debug
-chmod 640 "$FOLD"/hdd/installimage.conf
-chmod 640 "$FOLD"/hdd/installimage.debug
+cat /root/debug.txt > "$FOLD/hdd/installimage.debug"
+chmod 640 "$FOLD/hdd/installimage.conf"
+chmod 640 "$FOLD/hdd/installimage.debug"
 
 echo
 echo_bold "                  INSTALLATION COMPLETE"
