@@ -80,8 +80,8 @@ EOF
 aptitude --without-recommends -y install postfix proxmox-ve-"$PROXMOX_KERNEL_VERSION"
 if [ -f /etc/apt/sources.list.d/pve-enterprise.list ]; then
 	echo ""
-echo "----- Removing Proxmox Enterprise Repo -----"
-echo ""
+  echo "----- Removing Proxmox Enterprise Repo -----"
+  echo ""
 	rm /etc/apt/sources.list.d/pve-enterprise.list
 fi
 update-grub
