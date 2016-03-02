@@ -31,7 +31,7 @@ setup_network_config() {
       echo "### $COMPANY - installimage"
       echo "# general networking"
       echo "NETWORKING=yes"
-    } > "$NETWORKFILE" 2>> "$DEBUGFILE"
+    } > "$NETWORKFILE"
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-$1"
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network-scripts/route-$1"
