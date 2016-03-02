@@ -17,7 +17,7 @@ setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     # good we have a device and a MAC
 
-    SUSEVERSION="$(grep VERSION $FOLD/hdd/etc/SuSE-release | cut -d ' '  -f3 | sed -e 's/\.//')"
+    SUSEVERSION="$(grep VERSION "$FOLD/hdd/etc/SuSE-release" | cut -d ' '  -f3 | sed -e 's/\.//')"
     debug "# Version: ${SUSEVERSION}"
 
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network/routes"
@@ -27,35 +27,41 @@ setup_network_config() {
       UDEVFILE="/dev/null"
     fi
     # Delete network udev rules
-#    rm $FOLD/hdd/etc/udev/rules.d/*-persistent-net.rules 2>&1 | debugoutput
+#    rm "$FOLD"/hdd/etc/udev/rules.d/*-persistent-net.rules 2>&1 | debugoutput
 
     echo "### $COMPANY - installimage" > $UDEVFILE
     echo "# device: $1" >> $UDEVFILE
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
     # remove any other existing config files
-    for i in `find "$FOLD/hdd/etc/sysconfig/network/" -name "*-eth*"`; do rm -rf "$i" >>/dev/null 2>&1; done
+    find "$FOLD/hdd/etc/sysconfig/network/" -name "*-eth*" -delete
 
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network/ifcfg-$1"
 
-    echo "### $COMPANY - installimage" > "$CONFIGFILE"
-    echo "# device: $1" >> "$CONFIGFILE"
-    echo "BOOTPROTO='static'" >> "$CONFIGFILE"
-    echo "MTU=''" >> "$CONFIGFILE"
-    echo "STARTMODE='auto'" >> "$CONFIGFILE"
-    echo "UNIQUE=''" >> "$CONFIGFILE"
-    echo "USERCONTROL='no'" >> "$CONFIGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      echo "BOOTPROTO='static'"
+      echo "MTU=''"
+      echo "STARTMODE='auto'"
+      echo "UNIQUE=''"
+      echo "USERCONTROL='no'"
+    } > "$CONFIGFILE"
 
     if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo "REMOTE_IPADDR=''" >> "$CONFIGFILE"
-      echo "BROADCAST='$4'" >> "$CONFIGFILE"
-      echo "IPADDR='$3'" >> "$CONFIGFILE"
-      echo "NETMASK='$5'" >> "$CONFIGFILE"
-      echo "NETWORK='$7'" >> "$CONFIGFILE"
+      {
+        echo "REMOTE_IPADDR=''"
+        echo "BROADCAST='$4'"
+        echo "IPADDR='$3'"
+        echo "NETMASK='$5'"
+        echo "NETWORK='$7'"
+      } >> "$CONFIGFILE"
 
-      echo "$7 $6 $5 $1" > "$ROUTEFILE"
-      echo "$6 - 255.255.255.255 $1" >> "$ROUTEFILE"
-      echo "default $6 - -" >> "$ROUTEFILE"
+      {
+        echo "$7 $6 $5 $1"
+        echo "$6 - 255.255.255.255 $1"
+        echo "default $6 - -"
+      } > "$ROUTEFILE"
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
@@ -86,14 +92,14 @@ generate_config_mdadm() {
     if [ "$SUSEVERSION" -ge 132 ] ; then
       echo >> "$FOLD/hdd$MDADMCONF"
     fi
-#    if [ "$SUSEVERSION" = "11.0" -o "$SUSEVERSION" = "11.2" -o "$SUSEVERSION" = "11.3" -o "$SUSEVERSION" = "11.4" -o "$SUSEVERSION" = "12.1"  -o "$SUSEVERSION" = "12.2" ]; then
+#    if [ "$SUSEVERSION" = "11.0" ] || [ "$SUSEVERSION" = "11.2" ] || [ "$SUSEVERSION" = "11.3" ] || [ "$SUSEVERSION" = "11.4" ] || [ "$SUSEVERSION" = "12.1"  ] || [ "$SUSEVERSION" = "12.2" ]; then
     if [ "$SUSEVERSION" -ge 110 ]; then
       # Suse 11.2 argues about failing opening of /dev/md/<number>, so do a --examine instead of --details
       execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; declare -i EXITCODE=$?
     else
       execute_chroot_command "mdadm --detail --scan >> $MDADMCONF"; declare -i EXITCODE=$?
     fi
-    return $EXITCODE
+    return "$EXITCODE"
   fi
 }
 
@@ -114,16 +120,18 @@ generate_new_ramdisk() {
     fi
 
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/99-local.conf"
-    echo "### $COMPANY - installimage" > "$blacklist_conf"
-    echo '### silence any onboard speaker' >> "$blacklist_conf"
-    echo 'blacklist pcspkr' >> "$blacklist_conf"
-    echo 'blacklist snd_pcsp' >> "$blacklist_conf"
-    echo '### i915 driver blacklisted due to various bugs' >> "$blacklist_conf"
-    echo '### especially in combination with nomodeset' >> "$blacklist_conf"
-    echo 'blacklist i915' >> "$blacklist_conf"
-    echo '### mei driver blacklisted due to serious bugs' >> "$blacklist_conf"
-    echo 'blacklist mei' >> "$blacklist_conf" >> "$blacklist_conf"
-    echo 'blacklist mei-me' >> "$blacklist_conf">> "$blacklist_conf"
+    {
+      echo "### $COMPANY - installimage"
+      echo '### silence any onboard speaker'
+      echo 'blacklist pcspkr'
+      echo 'blacklist snd_pcsp'
+      echo '### i915 driver blacklisted due to various bugs'
+      echo '### especially in combination with nomodeset'
+      echo 'blacklist i915'
+      echo '### mei driver blacklisted due to serious bugs'
+      echo 'blacklist mei'
+      echo 'blacklist mei-me'
+    } > "$blacklist_conf"
 
     local dracut_feature=''
     local dracut_modules=''
@@ -166,9 +174,9 @@ setup_cpufreq() {
      # check release notes of furture releases carefully, if this has changed!
 
 #    CPUFREQCONF="$FOLD/hdd/etc/init.d/boot.local"
-#    echo -e "### $COMPANY - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
-#    echo -e "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
-#    echo -e "cpufreq-set -g $1 -r >> /dev/null 2>&1" >> $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "### $COMPANY - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
+#    echo "cpufreq-set -g $1 -r >> /dev/null 2>&1" >> $CPUFREQCONF 2>>$DEBUGFILE
 
     return 0
   fi
@@ -195,9 +203,9 @@ generate_config_grub() {
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
   local -i i=0
-  for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-    local j="$((i - 1))"
-    local disk="$(eval echo "\$DRIVE"$i)"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    local j; j="$((i - 1))"
+    local disk; disk="$(eval echo "\$DRIVE"$i)"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
@@ -205,11 +213,13 @@ generate_config_grub() {
   if [ "$SUSEVERSION" -lt 122 ]; then
     BFILE="$FOLD/hdd/boot/grub/menu.lst"
 
-    echo '#' > "$BFILE" 2>> "$DEBUGFILE"
-    echo "# $COMPANY - installimage" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo '# GRUB bootloader configuration file' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo '#' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
+    {
+      echo '#'
+      echo "# $COMPANY - installimage"
+      echo '# GRUB bootloader configuration file'
+      echo '#'
+      echo ''
+    } > "$BFILE" 2>> "$DEBUGFILE"
 
     PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
 
@@ -217,12 +227,14 @@ generate_config_grub() {
       PARTNUM="$((PARTNUM - 1))"
     fi
 
-    echo 'timeout 5' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo 'default 0' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-    echo 'title Linux (openSUSE)' >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "root (hd0,$PARTNUM)" >> "$BFILE" 2>> "$DEBUGFILE"
-    echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317" >> "$BFILE" 2>> "$DEBUGFILE"
+    {
+      echo 'timeout 5'
+      echo 'default 0'
+      echo ''
+      echo 'title Linux (openSUSE)'
+      echo "root (hd0,$PARTNUM)"
+      echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317"
+    } >> "$BFILE"
 
     if [ -f "$FOLD/hdd/boot/initrd-$1" ]; then
       echo "initrd /boot/initrd-$1" >> "$BFILE" 2>> "$DEBUGFILE"
@@ -240,7 +252,7 @@ generate_config_grub() {
       grub_linux_default="${grub_linux_default} elevater=noop"
     fi
     # H8SGL need workaround for iommu
-    if [ -n "$(dmidecode -s baseboard-product-name | grep -i h8sgl)" -a $IMG_VERSION -ge 131 ] ; then
+    if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ "$IMG_VERSION" -ge 131 ] ; then
       grub_linux_default="${grub_linux_default} iommu=noaperture"
     fi
 
@@ -249,14 +261,14 @@ generate_config_grub() {
 
     execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"'
 
-    [ -e $FOLD/hdd/boot/grub2/grub.cfg ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
+    rm -f "$FOLD/hdd/boot/grub2/grub.cfg"
     execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"
 
     # the opensuse mkinitrd uses this file to determine where to write the bootloader...
     GRUBINSTALLDEV_FILE="$FOLD/hdd/etc/default/grub_installdevice"
     [ -f "$GRUBINSTALLDEV_FILE" ] && rm "$GRUBINSTALLDEV_FILE"
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-      local disk="$(eval echo "\$DRIVE"$i)"
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
+      local disk; disk="$(eval echo "\$DRIVE"$i)"
       echo "$disk" >> "$GRUBINSTALLDEV_FILE"
     done
     echo "generic_mbr" >> "$GRUBINSTALLDEV_FILE"
@@ -275,17 +287,17 @@ write_grub() {
   if [ "$SUSEVERSION" -lt 122 ]; then
     execute_chroot_command "rm -rf /etc/lilo.conf"
 
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ $i -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
       fi
     done
   else
     # only install grub2 in mbr of all other drives if we use swraid
-    for ((i=1; i<="$COUNT_DRIVES"; i++)); do
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-        local disk="$(eval echo "\$DRIVE"$i)"
+        local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" declare -i EXITCODE="$?"
       fi
     done
@@ -304,3 +316,4 @@ run_os_specific_functions() {
   return 0
 }
 
+# vim: ai:ts=2:sw=2:et

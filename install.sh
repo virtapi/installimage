@@ -14,32 +14,33 @@ CURSTEP=0
 
 # read global variables and functions
 clear
+# shellcheck disable=SC1091
 . /tmp/install.vars
 
 
 inc_step() {
-  CURSTEP=$(($CURSTEP + 1))
+  CURSTEP=$((CURSTEP + 1))
 }
 
 status_busy() {
   local step="$CURSTEP"
-  test $CURSTEP -lt 10 && step=" $CURSTEP"
-  echo -ne "  $step/$TOTALSTEPS  :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
-  debug "# $@"
+  test "$CURSTEP" -lt 10 && step=" $CURSTEP"
+  echo -n -e "  $step/$TOTALSTEPS  :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
+  debug "# $*"
 }
 
 status_busy_nostep() {
-  echo -ne "         :  $@ $STATUS_POSITION${CYAN} busy $NOCOL"
+  echo -n -e "         :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
 }
 
 status_none() {
   local step="$CURSTEP"
-  test $CURSTEP -lt 10 && step=" $CURSTEP"
-  echo -e "  $step/$TOTALSTEPS  :  $@"
+  test "$CURSTEP" -lt 10 && step=" $CURSTEP"
+  echo -e "  $step/$TOTALSTEPS  :  $*"
 }
 
 status_none_nostep() {
-  echo -e "         :  $@"
+  echo -e "         :  $*"
 }
 
 status_done() {
@@ -48,7 +49,7 @@ status_done() {
 
 status_failed() {
   echo -e "$STATUS_POSITION${RED}failed$NOCOL"
-  [ $# -gt 0 ] && echo -e "${RED}         :  $@${NOCOL}"
+  [ $# -gt 0 ] && echo "${RED}         :  $*${NOCOL}"
   debug "=> FAILED"
   exit_function
   exit 1
@@ -56,11 +57,11 @@ status_failed() {
 
 status_warn() {
   echo -e "$STATUS_POSITION${YELLOW} warn"
-  echo -e "         :  $@${NOCOL}"
+  echo -e "         :  $*${NOCOL}"
 }
 
 status_donefailed() {
-  if [ "$1" -a $1 -eq 0 ]; then
+  if [ "$1" ] && [ "$1" -eq 0 ]; then
     status_done
   else
     status_failed
@@ -83,7 +84,7 @@ gather_network_information
 # Read configuration
 #
 status_busy_nostep "Reading configuration"
-read_vars $FOLD/install.conf
+read_vars "$FOLD/install.conf"
 status_donefailed $?
 
 #
@@ -97,20 +98,21 @@ status_donefailed $?
 # change sizes of DOS partitions
 check_dos_partitions "no_output"
 
-whoami $IMAGE_FILE
+whoami "$IMAGE_FILE"
 status_busy_nostep "Loading $IAM specific functions "
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
-  . $SCRIPTPATH/$IAM.sh 2>&1 > /dev/null
+  # shellcheck disable=SC1090 disable=SC2069
+  . "$SCRIPTPATH/$IAM".sh 2>&1 > /dev/null
   status_done
 else
   status_failed
 fi
 
-test "$SWRAID" = "1" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$LVM" = "1" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$OPT_INSTALL" && TOTALSTEPS=$(($TOTALSTEPS + 1))
-test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$(($TOTALSTEPS + 1))
+test "$SWRAID" = "1" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$LVM" = "1" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$OPT_INSTALL" && TOTALSTEPS=$((TOTALSTEPS + 1))
+test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$((TOTALSTEPS + 1))
 
 #
 # Remove partitions
@@ -121,9 +123,9 @@ status_busy "Deleting partitions"
 unmount_all
 stop_lvm_raid
 
-for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" -o "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
-    TARGETDISK="$(eval echo \$DRIVE${part_inc})"
+for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
+  if [ "$(eval echo "\$FORMAT_DRIVE${part_inc}")" = "1" ] || [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
+    TARGETDISK="$(eval echo "\$DRIVE${part_inc}")"
     debug "# Deleting partitions on $TARGETDISK"
     delete_partitions "$TARGETDISK" || status_failed
   fi
@@ -147,11 +149,11 @@ status_done
 inc_step
 status_busy "Creating partitions and /etc/fstab"
 
-for part_inc in $(seq 1 $COUNT_DRIVES) ; do
-  if [ "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
-    TARGETDISK="$(eval echo \$DRIVE${part_inc})"
+for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
+  if [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
+    TARGETDISK="$(eval echo "\$DRIVE${part_inc}")"
     debug "# Creating partitions on $TARGETDISK"
-    create_partitions $TARGETDISK || status_failed
+    create_partitions "$TARGETDISK" || status_failed
   fi
 done
 
@@ -180,7 +182,7 @@ if [ "$LVM" = "1" ]; then
   if [ $LVM_EXIT -eq 2 ] ; then
     status_failed "LVM thin-pool detected! Can't remove automatically!"
   else
-    status_donefailed $LVM_EXIT
+    status_donefailed "$LVM_EXIT"
   fi
 fi
 
@@ -190,10 +192,10 @@ fi
 #
 inc_step
 status_none "Formatting partitions"
-cat $FOLD/fstab | grep "^/dev/" > /tmp/fstab.tmp
-while read line ; do
-  DEV="$(echo $line |cut -d " " -f 1)"
-  FS="$(echo $line |cut -d " " -f 3)"
+grep "^/dev/" "$FOLD/fstab" > /tmp/fstab.tmp
+while read -r line ; do
+  DEV="$(echo "$line" |cut -d " " -f 1)"
+  FS="$(echo "$line" |cut -d " " -f 3)"
   status_busy_nostep "  formatting $DEV with $FS"
   format_partitions "$DEV" "$FS"
   status_donefailed $?
@@ -247,7 +249,7 @@ IMPORT_EXIT=$?
 if [ $IMPORT_EXIT -eq 2 ] ; then
   status_warn "No public key found!"
 else
-  status_donefailed $IMPORT_EXIT
+  status_donefailed "$IMPORT_EXIT"
 fi
 
 #
@@ -257,7 +259,7 @@ inc_step
 status_busy "Validating image before starting extraction"
 validate_image
 VALIDATE_EXIT=$?
-if [ -n "$FORCE_SIGN" -o -n "$OPT_FORCE_SIGN" ] && [ $VALIDATE_EXIT -gt 0 ] ; then
+if [ -n "$FORCE_SIGN" ] || [ -n "$OPT_FORCE_SIGN" ] && [ $VALIDATE_EXIT -gt 0 ] ; then
   debug "FORCE_SIGN set, but validation failed!"
   status_failed
 fi
@@ -266,7 +268,7 @@ if [ $VALIDATE_EXIT -eq 3 ] ; then
 elif [ $VALIDATE_EXIT -eq 2 ] ; then
   status_warn "No detached signature file found!"
 else
-  status_donefailed $VALIDATE_EXIT
+  status_donefailed "$VALIDATE_EXIT"
 fi
 
 #
@@ -366,7 +368,7 @@ if [ -n "$OPT_SSHKEYS_URL" ] ; then
     status_donefailed $?
 fi
 
-if [ "$OPT_USE_SSHKEYS" = "1" -a -z "$FORCE_PASSWORD" ]; then
+if [ "$OPT_USE_SSHKEYS" = "1" ] && [ -z "$FORCE_PASSWORD" ]; then
   status_busy_nostep "  Disabling root password"
   set_rootpassword "$FOLD/hdd/etc/shadow" "*"
   status_donefailed $?
@@ -397,14 +399,14 @@ inc_step
 status_busy "Installing bootloader $BOOTLOADER"
 
 debug "# Generating config for $BOOTLOADER"
-if [ "$BOOTLOADER" = "grub" -o "$BOOTLOADER" = "GRUB" ]; then
+if [ "$BOOTLOADER" = "grub" ] || [ "$BOOTLOADER" = "GRUB" ]; then
   generate_config_grub "$VERSION" || status_failed
 else
   generate_config_lilo "$VERSION" || status_failed
 fi
 
 debug "# Writing bootloader $BOOTLOADER into MBR"
-if [ "$BOOTLOADER" = "grub" -o "$BOOTLOADER" = "GRUB" ]; then
+if [ "$BOOTLOADER" = "grub" ] || [ "$BOOTLOADER" = "GRUB" ]; then
   write_grub "NIL" || status_failed
 else
   write_lilo "NIL" || status_failed
@@ -419,9 +421,10 @@ status_done
 if [ "$OPT_INSTALL" ]; then
   inc_step
   status_none "Installing additional software"
-  opt_install_items="$(echo $OPT_INSTALL | sed s/,/\\n/g)"
+  # shellcheck disable=SC2001
+  opt_install_items="$(echo "$OPT_INSTALL" | sed s/,/\\n/g)"
   for opt_item in $opt_install_items; do
-    opt_item=$(echo $opt_item | tr [:upper:] [:lower:])
+    opt_item=$(echo "$opt_item" | tr "[:upper:]" "[:lower:]")
     case "$opt_item" in
       plesk*)
         status_busy_nostep "  Installing PLESK Control Panel"
@@ -476,10 +479,10 @@ fi
 #
 ### report SSH fingerprints to URL where we got the pubkeys from (or not)
 if [ -n "$OPT_SSHKEYS_URL" ] ; then
-  case $OPT_SSHKEYS_URL in
+  case "$OPT_SSHKEYS_URL" in
     https:*|http:*)
       debug "# Reporting SSH fingerprints..."
-      curl -s -m 10 -X POST -H "Content-Type: application/json" -d @"$FOLD/ssh_fingerprints" $OPT_SSHKEYS_URL -o /dev/null
+      curl -s -m 10 -X POST -H "Content-Type: application/json" -d @"$FOLD/ssh_fingerprints" "$OPT_SSHKEYS_URL" -o /dev/null
     ;;
     *)
       debug "# cannot POST SSH fingerprints to non-HTTP URLs"
@@ -497,7 +500,7 @@ report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$E
 # Report debug.txt to rz_admin
 #
 report_id="$(report_config)"
-report_debuglog $report_id
+report_debuglog "$report_id"
 
 #
 # Save installimage configuration and debug file on the new system
@@ -515,13 +518,15 @@ report_debuglog $report_id
   echo "# http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
   echo "#"
   echo
-  cat $FOLD/install.conf | grep -v "^#" | grep -v "^$"
-) > $FOLD/hdd/installimage.conf
-cat /root/debug.txt > $FOLD/hdd/installimage.debug
-chmod 640 $FOLD/hdd/installimage.conf
-chmod 640 $FOLD/hdd/installimage.debug
+  grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
+) > "$FOLD"/hdd/installimage.conf
+cat /root/debug.txt > "$FOLD/hdd/installimage.debug"
+chmod 640 "$FOLD/hdd/installimage.conf"
+chmod 640 "$FOLD/hdd/installimage.debug"
 
 echo
 echo_bold "                  INSTALLATION COMPLETE"
 echo_bold "   You can now reboot and log in to your new system with"
 echo_bold "  the same password as you logged in to the rescue system.\n"
+
+# vim: ai:ts=2:sw=2:et

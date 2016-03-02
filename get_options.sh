@@ -11,7 +11,7 @@
 
 # check command line params / options
 while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
-  case $OPTION in
+  case "$OPTION" in
 
     # help
     h)
@@ -67,43 +67,44 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # config file  (file.name)
     c)
-      if [ -e $CONFIGSPATH/$OPTARG ] ; then
-        OPT_CONFIGFILE=$CONFIGSPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
-        OPT_CONFIGFILE=$OPTARG
+      if [ -e "$CONFIGSPATH/$OPTARG" ] ; then
+        OPT_CONFIGFILE="$CONFIGSPATH/$OPTARG"
+      elif [ -e "$OPTARG" ] ; then
+        OPT_CONFIGFILE="$OPTARG"
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        debug "$msg"
+        echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
-      echo $OPT_CONFIGFILE | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
-      cp $OPT_CONFIGFILE /autosetup
+      echo "$OPT_CONFIGFILE" | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
+      cp "$OPT_CONFIGFILE" /autosetup
       if grep -q PASSWD /autosetup ; then
         echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
-        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}\n"
-        echo -en "PASSWORD:  "
-        read -s imagepasswd
+        echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
+        echo ""
+        echo -n "PASSWORD:  "
+        read -r -s imagepasswd
         sed -i /autosetup -e "s/PASSWD/$imagepasswd/"
       fi
     ;;
 
     # post-install file  (file.name)
     x)
-      if [ -e $POSTINSTALLPATH/$OPTARG ] ; then
-        OPT_POSTINSTALLFILE=$POSTINSTALLPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
-        OPT_POSTINSTALLFILE=$OPTARG
+      if [ -e "$POSTINSTALLPATH/$OPTARG" ] ; then
+        OPT_POSTINSTALLFILE="$POSTINSTALLPATH/$OPTARG"
+      elif [ -e "$OPTARG" ] ; then
+        OPT_POSTINSTALLFILE="$OPTARG"
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        debug "$msg"
+        echo "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
-      echo $OPT_POSTINSTALLFILE | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
-      ln -fs $OPT_POSTINSTALLFILE /post-install
+      echo "$OPT_POSTINSTALLFILE" | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
+      ln -fs "$OPT_POSTINSTALLFILE" /post-install
     ;;
 
     # automatic mode
@@ -111,31 +112,31 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # hostname  (host.domain.tld)
     n)
-      OPT_HOSTNAME=$OPTARG
+      OPT_HOSTNAME="$OPTARG"
       if [ -e /autosetup ]; then
 	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
       fi
     ;;
 
     # bootloader  (lilo|grub)
-    b) OPT_BOOTLOADER=$OPTARG ;;
+    b) OPT_BOOTLOADER="$OPTARG" ;;
 
     # raid  (on|off|true|false|yes|no|0|1)
     r)
-      case $OPTARG in
+      case "$OPTARG" in
         off|false|no|0) OPT_SWRAID=0 ;;
         on|true|yes|1)  OPT_SWRAID=1 ;;
       esac
     ;;
 
     # raidlevel  (0|1)
-    l) OPT_SWRAIDLEVEL=$OPTARG ;;
+    l) OPT_SWRAIDLEVEL="$OPTARG" ;;
 
     # image
     # e.g.: file.tar.gz | http://domain.tld/file.tar.gz
     i)
       [ -f "$IMAGESPATH/$OPTARG" ] && OPT_IMAGE="$IMAGESPATH/$OPTARG" || OPT_IMAGE="$OPTARG"
-      IMAGENAME=$(basename $OPT_IMAGE)
+      IMAGENAME=$(basename "$OPT_IMAGE")
       IMAGENAME=${IMAGENAME/.tar.gz/}
       IMAGENAME=${IMAGENAME/.tar.bz/}
       IMAGENAME=${IMAGENAME/.tar.bz2/}
@@ -151,7 +152,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # partitions
     # e.g.: swap:swap:4G,/boot:ext2:256M,/:ext3:all | /boot:ext2:256M,lvm:vg0:all
     p)
-      OPT_PARTITIONS=$OPTARG
+      OPT_PARTITIONS="$OPTARG"
       OPT_PARTS=''
       OLD_IFS="$IFS"
       IFS=","
@@ -168,7 +169,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # logical volumes
     # e.g.: vg0:swap:swap:swap:4G,vg0:root:/:ext3:20G,vg0:tmp:/tmp:ext3:5G
     v)
-      OPT_VOLUMES=$OPTARG
+      OPT_VOLUMES="$OPTARG"
       OPT_LVS=''
       OLD_IFS="$IFS"
       IFS=","
@@ -185,8 +186,9 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # drives
     # e.g.: sda,sdb | sda
     d)
-      OPT_DRIVES=$OPTARG
-      sel_drives="$(echo $OPT_DRIVES | sed s/,/\\n/g)"
+      OPT_DRIVES="$OPTARG"
+      # shellcheck disable=SC2001
+      sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
@@ -196,7 +198,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # format second drive  (on|off|true|false|yes|no|0|1)
     f)
-      case $OPTARG in
+      case "$OPTARG" in
         off|false|no|0) export OPT_FORMATDRIVE2=0 ;;
         on|true|yes|1)  export OPT_FORMATDRIVE2=1 ;;
       esac
@@ -213,7 +215,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
     R)
-      ROBOTURL=$OPTARG
+      export ROBOTURL="$OPTARG"
       ;;
 
     # force signature validating of the image file
@@ -226,8 +228,8 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
        export OPT_USE_SSHKEYS="1"
      else
         msg="=> FAILED: cannot install ssh-keys without a source"
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        debug "$msg"
+        echo "${RED}$msg${NOCOL}"
         exit 1
      fi
      ;;
@@ -236,16 +238,18 @@ done
 
 
 # VALIDATION
-if [ "$OPT_AUTOMODE" -a -z "$OPT_IMAGE" -a -z "$OPT_CONFIGFILE" ] ; then
-  echo -e "\n${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}\n"
+if [ -n "$OPT_AUTOMODE" ] && [ -z "$OPT_IMAGE" ] && [ -z "$OPT_CONFIGFILE" ] ; then
+  echo ""
+  echo -e "${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}"
+  echo ""
   debug "=> FAILED, no image given"
   exit 1
 fi
 
-if [ "$OPT_USE_SSHKEYS" -a -z "$OPT_SSHKEYS_URL" ]; then
+if [ -n "$OPT_USE_SSHKEYS" ] && [ -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
+        debug "$msg"
+        echo "${RED}$msg${NOCOL}"
         exit 1
 fi
 
@@ -265,4 +269,4 @@ fi
 [ "$OPT_USE_SSHKEYS" ]  && debug "# OPT_USE_SSHKEYS:  $OPT_USE_SSHKEYS"
 [ "$OPT_SSHKEYS_URL" ]  && debug "# OPT_SSHKEYS_URL:  $OPT_SSHKEYS_URL"
 
-
+# vim: ai:ts=2:sw=2:et
