@@ -40,8 +40,10 @@ The `{` and the `}` have to be in own lines and the content between them indente
 echo "# Loopback device:"
 echo "auto lo"
 echo "iface lo inet loopback"
-echo "" } > "$CONFIGFILE"
+echo "" } > "$CONFIGFILE" 2>> "$DEBUGFILE"
 ```
+
+besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
 
 This good example is:
 ```bash
