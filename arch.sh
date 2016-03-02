@@ -21,11 +21,13 @@ setup_network_config() {
     echo "# device: $1" >> "$UDEVFILE"
     printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
 
-    { echo "### $COMPANY - installimage"
-    echo "# device: $1"
-    echo "[Match]"
-    echo "MACAddress=$2"
-    echo ""; } > "$CONFIGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      echo "[Match]"
+      echo "MACAddress=$2"
+      echo ""
+    } > "$CONFIGFILE"
 
     echo "[Network]" >> "$CONFIGFILE"
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
@@ -70,16 +72,18 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ "$1" ]; then
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
-    { echo "### $COMPANY - installimage"
-    echo "### silence any onboard speaker"
-    echo "blacklist pcspkr"
-    echo "blacklist snd_pcsp"
-    echo "### i915 driver blacklisted due to various bugs"
-    echo "### especially in combination with nomodeset"
-    echo "blacklist i915"
-    echo "### mei driver blacklisted due to serious bugs"
-    echo "blacklist mei"
-    echo "blacklist mei-me"; } > "$blacklist_conf"
+    {
+      echo "### $COMPANY - installimage"
+      echo "### silence any onboard speaker"
+      echo "blacklist pcspkr"
+      echo "blacklist snd_pcsp"
+      echo "### i915 driver blacklisted due to various bugs"
+      echo "### especially in combination with nomodeset"
+      echo "blacklist i915"
+      echo "### mei driver blacklisted due to serious bugs"
+      echo "blacklist mei"
+      echo "blacklist mei-me"
+    } > "$blacklist_conf"
 
     execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base udev autodetect modconf block mdadm lvm2 filesystems keyboard fsck\"/"'
     execute_chroot_command "mkinitcpio -p linux"; EXITCODE=$?
