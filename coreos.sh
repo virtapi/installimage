@@ -12,7 +12,7 @@
 # This file isn't ready for production!
 #
 
-# SRCIPTPATH will be exported in config.sh
+# SCRIPTPATH will be exported in config.sh
 # shellcheck disable=SC2153
 export IMAGE_PUBKEY="$SCRIPTPATH/gpg/coreos-pubkey.asc"
 
