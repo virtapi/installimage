@@ -43,7 +43,7 @@ echo "iface lo inet loopback"
 echo "" } > "$CONFIGFILE" 2>> "$DEBUGFILE"
 ```
 
-besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
+Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
 
 This good example is:
 ```bash
