@@ -68,7 +68,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # config file  (file.name)
     c)
       if [ -e "$CONFIGSPATH/$OPTARG" ] ; then
-        OPT_CONFIGFILE="$CONFIGSPATH"/$OPTARG
+        OPT_CONFIGFILE="$CONFIGSPATH/$OPTARG"
       elif [ -e "$OPTARG" ] ; then
         OPT_CONFIGFILE="$OPTARG"
       else
