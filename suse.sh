@@ -261,7 +261,7 @@ generate_config_grub() {
 
     execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"'
 
-    [ -e "$FOLD/hdd/boot/grub2/grub.cfg" ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
+    rm -f "$FOLD/hdd/boot/grub2/grub.cfg"
     execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"
 
     # the opensuse mkinitrd uses this file to determine where to write the bootloader...
