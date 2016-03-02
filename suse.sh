@@ -204,7 +204,7 @@ generate_config_grub() {
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
   local -i i=0
   for ((i=1; i<=COUNT_DRIVES; i++)); do
-    local j; disk="$((i - 1))"
+    local j; j="$((i - 1))"
     local disk; disk="$(eval echo "\$DRIVE"$i)"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
