@@ -10,6 +10,7 @@
 + [Preferred Usage of Bash Builtins](#preferred-usage-of-bash-builtins)
 + [Multiple Parameter Validation](#multiple-parameter-validation)
 + [Brackets Notation](#brackets-notation)
++ [Comments in Files](#comments-in-files)
 + [Inspiration](#inspiration)
 
 ---
@@ -110,6 +111,9 @@ and the correct one:
 ```bash
 awk '{print $2}'
 ```
+
+## Comments in Files
+There are to kinds of comments, those that contain higher level descriptions should be easily and clearly visible --> Empty comment line before and after. Commented code lines are without any empty comment lines.
 
 ## Inspiration
 This is loosely based on:
