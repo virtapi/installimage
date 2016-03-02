@@ -102,7 +102,7 @@ generate_menu() {
     RAWLIST=""
     RAWLIST=$(ls -1 "$IMAGESPATH"/CoreOS* 2>/dev/null)
     RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Wheezy"
-  elif [ "$1" = "old_images" ]; then
+  elif [ "$1" = "old images" ]; then
     RAWLIST=$(ls -1 "$OLDIMAGESPATH")
     FINALIMAGEPATH="$OLDIMAGESPATH"
   else

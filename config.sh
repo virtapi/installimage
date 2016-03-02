@@ -55,14 +55,16 @@ export V6ONLY="0"
 
 # dialog settings
 export DIATITLE='Hetzner Online GmbH'
-OSMENULIST='Debian (official) '
-OSMENULIST="$OSMENULIST"'Ubuntu (official) '
-OSMENULIST="$OSMENULIST"'CentOS (official) '
-OSMENULIST="$OSMENULIST"'openSUSE (official) '
-OSMENULIST="$OSMENULIST"'Archlinux (!!NO_SUPPORT!!) '
-OSMENULIST="$OSMENULIST"'Virtualization (!!NO_SUPPORT!!) '
-OSMENULIST="$OSMENULIST"'old_images (!!NO_SUPPORT!!) '
-export OSMENULIST=$OSMENULIST'custom_image (blanco_config_for_user_images) '
+export OSMENULIST=(
+"Debian"          "(official)"
+"Ubuntu"          "(official)"
+"CentOS"          "(official)"
+"openSUSE"        "(official)"
+"Archlinux"       "(!!NO SUPPORT!!)"
+"Virtualization"  "(!!NO SUPPORT!!)"
+"old images"      "(!!NO SUPPORT!!)"
+"custom image"    "(blanco config for user images)"
+)
 
 export PROXMOX3_BASE_IMAGE="Debian-78-wheezy-64-minimal"
 
