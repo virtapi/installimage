@@ -28,7 +28,7 @@ setup_network_config() {
         echo '# Loopback device:'
         echo 'auto lo'
         echo 'iface lo inet loopback'
-        echo '' >> "$CONFIGFILE"
+        echo ''
         if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
           echo "# device: $1"
           echo "auto  $1"
