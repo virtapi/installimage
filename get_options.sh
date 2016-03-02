@@ -239,7 +239,8 @@ done
 
 # VALIDATION
 if [ -n "$OPT_AUTOMODE" ] && [ -z "$OPT_IMAGE" ] && [ -z "$OPT_CONFIGFILE" ] ; then
-  echo -e "\n${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}"
+  echo ""
+  echo -e "${RED}ERROR: in automatic mode you need to specify an image and a config file!${NOCOL}"
   echo ""
   debug "=> FAILED, no image given"
   exit 1
