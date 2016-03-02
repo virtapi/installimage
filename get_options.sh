@@ -93,7 +93,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # post-install file  (file.name)
     x)
       if [ -e "$POSTINSTALLPATH/$OPTARG" ] ; then
-        OPT_POSTINSTALLFILE="$POSTINSTALLPATH"/$OPTARG
+        OPT_POSTINSTALLFILE="$POSTINSTALLPATH/$OPTARG"
       elif [ -e "$OPTARG" ] ; then
         OPT_POSTINSTALLFILE="$OPTARG"
       else
