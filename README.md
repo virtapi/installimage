@@ -22,7 +22,8 @@
 ---
 
 ## Setup
-TBD
+We've got a small diagram showing the workflow during an installation process:
+![installimage-workflow](installimage-workflow.svg)
 
 ---
 
