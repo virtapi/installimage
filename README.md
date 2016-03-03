@@ -1,6 +1,6 @@
 # installimage
 
-**installimage** is a collection of shell-scripts that can be used to install new machines quickly.
+**installimage** is a collection of shell-scripts that can be used to install physical and virtual machines quickly.
 
 ---
 
