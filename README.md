@@ -23,7 +23,7 @@
 
 ## Setup
 We've got a small diagram showing the workflow during an installation process:
-![installimage-workflow](installimage-workflow.svg)
+![installimage-workflow](https://rawgit.com/virtapi/installimage/add-workflow/installimage-workflow.svg)
 
 ---
 
