@@ -8,7 +8,19 @@
 #
 # changed and extended by Thore Bödecker, 2015-10-05
 # changed and extended by Tim Meusel
+# changed and extended by Dominik Hannen
 #
+
+
+# netmask_cidr_conv "$SUBNETMASK"
+netmask_cidr_conv() {
+  oct2nils=( [255]=0 [254]=1 [252]=2 [248]=3 [240]=4 [224]=5 [192]=6 [128]=7 [0]=8 )
+  local IFS='.' cidr; cidr=0
+  for oct in $1; do
+    cidr=$((cidr + oct2nils[oct]))
+  done
+  echo $cidr
+}
 
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
@@ -16,6 +28,7 @@ setup_network_config() {
     # good we have a device and a MAC
     CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-hetzner.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
+    local CIDR; CIDR=$(netmask_cidr_conv "$SUBNETMASK")
 
     echo "### ${COMPANY} - installimage" > "$UDEVFILE"
     echo "# device: $1" >> "$UDEVFILE"
