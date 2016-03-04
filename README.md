@@ -1,6 +1,6 @@
 # installimage
 
-**installimage** is a collection of shell-scripts that can be used to install new machines quickly.
+**installimage** is a collection of shell-scripts that can be used to install physical and virtual machines quickly.
 
 ---
 
@@ -22,7 +22,8 @@
 ---
 
 ## Setup
-TBD
+We've got a small diagram showing the workflow during an installation process:
+![installimage-workflow](https://rawgit.com/virtapi/installimage/add-workflow/installimage-workflow.svg)
 
 ---
 
