@@ -6,6 +6,16 @@
 
 ## Contents
 + [Setup](#setup)
++   [Workflow](#workflow)
++   [installimage.in_screen](#installimage.in_screen)
++   [installimage](#installimage)
++   [config.sh](#config.sh)
++   [functions.sh](#functions.sh)
++   [get_options.sh](#get_options.sh)
++   [autosetup.sh](#autosetup.sh)
++   [setup.sh](setup.sh)
++   [install.sh](#install.sh)
++   [$distro.sh]($distro.sh)
 + [Requirements](#requirements)
 + [Configuration](#configuration)
 + [Usage](#usage)
@@ -22,8 +32,27 @@
 ---
 
 ## Setup
+### Workflow
 We've got a small diagram showing the workflow during an installation process:
 ![installimage-workflow](https://rawgit.com/virtapi/installimage/master/installimage-workflow.svg)
+
+###installimage.in_screen
+
+###installimage
+
+###config.sh
+
+###functions.sh
+
+###get_options.sh
+
+###autosetup.sh
+
+###setup.sh
+
+###install.sh
+
+###$distro.sh
 
 ---
 
