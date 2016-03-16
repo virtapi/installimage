@@ -243,6 +243,10 @@ run_os_specific_functions() {
   return 0
 }
 
+delete_grub_device_map() {
+  [ -f "$FOLD/hdd/boot/grub/device.map" ] && rm "$FOLD/hdd/boot/grub/device.map"
+}
+
 randomize_mdadm_checkarray_cronjob_time() {
   if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && grep -q checkarray "$FOLD/hdd/etc/cron.d/mdadm"; then
     declare -i hour minute day
