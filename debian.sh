@@ -226,6 +226,26 @@ delete_grub_device_map() {
   [ -f "$FOLD/hdd/boot/grub/device.map" ] && rm "$FOLD/hdd/boot/grub/device.map"
 }
 
+#
+# os specific functions
+# for purpose of e.g. debian-sys-maint mysql user password in debian/ubuntu LAMP
+#
+run_os_specific_functions() {
+  randomize_mdadm_checkarray_cronjob_time
+
+  #
+  # randomize mysql password for debian-sys-maint in LAMP image
+  #
+  debug "# Testing if mysql is installed and if this is a LAMP image and setting new debian-sys-maint password"
+  if [ -f "$FOLD/hdd/etc/mysql/debian.cnf" ] ; then
+    if [[ "${IMAGE_FILE,,}" =~ lamp ]]; then
+      randomize_maint_mysql_pass || return 1
+    fi
+  fi
+
+  return 0
+}
+
 randomize_mdadm_checkarray_cronjob_time() {
   if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && grep -q checkarray "$FOLD/hdd/etc/cron.d/mdadm"; then
     declare -i hour minute day
