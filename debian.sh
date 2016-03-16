@@ -177,25 +177,28 @@ setup_cpufreq() {
 }
 
 #
-# generate_config_grub <version>
-#
 # Generate the GRUB bootloader configuration.
 #
 generate_config_grub() {
   declare -i EXITCODE=0
-  [ -n "$1" ] || return
 
+  local grubdefconf="$FOLD/hdd/etc/default/grub"
+
+  # do we still actually need this? grub-install should/will copy this, if not
+  # already present in image
   execute_chroot_command "mkdir -p /boot/grub/; cp -r /usr/lib/grub/* /boot/grub >> /dev/null 2>&1"
-  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
+
+  # set linux_default in grub
+  local grub_linux_default="nomodeset"
   if isVServer; then
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset elevator=noop\"/"'
-  else
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset\"/"'
+     grub_linux_default="${grub_linux_default} elevator=noop"
   fi
 
-  #
+  sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
+  # need to sort escapes of this cmd to use without execute_chroot
+  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
+
   # only install grub2 in mbr of all other drives if we use swraid
-  #
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk; disk="$(eval echo "\$DRIVE"$i)"
@@ -217,30 +220,6 @@ generate_config_grub() {
   delete_grub_device_map
 
   return "$EXITCODE"
-}
-
-delete_grub_device_map() {
-  [ -f "$FOLD/hdd/boot/grub/device.map" ] && rm "$FOLD/hdd/boot/grub/device.map"
-}
-
-#
-# os specific functions
-# for purpose of e.g. debian-sys-maint mysql user password in debian/ubuntu LAMP
-#
-run_os_specific_functions() {
-  randomize_mdadm_checkarray_cronjob_time
-
-  #
-  # randomize mysql password for debian-sys-maint in LAMP image
-  #
-  debug "# Testing if mysql is installed and if this is a LAMP image and setting new debian-sys-maint password"
-  if [ -f "$FOLD/hdd/etc/mysql/debian.cnf" ] ; then
-    if [[ "$IMAGENAME" =~ lamp ]]; then
-      randomize_maint_mysql_pass || return 1
-    fi
-  fi
-
-  return 0
 }
 
 delete_grub_device_map() {
