@@ -6,7 +6,8 @@
 # originally written by Florian Wicke and David Mayr
 # (c) 2007-2016, Hetzner Online AG
 #
-
+# changed and extended by Tim Meusel
+#
 
 # simple params - restart with other params
 case $1 in
