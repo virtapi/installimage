@@ -2195,10 +2195,10 @@ import_imagekey() {
   # check if pubkey is given by the customer
   if [ -n "$IMAGE_PUBKEY" ] && [ -e "$IMAGE_PUBKEY" ] ; then
     PUBKEY="$IMAGE_PUBKEY"
-  elif [ -e "$HETZNER_PUBKEY" ] ; then
+  elif [ -e "$COMPANY_PUBKEY" ] ; then
     # if no special pubkey given, use the hetzner key
-    echo "Using hetzner standard pubkey: $HETZNER_PUBKEY" | debugoutput
-    PUBKEY="$HETZNER_PUBKEY"
+    echo "Using standard pubkey: $COMPANY_PUBKEY" | debugoutput
+    PUBKEY="$COMPANY_PUBKEY"
   fi
   if [ -n "$PUBKEY" ] ; then
     # import public key

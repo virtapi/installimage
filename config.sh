@@ -29,7 +29,7 @@ export OLDIMAGESPATH="$SCRIPTPATH/../images.old/"
 export IMAGESPATHTYPE="local"
 export IMAGESEXT="tar.gz"
 export IMAGEFILETYPE="tgz"
-export HETZNER_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
+export COMPANY_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
 export COMPANY="Example Awesome Company"
 export C_SHORT="example"
 
