@@ -286,8 +286,8 @@ randomize_maint_mysql_pass() {
   execute_chroot_command "/etc/init.d/mysql start >>/dev/null 2>&1"
   execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; EXITCODE=$?
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"
-  sed -i s/password.*/"password = $debianpass"/g "$sqlconfig" 
-  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$pma_pass'"/g "$pma_dbc_cnf" 
+  sed -i s/password.*/"password = $debianpass"/g "$sqlconfig"
+  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$pma_pass'"/g "$pma_dbc_cnf"
   execute_chroot_command "DEBIAN_FRONTEND=noninteractive dpkg-reconfigure phpmyadmin"
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 
