@@ -245,32 +245,29 @@ randomize_mdadm_checkarray_cronjob_time() {
 # randomize mysql password for debian-sys-maint in LAMP image
 #
 randomize_maint_mysql_pass() {
-  local SQLCONFIG="$FOLD/hdd/etc/mysql/debian.cnf"
-  local MYCNF="$FOLD/hdd/root/.my.cnf"
-  local PMA_DBC_CNF="$FOLD/hdd/etc/dbconfig-common/phpmyadmin.conf"
-  local PMA_SEC_CNF="$FOLD/hdd/var/lib/phpmyadmin/blowfish_secret.inc.php"
-
-  #
+  local sqlconfig; sqlconfig="$FOLD/hdd/etc/mysql/debian.cnf"
+  local mycnf; mycnf="$FOLD/hdd/root/.my.cnf"
+  local pma_dbc_cnf; pma_dbc_cnf="$FOLD/hdd/etc/dbconfig-common/phpmyadmin.conf"
+  local pma_sec_cnf; pma_sec_cnf="$FOLD/hdd/var/lib/phpmyadmin/blowfish_secret.inc.php"
   # generate PW for user debian-sys-maint, root and phpmyadmin
-  #
-  # NEWPASS=$(cat /dev/urandom | strings | head -c 512 | md5sum | cut -b -16)
-  # ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
-  local DEBIANPASS; DEBIANPASS=$(pwgen -s 16 1)
-  local ROOTPASS; ROOTPASS=$(pwgen -s 16 1)
-  local PMAPASS; PMAPASS=$(pwgen -s 16 1)
-  local PMASEC; PMASEC=$(pwgen -s 24 1)
-  if [ -f "$PMA_SEC_CNF" ]; then
-    echo -e "<?php\n\$cfg['blowfish_secret'] = '$PMASEC';" > "$PMA_SEC_CNF"
+  local debianpass; debianpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local rootpass; rootpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local pma_pass; pma_pass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local pma_sec; pma_sec=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c24)
+  if [ -f "$pma_sec_cnf" ]; then
+    echo -e "<?php\n\$cfg['blowfish_secret'] = '$pma_sec';" > "$pma_sec_cnf"
   fi
-  MYSQLCOMMAND="USE mysql;\nUPDATE user SET password=PASSWORD(\"$DEBIANPASS\") WHERE user='debian-sys-maint';
-    UPDATE user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';
-    UPDATE user SET password=PASSWORD(\"$PMAPASS\") WHERE user='phpmyadmin'; FLUSH PRIVILEGES;"
-  echo "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
+  MYSQLCOMMAND="USE mysql; \
+  UPDATE user SET password=PASSWORD('$debianpass') WHERE user='debian-sys-maint'; \
+  UPDATE user SET password=PASSWORD('$rootpass') WHERE user='root'; \
+  UPDATE user SET password=PASSWORD('$pma_pass') WHERE user='phpmyadmin'; \
+  FLUSH PRIVILEGES;"
+  echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
   execute_chroot_command "/etc/init.d/mysql start >>/dev/null 2>&1"
-  execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; declare -i EXITCODE=$?
+  execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; EXITCODE=$?
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"
-  sed -i s/password.*/"password = $DEBIANPASS"/g "$SQLCONFIG"
-  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$PMAPASS'"/g "$PMA_DBC_CNF"
+  sed -i s/password.*/"password = $debianpass"/g "$sqlconfig" 
+  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$pma_pass'"/g "$pma_dbc_cnf" 
   execute_chroot_command "DEBIAN_FRONTEND=noninteractive dpkg-reconfigure phpmyadmin"
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 
@@ -280,16 +277,14 @@ randomize_maint_mysql_pass() {
   {
     echo "[client]"
     echo "user=root"
-    echo "password=$ROOTPASS"
-  } > "$MYCNF"
+    echo "password=$rootpass"
+  } > "$mycnf"
 
-  #
   # write password file and erase script
-  #
   cp "$SCRIPTPATH/password.txt" "$FOLD/hdd/"
-  sed -i -e "s#<password>#$ROOTPASS#" "$FOLD/hdd/password.txt"
+  sed -i -e "s#<password>#$rootpass#" "$FOLD/hdd/password.txt"
   chmod 600 "$FOLD/hdd/password.txt"
-  printf '\nNote: Your MySQL password is in /password.txt (delete this with "erase_password_note")\n' >> "$FOLD/hdd/etc/motd.tail"
+  echo -e "\nNote: Your MySQL password is in /password.txt (delete this with \"erase_password_note\")\n" >> "$FOLD/hdd/etc/motd.tail"
   cp "$SCRIPTPATH/erase_password_note" "$FOLD/hdd/usr/local/bin/"
   chmod +x "$FOLD/hdd/usr/local/bin/erase_password_note"
 
