@@ -38,18 +38,25 @@ setup_network_config() {
     } > "$CONFIGFILE"
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      {
-        echo "# device: $1"
-        echo "auto  $1"
-        echo "iface $1 inet static"
-        echo "  address   $3"
-        echo "  netmask   $5"
-        echo "  gateway   $6"
-        if ! is_private_ip "$3"; then
-          echo "  # default route to access subnet"
-          echo "  up route add -net $7 netmask $5 gw $6 $1"
-        fi
-      } >> "$CONFIGFILE"
+      echo "# device: $1" >> "$CONFIGFILE"
+      if is_private_ip "$3" && isVServer; then
+        {
+          echo "auto  $1"
+          echo "iface $1 inet dhcp"
+        } >> "$CONFIGFILE"
+      else
+        {
+          echo "auto  $1"
+          echo "iface $1 inet static"
+          echo "  address   $3"
+          echo "  netmask   $5"
+          echo "  gateway   $6"
+          if ! is_private_ip "$3"; then
+            echo "  # default route to access subnet"
+            echo "  up route add -net $7 netmask $5 gw $6 $1"
+          fi
+        } >> "$CONFIGFILE"
+      fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
