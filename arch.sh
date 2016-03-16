@@ -11,17 +11,6 @@
 # changed and extended by Dominik Hannen
 #
 
-
-# netmask_cidr_conv "$SUBNETMASK"
-netmask_cidr_conv() {
-  oct2nils=( [255]=0 [254]=1 [252]=2 [248]=3 [240]=4 [224]=5 [192]=6 [128]=7 [0]=8 )
-  local IFS='.' cidr; cidr=0
-  for oct in $1; do
-    cidr=$((cidr + oct2nils[oct]))
-  done
-  echo $cidr
-}
-
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
