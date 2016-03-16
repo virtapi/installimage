@@ -297,14 +297,15 @@ randomize_maint_mysql_pass() {
 }
 
 debian_grub_fix() {
-  MAPPER="$FOLD/hdd/dev/mapper"
+  local mapper="$FOLD/hdd/dev/mapper"
 
-  find "$MAPPER" -type l -printf '%f.%l\n' | while read -r line; do
-    VOLGROUP="$(echo "$line" | cut -d'.' -f1)"
-    DMDEVICE="$(echo "$line" | cut -d'/' -f2)"
+  find "$mapper" -type l -printf '%f.%l\n' | while read -r line; do
+    local dmdevice volgroup
+    volgroup="$(echo "$line" | cut -d'.' -f1)"
+    dmdevice="$(echo "$line" | cut -d'/' -f2)"
 
-    rm "$MAPPER/$VOLGROUP"
-    cp -R "$FOLD/hdd/dev/$DMDEVICE" "$MAPPER/$VOLGROUP"
+    rm "$mapper/$volgroup"
+    cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
   done
 }
 
