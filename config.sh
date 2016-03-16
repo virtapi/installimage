@@ -29,6 +29,8 @@ export IMAGESPATHTYPE="local"
 export IMAGESEXT="tar.gz"
 export IMAGEFILETYPE="tgz"
 export HETZNER_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
+export COMPANY="Example Awesome Company"
+export C_SHORT="example"
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
 export STATSSERVER="rz-admin.hetzner.de"
