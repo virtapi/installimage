@@ -23,9 +23,12 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
-    echo "### $COMPANY - installimage" > "$UDEVFILE"
-    echo "# device: $1" >> $UDEVFILE
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
+
     {
       echo "### $COMPANY - installimage"
       echo "# Loopback device:"
