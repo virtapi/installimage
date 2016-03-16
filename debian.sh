@@ -74,8 +74,10 @@ setup_network_config() {
     # set duplex speed
     #
     if ! isNegotiated && ! isVServer; then
-      echo "  # force full-duplex for ports without auto-neg" >> "$CONFIGFILE"
-      echo "  post-up mii-tool -F 100baseTx-FD $1" >> "$CONFIGFILE"
+      {
+        echo "  # force full-duplex for ports without auto-neg"
+        echo "  post-up mii-tool -F 100baseTx-FD $1"
+      } >> "$CONFIGFILE"
     fi
 
     return 0
