@@ -4,7 +4,7 @@
 # Archlinux specific functions
 #
 # originally written by Markus Schade
-# (c) 2013-2015, Hetzner Online GmbH
+# (c) 2013-2016, Hetzner Online GmbH
 #
 # changed and extended by Thore Bödecker, 2015-10-05
 # changed and extended by Tim Meusel
