@@ -86,26 +86,23 @@ setup_network_config() {
 
 # generate_config_mdadm "NIL"
 generate_config_mdadm() {
-  if [ -n "$1" ]; then
-    MDADMCONF="/etc/mdadm/mdadm.conf"
-    # echo "DEVICES /dev/[hs]d*" > $FOLD/hdd$MDADMCONF
-    # execute_chroot_command "mdadm --detail --scan | sed -e 's/metadata=00.90/metadata=0.90/g' >> $MDADMCONF"; declare -i EXITCODE=$?
-    execute_chroot_command "/usr/share/mdadm/mkconf > $MDADMCONF"; declare -i EXITCODE=$?
+  local mdadmconf="/etc/mdadm/mdadm.conf"
+  execute_chroot_command "/usr/share/mdadm/mkconf > $mdadmconf"; declare -i EXITCODE=$?
 
-    #
-    # Enable mdadm
-    #
-    sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i -e "s/^INITRDSTART=.*/INITRDSTART='all' # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
+  #
+  # Enable mdadm
+  #
+  local mdadmdefconf="$FOLD/hdd/etc/default/mdadm"
+  sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i -e "s/^INITRDSTART=.*/INITRDSTART='all' # modified by installimage/" \
+    "$mdadmdefconf"
 
-    return "$EXITCODE"
-  fi
+  return "$EXITCODE"
 }
 
 # generate_new_ramdisk "NIL"
