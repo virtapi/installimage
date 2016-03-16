@@ -108,16 +108,13 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    OUTFILE=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex ".*\(gz\|bak\)" -printf "%f\n" | sort -nr | head -n1)
-    VERSION=$(echo "$OUTFILE" |cut -d "-" -f2-)
-    echo "Kernel Version found: $VERSION" | debugoutput
+    local outfile; outfile=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex ".*\(gz\|bak\)" -printf "%f\n" | sort -nr | head -n1)
+    local kvers; kvers=$(echo "$outfile" |cut -d "-" -f2-)
+    debug "# Kernel Version found: $kvers"
 
     if [ "$IMG_VERSION" -ge 60 ]; then
-
-      #
-      # blacklist i915 driver due to many bugs and stability issues
-      #
-      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
+      # blacklist various driver due to bugs and stability issues
       {
         echo "### $COMPANY - installimage"
         echo "### silence any onboard speaker"
@@ -132,14 +129,24 @@ generate_new_ramdisk() {
       } > "$blacklist_conf"
     fi
 
-    #
+    # apparently sometimes the mdadm assembly bugfix introduced with the recent mdadm release does not work
+    # however, the problem is limited to H8SGL boards
+    # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=784070
+    if [ "$IMG_VERSION" -ge 80 ] && [ "$MBTYPE" = 'H8SGL' ]; then
+      local script="$FOLD/hdd/usr/share/initramfs-tools/scripts/local-block/mdadmpatch"
+      cp "$SCRIPTPATH/h8sgl-deb8-md.sh" "$script"
+      chmod a+x "$script"
+    fi
+
     # just make sure that we do not accidentally try to install a bootloader
     # when we haven't configured grub yet
     # Debian won't install a boot loader anyway, but display an error message,
     # that needs to be confirmed
-    #
     sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
-    execute_chroot_command "update-initramfs -u -k $VERSION"; declare -i EXITCODE=$?
+
+    # well, we might just as well update all initramfs and stop findling around
+    # to find out which kernel version is the latest
+    execute_chroot_command "update-initramfs -u -k $kvers"; EXITCODE=$?
 
     return "$EXITCODE"
   fi
