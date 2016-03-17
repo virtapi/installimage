@@ -86,21 +86,14 @@ setup_network_config() {
 
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
-  if [ "$1" ]; then
-    MDADMCONF="/etc/mdadm.conf"
-    echo "DEVICES /dev/[hs]d*" > "$FOLD/hdd$MDADMCONF"
-    echo "MAILADDR root" >> "$FOLD/hdd$MDADMCONF"
-    if [ "$SUSEVERSION" -ge 132 ] ; then
-      echo >> "$FOLD/hdd$MDADMCONF"
-    fi
-#    if [ "$SUSEVERSION" = "11.0" ] || [ "$SUSEVERSION" = "11.2" ] || [ "$SUSEVERSION" = "11.3" ] || [ "$SUSEVERSION" = "11.4" ] || [ "$SUSEVERSION" = "12.1"  ] || [ "$SUSEVERSION" = "12.2" ]; then
-    if [ "$SUSEVERSION" -ge 110 ]; then
-      # Suse 11.2 argues about failing opening of /dev/md/<number>, so do a --examine instead of --details
-      execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; declare -i EXITCODE=$?
-    else
-      execute_chroot_command "mdadm --detail --scan >> $MDADMCONF"; declare -i EXITCODE=$?
-    fi
-    return "$EXITCODE"
+  if [ -n "$1" ]; then
+    local mdadmconf="/etc/mdadm.conf"
+    {
+      echo "DEVICE partitions"
+      echo "MAILADDR root"
+    } > "$FOLD/hdd$mdadmconf"
+    execute_chroot_command "mdadm --examine --scan >> $mdadmconf"; declare -i EXITCODE=$?
+    return $EXITCODE
   fi
 }
 
