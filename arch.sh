@@ -102,8 +102,9 @@ generate_new_ramdisk() {
 setup_cpufreq() {
   if [ -n "$1" ]; then
     if ! isVServer; then
-      CPUFREQCONF="$FOLD/hdd/etc/default/cpupower"
-      sed -i -e "s/#governor=.*/governor'$1'/" "$CPUFREQCONF"
+      local cpufreqconf=''
+      cpufreqconf="$FOLD/hdd/etc/default/cpupower"
+      sed -i -e "s/#governor=.*/governor'$1'/" "$cpufreqconf"
       execute_chroot_command "systemctl enable cpupower"
     fi
 
