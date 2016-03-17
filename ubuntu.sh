@@ -12,7 +12,7 @@ setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     if [ -f "$FOLD/hdd/etc/udev/rules.d/70-persistent-net.rules" ]; then
       UDEVFILE="$FOLD/hdd/etc/udev/rules.d/70-persistent-net.rules"
-    elif [ "$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules" ]; then
+    elif [ -f "$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules" ]; then
       UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
     else
       UDEVFILE="/dev/null"
