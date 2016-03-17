@@ -15,7 +15,7 @@
     - Make sure that you have tests for the bug you are fixing, or feature you are adding
     - Make sure the test suites passes after your commit (if such a suite exists)
   - When introducing a new feature, make sure it is properly documented in the README.md
-  - Add yourself to the Contributors list in the README.md and README_DE.md
+  - Add yourself to the Contributors list in LICENSE file
 + Submission:
   + Pre-requisites:
     + Make sure you have a [GitHub account](https://github.com/join)
