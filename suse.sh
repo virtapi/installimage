@@ -12,7 +12,11 @@ setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     # good we have a device and a MAC
 
-    SUSEVERSION="$(grep VERSION "$FOLD/hdd/etc/SuSE-release" | cut -d ' '  -f3 | sed -e 's/\.//')"
+    if [ -e "$FOLD/hdd/etc/os-release" ]; then
+      SUSEVERSION="$(grep 'VERSION=' "$FOLD/hdd/etc/os-release" | cut -d '"' -f2 | sed -e 's/\.//')"
+    else
+      SUSEVERSION="$(grep VERSION "$FOLD/hdd/etc/SuSE-release" | cut -d ' '  -f3 | sed -e 's/\.//')"
+    fi
     debug "# Version: ${SUSEVERSION}"
 
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network/routes"
@@ -24,9 +28,11 @@ setup_network_config() {
     # Delete network udev rules
 #    rm "$FOLD"/hdd/etc/udev/rules.d/*-persistent-net.rules 2>&1 | debugoutput
 
-    echo "### $COMPANY - installimage" > $UDEVFILE
-    echo "# device: $1" >> $UDEVFILE
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
 
     # remove any other existing config files
     find "$FOLD/hdd/etc/sysconfig/network/" -name "*-eth*" -delete
