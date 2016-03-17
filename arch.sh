@@ -10,13 +10,15 @@
 setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     # good we have a device and a MAC
-    CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-hetzner.network"
+    CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-$C_SHORT.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
     local CIDR; CIDR=$(netmask_cidr_conv "$SUBNETMASK")
 
-    echo "### ${COMPANY} - installimage" > "$UDEVFILE"
-    echo "# device: $1" >> "$UDEVFILE"
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
 
     {
       echo "### $COMPANY - installimage"
@@ -29,16 +31,20 @@ setup_network_config() {
     echo "[Network]" >> "$CONFIGFILE"
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      { echo "Address=$8/$9"
-      echo "Gateway=${10}"
-      echo ""; } >> "$CONFIGFILE"
+      {
+        echo "Address=$8/$9"
+        echo "Gateway=${10}"
+        echo ""
+      } >> "$CONFIGFILE"
     fi
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
       debug "setting up ipv4 networking $3/$5 via $6"
-      { echo "Address=$3/$CIDR"
-      echo "Gateway=$6"
-      echo ""; } >> "$CONFIGFILE"
+      {
+        echo "Address=$3/$CIDR"
+        echo "Gateway=$6"
+        echo ""
+      } >> "$CONFIGFILE"
 
       if ! is_private_ip "$3"; then
         { echo "[Route]"
