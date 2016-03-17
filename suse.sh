@@ -3,12 +3,7 @@
 #
 # OpenSUSE specific functions
 #
-# originally written by Florian Wicke and David Mayr
 # (c) 2007-2016, Hetzner Online GmbH
-#
-# changed and extended by Thore Bödecker, 2015-10-05
-# changed and extended by Tim Meusel
-# changed and extended by Silvio Knizek
 #
 
 
