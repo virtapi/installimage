@@ -78,7 +78,7 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+    local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
     {
       echo "### $COMPANY - installimage"
       echo "### silence any onboard speaker"
