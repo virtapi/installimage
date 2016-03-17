@@ -130,7 +130,7 @@ generate_new_ramdisk() {
       sed -i 's/^NO_KMS_IN_INITRD=.*/NO_KMS_IN_INIRD="yes"/' "$f"
     fi
 #  elif [ "$SUSEVERSION" -ge 132 ]; then
-  else 
+  else
     local dracutfile="$FOLD/hdd/etc/dracut.conf.d/99-$C_SHORT.conf"
     {
       echo "### $COMPANY - installimage"
@@ -179,98 +179,61 @@ setup_cpufreq() {
 }
 
 #
-# generate_config_grub <version>
+# generate_config_grub
 #
 # Generate the GRUB bootloader configuration.
 #
 generate_config_grub() {
-  [ -n "$1" ] || return
-
   declare -i EXITCODE=0
+  local grubdefconf="$FOLD/hdd/etc/default/grub"
 
-  if [ "$SUSEVERSION" -lt 122 ]; then
-    DMAPFILE="$FOLD/hdd/boot/grub/device.map"
-  else
-    # even though grub2-mkconfig will generate a device.map on the fly, the
-    # yast perl bootloader script, will use the fscking device.map, as well as
-    # mkinitrd (which also uses the perl bootloader script) if the -B option is
-    # not passed
-    DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
-  fi
-  [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
-  local -i i=0
+  # even though grub2-mkconfig will generate a device.map on the fly, the
+  # yast perl bootloader script, will use the fscking device.map, as well as
+  # mkinitrd (which also uses the perl bootloader script) if the -B option is
+  # not passed
+  DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
+
+  rm -f "$DMAPFILE"
+
+  local i=0
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     local j; j="$((i - 1))"
-    local disk; disk="$(eval echo "\$DRIVE"$i)"
+    local disk; disk="$(eval echo "\$DRIVE$i")"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
 
-  if [ "$SUSEVERSION" -lt 122 ]; then
-    BFILE="$FOLD/hdd/boot/grub/menu.lst"
-
-    {
-      echo '#'
-      echo "# $COMPANY - installimage"
-      echo '# GRUB bootloader configuration file'
-      echo '#'
-      echo ''
-    } > "$BFILE" 2>> "$DEBUGFILE"
-
-    PARTNUM=$(echo "$SYSTEMBOOTDEVICE" | rev | cut -c1)
-
-    if [ "$SWRAID" = "0" ]; then
-      PARTNUM="$((PARTNUM - 1))"
-    fi
-
-    {
-      echo 'timeout 5'
-      echo 'default 0'
-      echo ''
-      echo 'title Linux (openSUSE)'
-      echo "root (hd0,$PARTNUM)"
-      echo "kernel /boot/vmlinuz-$1 root=$SYSTEMROOTDEVICE vga=0x317"
-    } >> "$BFILE"
-
-    if [ -f "$FOLD/hdd/boot/initrd-$1" ]; then
-      echo "initrd /boot/initrd-$1" >> "$BFILE" 2>> "$DEBUGFILE"
-    fi
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
-
-  else
-    local grub_linux_default="nomodeset"
-    # set net.ifnames=0 to avoid predictable interface names for opensuse 13.2
-    if [ "$SUSEVERSION" -ge 132 ] ; then
-      grub_linux_default="${grub_linux_default} net.ifnames=0 quiet systemd.show_status=1"
-    fi
-    # set elevator to noop for vserver
-    if isVServer; then
-      grub_linux_default="${grub_linux_default} elevater=noop"
-    fi
-    # H8SGL need workaround for iommu
-    if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ "$IMG_VERSION" -ge 131 ] ; then
-      grub_linux_default="${grub_linux_default} iommu=noaperture"
-    fi
-
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/#GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/#GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
-
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"'
-
-    rm -f "$FOLD/hdd/boot/grub2/grub.cfg"
-    execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"
-
-    # the opensuse mkinitrd uses this file to determine where to write the bootloader...
-    GRUBINSTALLDEV_FILE="$FOLD/hdd/etc/default/grub_installdevice"
-    [ -f "$GRUBINSTALLDEV_FILE" ] && rm "$GRUBINSTALLDEV_FILE"
-    for ((i=1; i<=COUNT_DRIVES; i++)); do
-      local disk; disk="$(eval echo "\$DRIVE"$i)"
-      echo "$disk" >> "$GRUBINSTALLDEV_FILE"
-    done
-    echo "generic_mbr" >> "$GRUBINSTALLDEV_FILE"
+  local grub_linux_default="nomodeset"
+  # set net.ifnames=0 to avoid predictable interface names for opensuse 13.2
+  if [ "$SUSEVERSION" -ge 132 ] ; then
+    grub_linux_default="${grub_linux_default} net.ifnames=0 quiet systemd.show_status=1"
+  fi
+  # set elevator to noop for vserver
+  if isVServer; then
+    grub_linux_default="${grub_linux_default} elevater=noop"
+  fi
+  # H8SGL need workaround for iommu
+  if [ "$MBTYPE" = 'H8SGL' ] && [ "$IMG_VERSION" -ge 131 ] ; then
+    grub_linux_default="${grub_linux_default} iommu=noaperture"
   fi
 
-  return "$EXITCODE"
+  sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
+  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
+
+  sed -i "grubdefconf" -e "s/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/"
+
+  execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"
+
+  # the opensuse mkinitrd uses this file to determine where to write the bootloader...
+  local grubinstalldev_file; grubinstalldev_file="$FOLD/hdd/etc/default/grub_installdevice"
+  rm -f "$grubinstalldev_file"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    local disk; disk="$(eval echo "\$DRIVE$i")"
+    echo "$disk" >> "$grubinstalldev_file"
+  done
+  echo "generic_mbr" >> "$grubinstalldev_file"
+
+  return $EXITCODE
 }
 
 #
