@@ -311,20 +311,4 @@ randomize_mdadm_checkarray_cronjob_time() {
   fi
 }
 
-ubuntu_grub_fix() {
-  local mapper="$FOLD/hdd/dev/mapper"
-  local tempfile="$FOLD/hdd/tmp/mapper.tmp"
-
-  ls -l "$mapper" > "$tempfile"
-  grep -v "total" "$tempfile" | grep -v "crw" | while read -r line; do
-    local dmdevice volgroup
-    volgroup="$(echo "$line" | cut -d " " -f9)"
-    dmdevice="$(echo "$line" | cut -d "/" -f2)"
-
-    rm "$mapper/$volgroup"
-    cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
-  done
-  rm "$tempfile"
-}
-
 # vim: ai:ts=2:sw=2:et
