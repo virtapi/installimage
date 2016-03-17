@@ -350,28 +350,28 @@ EOF
 # for purpose of e.g. debian-sys-maint mysql user password in debian/ubuntu LAMP
 #
 run_os_specific_functions() {
-    local ROOT_DEV; ROOT_DEV=$(blkid -t "LABEL=ROOT" -o device "${DRIVE1}"*)
-    local OEM_DEV; OEM_DEV=$(blkid -t "LABEL=OEM" -o device "${DRIVE1}"*)
-    local is_ext4; is_ext4=$(blkid -o value "$ROOT_DEV" | grep ext4)
-    if [ -n "$is_ext4" ]; then
-      mount "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
-    else
-      mount -t btrfs -o subvol=root "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
-    fi
-    [ "$EXITCODE" -ne "0" ] && return 1
+  local ROOT_DEV; ROOT_DEV=$(blkid -t "LABEL=ROOT" -o device "${DRIVE1}"*)
+  local OEM_DEV; OEM_DEV=$(blkid -t "LABEL=OEM" -o device "${DRIVE1}"*)
+  local is_ext4; is_ext4=$(blkid -o value "$ROOT_DEV" | grep ext4)
+  if [ -n "$is_ext4" ]; then
+    mount "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
+  else
+    mount -t btrfs -o subvol=root "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
+  fi
+  [ "$EXITCODE" -ne "0" ] && return 1
 
-   # mount OEM partition as well
-    mount "${OEM_DEV}" "$FOLD/hdd/usr" 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
+ # mount OEM partition as well
+  mount "${OEM_DEV}" "$FOLD/hdd/usr" 2>&1 | debugoutput ; EXITCODE=$?
+  [ "$EXITCODE" -ne "0" ] && return 1
 
-    if ! isVServer; then
-      add_coreos_oem_scripts "$FOLD/hdd/usr"
-    fi
-    add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
+  if ! isVServer; then
+    add_coreos_oem_scripts "$FOLD/hdd/usr"
+  fi
+  add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
 
-    mkdir -p "$FOLD/hdd/var/lib/coreos-install"
-    debugoutput <  "$CLOUDINIT"
-    cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
+  mkdir -p "$FOLD/hdd/var/lib/coreos-install"
+  debugoutput < "$CLOUDINIT"
+  cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
 
   return 0
 }
