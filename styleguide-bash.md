@@ -131,6 +131,13 @@ we've got two types of varibles:
 
 Try to use local vars whereever possible. Complex variable names (consisting of multiple names) are always connected with a _, for example `COUNT_DRIVES` as a global one or `count_drives` as a local one.
 
+Variables that contain an array:
+Arrays should be indicated by name and the loop variable should resamble this. Good example (take a look at the singular/plural here):
+```bash
+declare -a harddrives
+for harddrive in "${hardrives[@]}"; do; done
+```
+
 ## Inspiration
 This is loosely based on:
 + [Bash Hackers Style Guide](http://wiki.bash-hackers.org/scripting/style)
