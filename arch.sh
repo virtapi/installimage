@@ -47,9 +47,11 @@ setup_network_config() {
       } >> "$CONFIGFILE"
 
       if ! is_private_ip "$3"; then
-        { echo "[Route]"
-        echo "Destination=$7/$CIDR"
-        echo "Gateway=$6"; } >> "$CONFIGFILE"
+        {
+          echo "[Route]"
+          echo "Destination=$7/$CIDR"
+          echo "Gateway=$6"
+        } >> "$CONFIGFILE"
       fi
     fi
 
@@ -62,7 +64,7 @@ setup_network_config() {
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
   if [ "$1" ]; then
-	  local mdadmconf="/etc/mdadm.conf"
+    local mdadmconf="/etc/mdadm.conf"
     {
       echo "DEVICE partitions"
       echo "MAILADDR root"
