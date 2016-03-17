@@ -113,7 +113,7 @@ setup_cpufreq() {
 }
 
 #
-# generate_config_grub <version>
+# generate_config_grub
 #
 # Generate the GRUB bootloader configuration.
 #
@@ -125,18 +125,19 @@ generate_config_grub() {
 
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
-  execute_chroot_command "grub-install --no-floppy --recheck $DRIVE1 2>&1"; EXITCODE=$?
+  execute_chroot_command "grub-install --no-floppy --recheck $DRIVE1 2>&1";
+  declare -i EXITCODE=$?
 
   # only install grub2 in mbr of all other drives if we use swraid
   if [ "$SWRAID" = "1" ] ;  then
     local i=2
     while [ "$(eval echo "\$DRIVE"$i)" ]; do
-      local TARGETDRIVE=''
-      TARGETDRIVE="$(eval echo "\$DRIVE"$i)"
-      execute_chroot_command "grub-install --no-floppy --recheck $TARGETDRIVE 2>&1"
+      local targetdrive; targetdrive="$(eval echo "\$DRIVE$i")"
+      execute_chroot_command "grub-install --no-floppy --recheck $targetdrive 2>&1"
+      declare -i EXITCODE=$?
       let i=i+1
     done
-  fi
+fi
   uuid_bugfix
 
   return "$EXITCODE"
