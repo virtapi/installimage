@@ -169,29 +169,32 @@ validate_image() {
 # extract image file to hdd
 extract_image() {
   LANG=C pacstrap -m -a "$FOLD/hdd" base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget 2>&1 | debugoutput
+	declare -i EXITCODE=$?
 
   if [ "$EXITCODE" -eq "0" ]; then
     cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" 2>&1 | debugoutput
 
     #timezone - we are in Germany
     execute_chroot_command "ln -s /usr/share/timezone/Europe/Berlin /etc/localtime"
-    echo en_US.UTF-8 UTF-8 > "$FOLD/hdd/etc/locale.gen"
-    echo de_DE.UTF-8 UTF-8 >> "$FOLD/hdd/etc/locale.gen"
+    {
+      echo "en_US.UTF-8 UTF-8"
+      echo "de_DE.UTF-8 UTF-8"
+    } > "$FOLD/hdd/etc/locale.gen"
     execute_chroot_command "locale-gen"
 
-    echo > "$FOLD/hdd/etc/locale.conf"
-    echo "LANG=de_DE.UTF-8" >> "$FOLD/hdd/etc/locale.conf"
-    echo "LC_MESSAGES=C" >> "$FOLD/hdd/etc/locale.conf"
+    {
+      echo "LANG=de_DE.UTF-8"
+      echo "LC_MESSAGES=C"
+    } > "$FOLD/hdd/etc/locale.conf"
 
-    echo > "$FOLD/hdd/etc/vconsole.conf"
-    echo "KEYMAP=de" >> "$FOLD/hdd/etc/vconsole.conf"
-    echo "FONT=LatArCyrHeb-16" >> "$FOLD/hdd/etc/vconsole.conf"
-
+    {
+      echo "KEYMAP=de"
+      echo "FONT=LatArCyrHeb-16"
+    } > "$FOLD/hdd/etc/vconsole.conf"
 
     return 0
   else
     return 1
   fi
 }
-
 # vim: ai:ts=2:sw=2:et
