@@ -47,7 +47,7 @@ setup_network_config() {
             echo "  address   $3"
             echo "  netmask   $5"
             echo "  gateway   $6"
-            if ! is_private_ip "$3"; then 
+            if ! is_private_ip "$3"; then
               echo "  # default route to access subnet"
               echo "  up route add -net $7 netmask $5 gw $6 $1"
             fi
@@ -124,25 +124,24 @@ setup_network_config() {
 
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
-  if [ -n "$1" ]; then
-    MDADMCONF="/etc/mdadm/mdadm.conf"
-    execute_chroot_command "/usr/share/mdadm/mkconf > $MDADMCONF"; EXITCODE=$?
-    # Enable mdadm
-    sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" \
-        "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" \
-        "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" \
-        "$FOLD/hdd/etc/default/mdadm"
-    if [ -f "$FOLD/hdd/etc/initramfs-tools/conf.d/mdadm" ]; then
-      sed -i "s/BOOT_DEGRADED=false/BOOT_DEGRADED=true # modified by installimage/" \
-        "$FOLD/hdd/etc/initramfs-tools/conf.d/mdadm"
-    fi
+  local mdadmconf="/etc/mdadm/mdadm.conf"
+  local initramfs_mdadmconf="$FOLD/hdd/etc/initramfs-tools/conf.d/mdadm"
+  execute_chroot_command "/usr/share/mdadm/mkconf > $mdadmconf"; declare -i EXITCODE=$?
 
-    return "$EXITCODE"
+  #
+  # Enable mdadm
+  #
+  local mdadmdefconf="$FOLD/hdd/etc/default/mdadm"
+  sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" "$mdadmdefconf"
+  sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" "$mdadmdefconf"
+  sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" "$mdadmdefconf"
+  sed -i -e "s/^INITRDSTART=.*/INITRDSTART='all' # modified by installimage/" "$mdadmdefconf"
+  if [ -f "$initramfs_mdadmconf" ]; then
+    sed -i "s/BOOT_DEGRADED=false/BOOT_DEGRADED=true # modified by installimage/" "$initramfs_mdadmconf"
   fi
-}
 
+  return "$EXITCODE"
+}
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
