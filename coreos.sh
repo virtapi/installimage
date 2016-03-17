@@ -60,12 +60,19 @@ extract_image() {
        ;;
       *)return 1;;
     esac
-    #TODO: what happens if COMPRESSION is empty because $2 is "bin"?
+
     # extract image with given compression
-    "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"; EXITCODE=$?
+    if [ -n "$COMPRESSION" ]; then
+      "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"
+      EXITCODE=$?
+    else
+      # or write binary file directly to disk
+      dd if="$EXTRACTFROM" of="${DRIVE1}" bs=1M
+      EXITCODE=$?
+    fi
 
     if [ "$EXITCODE" -eq "0" ]; then
-      echo "sucess " | debugoutput
+      debug "# sucess"
       # inform the OS of partition table changes
       blockdev --rereadpt "${DRIVE1}"
       return 0
