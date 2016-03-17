@@ -62,7 +62,7 @@ setup_network_config() {
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
   if [ "$1" ]; then
-	local mdadmconf="/etc/mdadm.conf"
+	  local mdadmconf="/etc/mdadm.conf"
     {
       echo "DEVICE partitions"
       echo "MAILADDR root"
