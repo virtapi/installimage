@@ -200,7 +200,7 @@ set_rootpassword() {
 
 # set sshd PermitRootLogin
 set_ssh_rootlogin() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
      local permit="$1"
      case "$permit" in
        yes|no|without-password|forced-commands-only)
@@ -230,7 +230,7 @@ EOF
 
 # copy_ssh_keys "$OPT_SSHKEYS_URL"
 copy_ssh_keys() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local key_url="$1"
     echo "ssh_authorized_keys:" >> "$CLOUDINIT"
     case "$key_url" in
@@ -261,7 +261,7 @@ write_grub() {
 }
 
 add_coreos_oem_scripts() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local mntpath=$1
 
     # add netname simplify script (use eth names)
@@ -292,7 +292,7 @@ EOF
 }
 
 add_coreos_oem_cloudconfig() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local mntpath=$1
     local cloudconfig="$mntpath/cloud-config.yml"
     echo "#cloud-config" > "$cloudconfig"
