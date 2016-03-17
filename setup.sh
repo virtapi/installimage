@@ -3,10 +3,7 @@
 #
 # mainmenu - choose which image should be installed
 #
-# originally written by Florian Wicke and David Mayr
 # (c) 2007-2016, Hetzner Online GmbH
-#
-# changed and extended by Tim Meusel
 #
 
 # read global variables and functions
