@@ -295,17 +295,15 @@ run_os_specific_functions() {
 }
 
 randomize_mdadm_checkarray_cronjob_time() {
-  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && grep -q checkarray "$FOLD/hdd/etc/cron.d/mdadm"; then
+  local mdcron; mdcron="$FOLD/hdd/etc/cron.d/mdadm"
+  if [ -f "$mdcron" ] && grep -q checkarray "$mdcron"; then
     declare -i hour minute day
     hour="$(((RANDOM % 4) + 1))"
     minute="$(((RANDOM % 59) + 1))"
     day="$(((RANDOM % 28) + 1))"
     debug "# Randomizing cronjob run time for mdadm checkarray: day $day @ $hour:$minute"
 
-    sed -i \
-      -e "s|^57 0 \* \* 0 |$minute $hour $day \* \* |" \
-      -e 's| && \[ \$\(date +\\%d\) -le 7 \]||' \
-      "$FOLD/hdd/etc/cron.d/mdadm"
+    sed -i -e "s/^[* 0-9]*root/$minute $hour $day * * root/" -e "s/ &&.*]//" "$mdcron"
   else
     debug '# No /etc/cron.d/mdadm found to randomize cronjob run time'
   fi
