@@ -190,20 +190,22 @@ generate_new_ramdisk() {
 
 setup_cpufreq() {
   if [ -n "$1" ]; then
-    LOADCPUFREQCONF="$FOLD/hdd/etc/default/loadcpufreq"
-    CPUFREQCONF="$FOLD/hdd/etc/default/cpufrequtils"
-    echo "### $COMPANY - installimage" > "$CPUFREQCONF"
-    echo '# cpu frequency scaling' >> "$CPUFREQCONF"
+    local loadcpufreqconf="$FOLD/hdd/etc/default/loadcpufreq"
+    local cpufreqconf="$FOLD/hdd/etc/default/cpufrequtils"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# cpu frequency scaling"
+    } > "$cpufreqconf"
     if isVServer; then
-      echo 'ENABLE="false"' > "$LOADCPUFREQCONF"
-      echo 'ENABLE="false"' >> "$CPUFREQCONF"
+      echo 'ENABLE="false"' > "$loadcpufreqconf"
+      echo 'ENABLE="false"' >> "$cpufreqconf"
     else
       {
-          echo 'ENABLE="true"'
-          printf 'GOVERNOR="%s"' "$1"
-          echo 'MAX_SPEED="0"'
-          echo 'MIN_SPEED="0"'
-      } >> "$CPUFREQCONF"
+        echo 'ENABLE="true"'
+        printf 'GOVERNOR="%s"', "$1"
+        echo 'MAX_SPEED="0"'
+        echo 'MIN_SPEED="0"'
+      } >> "$cpufreqconf"
     fi
 
     return 0
