@@ -135,7 +135,12 @@ Variables that contain an array:
 Arrays should be indicated by name and the loop variable should resamble this. Good example (take a look at the singular/plural here):
 ```bash
 declare -a harddrives
-for harddrive in "${hardrives[@]}"; do; done
+declare -i harddrives_number="${#harddrives[@]}"
+if [[ $harddrives_number -gt 0 ]]; then
+  for harddrive in harddrives; do
+    echo "$harddrive"
+  done
+fi
 ```
 
 ## Inspiration
