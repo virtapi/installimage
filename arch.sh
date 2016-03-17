@@ -75,7 +75,7 @@ generate_config_mdadm() {
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
     {
       echo "### $COMPANY - installimage"
@@ -98,7 +98,7 @@ generate_new_ramdisk() {
 }
 
 setup_cpufreq() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     if ! isVServer; then
       CPUFREQCONF="$FOLD/hdd/etc/default/cpupower"
       sed -i -e "s/#governor=.*/governor'$1'/" "$CPUFREQCONF"
