@@ -4,9 +4,10 @@
 # skip menu - use "autosetup" file
 #
 # originally written by Florian Wicke and David Mayr
-# (c) 2008-2015, Hetzner Online GmbH
+# (c) 2008-2016, Hetzner Online GmbH
 #
-
+# changed and extended by Tim Meusel
+#
 
 # read global variables and functions
 # shellcheck disable=SC1091

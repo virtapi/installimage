@@ -4,9 +4,10 @@
 # set all necessary vars and functions
 #
 # originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2016, Hetzner Online GmbH
 #
-
+# changed and extended by Tim Meusel
+#
 
 DEBUGFILE=/root/debug.txt
 
@@ -28,7 +29,9 @@ export OLDIMAGESPATH="$SCRIPTPATH/../images.old/"
 export IMAGESPATHTYPE="local"
 export IMAGESEXT="tar.gz"
 export IMAGEFILETYPE="tgz"
-export HETZNER_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
+export COMPANY_PUBKEY="$SCRIPTPATH/gpg/public-key.asc"
+export COMPANY="Example Awesome Company"
+export C_SHORT="example"
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
 export STATSSERVER="rz-admin.hetzner.de"

@@ -4,7 +4,9 @@
 # install - installation commands
 #
 # originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2016, Hetzner Online GmbH
+#
+# changed and extended by Tim Meusel
 #
 
 STATUS_POSITION="\033[60G"

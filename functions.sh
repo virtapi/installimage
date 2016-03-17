@@ -4,9 +4,10 @@
 # functions
 #
 # originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2016, Hetzner Online GmbH
 #
-
+# changed and extended by Tim Meusel
+#
 
 # nil settings parsed out of the config
 PART_COUNT=""
@@ -2194,10 +2195,10 @@ import_imagekey() {
   # check if pubkey is given by the customer
   if [ -n "$IMAGE_PUBKEY" ] && [ -e "$IMAGE_PUBKEY" ] ; then
     PUBKEY="$IMAGE_PUBKEY"
-  elif [ -e "$HETZNER_PUBKEY" ] ; then
+  elif [ -e "$COMPANY_PUBKEY" ] ; then
     # if no special pubkey given, use the hetzner key
-    echo "Using hetzner standard pubkey: $HETZNER_PUBKEY" | debugoutput
-    PUBKEY="$HETZNER_PUBKEY"
+    echo "Using standard pubkey: $COMPANY_PUBKEY" | debugoutput
+    PUBKEY="$COMPANY_PUBKEY"
   fi
   if [ -n "$PUBKEY" ] ; then
     # import public key
@@ -3917,4 +3918,13 @@ is_private_ip() {
  fi
 }
 
+# netmask_cidr_conv "$SUBNETMASK"
+netmask_cidr_conv() {
+  oct2nils=( [255]=0 [254]=1 [252]=2 [248]=3 [240]=4 [224]=5 [192]=6 [128]=7 [0]=8 )
+  local IFS='.' cidr; cidr=0
+  for oct in $1; do
+    cidr=$((cidr + oct2nils[oct]))
+  done
+  echo $cidr
+}
 # vim: ai:ts=2:sw=2:et
