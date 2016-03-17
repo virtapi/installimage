@@ -91,7 +91,7 @@ setup_network_config() {
       echo "[Network]" >> "$CONFIGFILE"
       if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
         debug "setting up ipv6 networking $8/$9 via ${10}"
-        { 
+        {
           echo "Address=$8/$9"
           echo "Gateway=${10}"
           echo ""
@@ -122,7 +122,7 @@ setup_network_config() {
   fi
 }
 
-# generate_mdadmconf "NIL"
+# generate_config_mdadm "NIL"
 generate_config_mdadm() {
   local mdadmconf="/etc/mdadm/mdadm.conf"
   local initramfs_mdadmconf="$FOLD/hdd/etc/initramfs-tools/conf.d/mdadm"
@@ -147,17 +147,18 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
     shopt -s extglob
+    local kvers;
     for file in "$FOLD/hdd/boot/initrd.img-"!(*.bak|*.gz); do
-      VERSION="${file##*/}"
-      VERSION="${VERSION#*-}"
+      kvers="${file##*/}"
+      kvers="${kvers#*-}"
     done
     shopt -u extglob
-    echo "Kernel Version found: $VERSION" | debugoutput
+    echo "Kernel Version found: $kvers" | debugoutput
 
     if [ "$IMG_VERSION" -ge 1204 ]; then
       # blacklist i915 driver due to many bugs and stability issues
       # required for Ubuntu 12.10 because of a kernel bug
-      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
       {
         echo "### $COMPANY - installimage"
         echo '### silence any onboard speaker'
@@ -172,12 +173,18 @@ generate_new_ramdisk() {
         echo 'blacklist mei_me'
       } > "$blacklist_conf"
     fi
-
+    # just make sure that we do not accidentally try to install a bootloader
+    # when we haven't configured grub yet
     sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
-    execute_chroot_command "update-initramfs -u -k $VERSION"; declare -i EXITCODE="$?"
+
+    # well, we might just as well update all initramfs and stop findling around
+    # to find out which kernel version is the latest
+    execute_chroot_command "update-initramfs -u -k $kvers"; EXITCODE=$?
+
+    # re-enable updates to grub
     sed -i "s/do_bootloader = no/do_bootloader = yes/" "$FOLD/hdd/etc/kernel-img.conf"
 
-    return "$EXITCODE"
+    return $EXITCODE
   fi
 }
 
