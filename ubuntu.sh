@@ -229,14 +229,14 @@ write_lilo() {
 }
 
 #
-# generate_config_grub <version>
+# generate_config_grub
 #
 # Generate the GRUB bootloader configuration.
 #
 generate_config_grub() {
+  declare -i EXITCODE=0
 
-  ubuntu_grub_fix
-  execute_chroot_command "cd /boot; [ -e boot ] && rm -rf boot; ln -s . boot >> /dev/null 2>&1"
+  local grubdefconf="$FOLD/hdd/etc/default/grub"
 
   # set linux_default in grub
   local grub_linux_default="nomodeset"
@@ -249,24 +249,28 @@ generate_config_grub() {
   fi
 
   # H8SGL need workaround for iommu
-  if dmidecode -s baseboard-product-name | grep -q -i h8sgl && [ "$IMG_VERSION" -ge 1404 ] ; then
+  if [ "$MBTYPE" = 'H8SGL' ] && [ "$IMG_VERSION" -ge 1404 ] ; then
     grub_linux_default="${grub_linux_default} iommu=noaperture"
   fi
 
-  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
+  sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
+  # need to sort escapes of this cmd to use without execute_chroot
   execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
-  execute_chroot_command 'echo -e "\n# only use text mode - other modes may scramble screen\nGRUB_GFXPAYLOAD_LINUX=\"text\"\n" >>/etc/default/grub'
+  {
+    echo ""
+    echo "# only use text mode - other modes may scramble screen"
+    echo 'GRUB_GFXPAYLOAD_LINUX="text"'
+  } >> "$grubdefconf"
 
   # create /run/lock if it didn't exist because it is needed by grub-mkconfig
-  execute_chroot_command "mkdir -p /run/lock"
+  mkdir -p "$FOLD/hdd/run/lock"
 
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
   # only install grub2 in mbr of all other drives if we use swraid
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-      local disk
-      disk="$(eval echo "\$DRIVE"$i)"
+      local disk; disk="$(eval echo "\$DRIVE$i")"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
     fi
   done
@@ -277,7 +281,8 @@ generate_config_grub() {
   if [ "$SWRAID" = "0" ]; then
     PARTNUM="$((PARTNUM - 1))"
   fi
-  return 0
+
+  return "$EXITCODE"
 }
 
 #
