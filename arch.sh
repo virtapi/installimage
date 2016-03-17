@@ -62,10 +62,12 @@ setup_network_config() {
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
   if [ "$1" ]; then
-    MDADMCONF="/etc/mdadm.conf"
-    echo "DEVICES /dev/[hs]d*" > "$FOLD/hdd$MDADMCONF"
-    echo "MAILADDR root" >> "$FOLD/hdd$MDADMCONF"
-    execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; EXITCODE=$?
+	local mdadmconf="/etc/mdadm.conf"
+    {
+      echo "DEVICE partitions"
+      echo "MAILADDR root"
+    } > "$FOLD/hdd$mdadmconf"
+    execute_chroot_command "mdadm --examine --scan >> $mdadmconf"; declare -i EXITCODE=$?
     return "$EXITCODE"
   fi
 }
