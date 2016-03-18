@@ -123,13 +123,13 @@ generate_config_mdadm() {
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
 
     # pick the latest kernel
     for file in "$FOLD/hdd/boot/vmlinuz-"*; do VERSION="${file#*-}"; done
 
     if [ "$IMG_VERSION" -lt 60 ] ; then
-      declare -r MODULESFILE="$FOLD/hdd/etc/modprobe.conf"
+      local modulesfile="$FOLD/hdd/etc/modprobe.conf"
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
       # So we only add aliases for the controller
@@ -138,19 +138,19 @@ generate_new_ramdisk() {
         echo "# load all modules"
         echo ""
         echo "# hdds"
-      } > "$MODULESFILE" 2>> "$DEBUGFILE"
+      } > "$modulesfile"
 
       HDDDEV=""
       for hddmodule in $MODULES; do
         if [ "$hddmodule" != "powernow-k8" ] && [ "$hddmodule" != "via82cxxx" ] && [ "$hddmodule" != "atiixp" ]; then
-          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$modulesfile"
           HDDDEV="$((HDDDEV + 1))"
         fi
       done
-      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "" >> "$modulesfile"
     elif [ "$IMG_VERSION" -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
-      local -r blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
       {
         echo "### $COMPANY - installimage"
         echo "### silence any onboard speaker"
@@ -162,29 +162,36 @@ generate_new_ramdisk() {
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
-      declare -r DRACUTFILE="$FOLD/hdd/etc/dracut.conf.d/hetzner.conf"
+      local dracutfile="$FOLD/hdd/etc/dracut.conf.d/99-$C_SHORT.conf"
       {
-        echo 'add_dracutmodules+="mdraid lvm"'
-        echo 'add_drivers+="raid1 raid10 raid0 raid456"'
-        echo 'mdadmconf="yes"'
-        echo 'lvmconf="yes"'
+        echo "### $COMPANY - installimage"
+        echo 'add_dracutmodules+="lvm mdraid"'
+        echo 'add_drivers+="raid0 raid1 raid10 raid456"'
+        #echo 'early_microcode="no"'
         echo 'hostonly="no"'
-        echo 'early_microcode="no"'
-      } >> "$DRACUTFILE"
+        echo 'hostonly_cmdline="no"'
+        echo 'lvmconf="yes"'
+        echo 'mdadmconf="yes"'
+        echo 'persistent_policy="by-uuid"'
+      } > "$dracutfile"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
-      execute_chroot_command "/sbin/dracut -f --kver $VERSION"; declare -i EXITCODE=$?
+      execute_chroot_command "/sbin/dracut -f --kver $VERSION"
+      declare -i EXITCODE=$?
     else
       if [ "$IMG_VERSION" -ge 60 ] ; then
-        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"; declare -i EXITCODE="$?"
+        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"
+        declare -i EXITCODE=$?
       else
-        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"; declare -i EXITCODE="$?"
+        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"
+        declare -i EXITCODE=$?
       fi
     fi
     return "$EXITCODE"
   fi
 }
+
 
 
 setup_cpufreq() {
