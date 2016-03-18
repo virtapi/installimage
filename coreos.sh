@@ -87,7 +87,7 @@ setup_network_config() {
   return 0
 }
 
-# generate_mdadmconf "NIL"
+# generate_config_mdadm "NIL"
 generate_config_mdadm() {
   return 0
 }
