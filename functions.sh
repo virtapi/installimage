@@ -176,15 +176,15 @@ create_config() {
     fi
 
     {
-      echo "## ==================================================="
-      echo "##  Hetzner Online GmbH - installimage - standardconfig "
-      echo "## ==================================================="
+      echo "## ======================================================"
+      echo "##  $COMPANY - installimage - standardconfig "
+      echo "## ======================================================"
       echo ""
     } > "$CNF"
 
     # first drive
     {
-      echo "" >> "$CNF"
+      echo ""
       echo "## ===================="
       echo "##  HARD DISK DRIVE(S):"
       echo "## ===================="
@@ -195,19 +195,19 @@ create_config() {
 
     local found_optdrive=0
     local optdrive_count=0
-    for i in $(seq 1 $COUNT_DRIVES) ; do
-      DISK="$(eval echo \$DRIVE"${i}")"
-      OPTDISK="$(eval echo \$OPT_DRIVE"${i}")"
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
+      DISK="$(eval echo \$DRIVE${i})"
+      OPTDISK="$(eval echo \$OPT_DRIVE${i})"
       if [ -n "$OPTDISK" ] ; then
         optdrive_count=$((optdrive_count+1))
         found_optdrive=1
-        hdinfo "/dev/$OPTDISK" >>"$CNF"
-        echo "DRIVE$i /dev/$OPTDISK" >>"$CNF"
+        hdinfo "/dev/$OPTDISK" >> "$CNF"
+        echo "DRIVE$i /dev/$OPTDISK" >> "$CNF"
       else
-        hdinfo "$DISK" >>"$CNF"
+        hdinfo "$DISK" >> "$CNF"
         # comment drive out when not given via commandline
-        [ $found_optdrive -eq 1 ] && echo -n "# " >>"$CNF"
-        echo "DRIVE$i $DISK" >>"$CNF"
+        [ $found_optdrive -eq 1 ] && echo -n "# " >> "$CNF"
+        echo "DRIVE$i $DISK" >> "$CNF"
       fi
     done
 
@@ -216,20 +216,24 @@ create_config() {
 
     echo "" >> "$CNF"
     if [ $COUNT_DRIVES -gt 2 ] ; then
-     if [ $COUNT_DRIVES -lt 4 ] ; then
-       echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5" >>"$CNF"
-       echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>"$CNF"
-     else
-       echo "## if you dont want raid over all of your drives then comment out the following line and set SWRAIDLEVEL not to 5 or 6 or 10" >>"$CNF"
-       echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>"$CNF"
-     fi
-    fi
+      if [ $COUNT_DRIVES -lt 4 ] ; then
+        {
+          echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5"
+          echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks"
+        } >> "$CNF"
+      else
+        {
+          echo "## if you dont want raid over all of your drives then comment out the following line and set SWRAIDLEVEL not to 5 or 6 or 10"
+          echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks"
+        } >> "$CNF"
+      fi
+		fi
     echo "" >> "$CNF"
 
     # software-raid
     if [ $COUNT_DRIVES -gt 1 ]; then
       {
-        echo "" >> "$CNF"
+        echo ""
 
         echo "## ==============="
         echo "##  SOFTWARE RAID:"
@@ -245,15 +249,15 @@ create_config() {
         *) echo "SWRAID $DEFAULTSWRAID" >> "$CNF" ;;
       esac
 
-      echo >> "$CNF"
+      echo '' >> "$CNF"
 
       # available raidlevels
       local raid_levels="0 1 5 6 10"
       # set default raidlevel
       local default_level="$DEFAULTTWODRIVESWRAIDLEVEL"
-      if [ $COUNT_DRIVES -eq 3 ] ; then
+      if [ "$COUNT_DRIVES" -eq 3 ] ; then
         default_level="$DEFAULTTHREEDRIVESWRAIDLEVEL"
-      elif [ $COUNT_DRIVES -gt 3 ] ; then
+      elif [ "$COUNT_DRIVES" -gt 3 ] ; then
         default_level="$DEFAULTFOURDRIVESWRAIDLEVEL"
       fi
 
@@ -310,10 +314,19 @@ create_config() {
     } >> "$CNF"
 
     if [ "$NOLILO" ]; then
-      echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> "$CNF"
-      echo "BOOTLOADER grub" >> "$CNF"
+      {
+        echo ""
+        echo "## Do not change. This image does not include or support lilo (grub only)!:"
+        echo ""
+        echo "BOOTLOADER grub"
+        echo ""
+      } >> "$CNF"
     else
-      echo -e "\n## which bootloader should be used?  < lilo | grub >\n" >> "$CNF"
+      {
+        echo ""
+        echo "## which bootloader should be used?  < lilo | grub >"
+        echo ""
+      } >> "$CNF"
       case "$OPT_BOOTLOADER" in
         lilo) echo "BOOTLOADER lilo" >> "$CNF" ;;
         grub) echo "BOOTLOADER grub" >> "$CNF" ;;
@@ -340,7 +353,7 @@ create_config() {
     # or to proxmox if chosen
     if [ "$PROXMOX" = "true" ]; then
       echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> "$CNF"
-      DEFAULT_HOSTNAME="Proxmox-VE.localdomain"
+      DEFAULT_HOSTNAME="Proxmox-VE.yourdomain.localdomain"
     fi
     # or to the hostname passed through options
     [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
@@ -480,8 +493,11 @@ create_config() {
 
     # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
     if isVServer; then
-#      DEFAULTPARTS=${DEFAULTPARTS//ext4/ext3}
-      DEFAULTPARTS="$DEFAULTPARTS_VSERVER"
+      if [ "$SYSTYPE" = "vServer" ]; then
+        DEFAULTPARTS=$DEFAULTPARTS_CLOUDSERVER
+      else
+        DEFAULTPARTS=$DEFAULTPARTS_VSERVER
+      fi
     fi
 
     # use /var instead of /home for all partition when installing plesk
@@ -506,7 +522,7 @@ create_config() {
       [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >> "$CNF" || echo -e "$DEFAULTPARTS" >> "$CNF"
     fi
 
-    [ "$OPT_LVS" ] && echo "$OPT_LVS" >> "$CNF"
+    [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >> "$CNF"
     echo "" >> "$CNF"
 
     # image
