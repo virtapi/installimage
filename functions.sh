@@ -571,16 +571,17 @@ create_config() {
 }
 
 getdrives() {
-  local DRIVES; DRIVES="$(sfdisk -s 2>/dev/null | sort -u | grep -e "/dev/[hsv]d" | cut -d: -f1)"
+  local drives;
+  drives="$(find /sys/block/ \( -name  'nvme[0-9]n[0-9]' -o  -name '[hvs]d[a-z]' \) -printf '%f\n')"
   local i=1
 
   #cast drives into an array
-  DRIVES=( $DRIVES )
+  drives=( $drives )
 
-  for drive in ${DRIVES[*]} ; do
+  for drive in ${drives[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
-    if [ ${#DRIVES[@]} -eq 1 ] || [ ! "$(fdisk -s "$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
-      eval DRIVE$i="$drive"
+    if [ ${#drives[@]} -eq 1 ] || [ ! "$(fdisk -s "$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
+      eval DRIVE$i="/dev/$drive"
       let i=i+1
     fi
   done
