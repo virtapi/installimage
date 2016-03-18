@@ -177,7 +177,7 @@ create_config() {
 
     {
       echo "## ======================================================"
-      echo "##  $COMPANY - installimage - standardconfig"
+      echo "##  $COMPANY - installimage - standard config"
       echo "## ======================================================"
       echo ""
     } > "$CNF"
