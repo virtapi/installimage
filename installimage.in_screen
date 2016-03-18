@@ -28,7 +28,7 @@ case $1 in
       if [ $EXITCODE -eq 0 ] ; then
         echo -e "\n\n\n===>  Erfolgreich beendet.\n"
         echo "Der Computer wird in $TIMEOUT Sekunden neu gestartet !"
-        echon "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
+        echo "Druecken sie jetzt eine beliebige Taste, um den Neustart zu verhindern: "
         # shellcheck disable=SC2034
         for i in $(seq 1 $TIMEOUT) ; do
           echo -n "."
