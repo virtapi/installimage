@@ -169,7 +169,7 @@ validate_image() {
 # extract image file to hdd
 extract_image() {
   LANG=C pacstrap -m -a "$FOLD/hdd" base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget 2>&1 | debugoutput
-	declare -i EXITCODE=$?
+  declare -i EXITCODE=$?
 
   if [ "$EXITCODE" -eq "0" ]; then
     cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" 2>&1 | debugoutput
@@ -183,7 +183,7 @@ extract_image() {
     execute_chroot_command "locale-gen"
 
     {
-      echo "LANG=de_DE.UTF-8"
+      echo "LANG=en_US.UTF-8"
       echo "LC_MESSAGES=C"
     } > "$FOLD/hdd/etc/locale.conf"
 

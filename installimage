@@ -8,11 +8,11 @@
 
 # simple params - restart with other params
 case $1 in
-  proxmox)		exec "$0" -c proxmox -x proxmox ;;
-  hsa-baculadir)        exec "$0" -c hsa-baculadir -x hsa-baculadir ;;
-  hsa-minimal64)        exec "$0" -c hsa-minimal64 -x hsa-minimal64 ;;
-  hsa-managed)		exec "$0" -c hsa-managed -x hsa-managed ;;
-  hsa-sql)		exec "$0" -c hsa-sql -x hsa-sql ;;
+  proxmox)        exec "$0" -c proxmox -x proxmox ;;
+  hsa-baculadir)  exec "$0" -c hsa-baculadir -x hsa-baculadir ;;
+  hsa-minimal64)  exec "$0" -c hsa-minimal64 -x hsa-minimal64 ;;
+  hsa-managed)    exec "$0" -c hsa-managed -x hsa-managed ;;
+  hsa-sql)        exec "$0" -c hsa-sql -x hsa-sql ;;
 esac
 
 
@@ -47,8 +47,10 @@ echo > "$DEBUGFILE"
 
 # get command line options
 if [ $# -lt 1 ] && [ ! -e "$AUTOSETUPCONFIG" ] ; then
-  echo -e "\n${YELLOW}run  'installimage -h'  to get help for command line arguments."
-  echo -e "${GREEN}starting interactive mode ...${NOCOL}\n"
+  echo ''
+  echo -e "${YELLOW}run  'installimage -h'  to get help for command line arguments."
+  echo -e "${GREEN}starting interactive mode ...${NOCOL}"
+  echo ''
   # press any key or sleep 1 sec ...
   # shellcheck disable=SC2162
   read -n1 -t1
@@ -121,7 +123,8 @@ if [ -e "$AUTOSETUPCONFIG" ] ; then
     # shellcheck disable=SC1090
      . "$AUTOSETUPFILE" ; EXITCODE=$?
   else
-    echo -e "${RED}\nERROR: $AUTOSETUPFILE does not exist${NOCOL}"
+    echo ''
+    echo -e "${RED}ERROR: $AUTOSETUPFILE does not exist${NOCOL}"
     debug "=> FAILED, $AUTOSETUPFILE does not exist"
   fi
 
@@ -134,7 +137,8 @@ else
      . "$SETUPFILE" ; EXITCODE=$?
   else
     debug "=> FAILED, $SETUPFILE does not exist"
-    echo -e "${RED}\nERROR: Cant find files${NOCOL}"
+    echo ''
+    echo -e "${RED}ERROR: Cant find files${NOCOL}"
   fi
 fi
 

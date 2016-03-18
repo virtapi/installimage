@@ -37,7 +37,7 @@ echo "" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 
 The `{` and the `}` have to be in own lines and the content between them indented by two spaces. Here is another bad example:
 ```bash
-{	echo "### $COMPANY - installimage"
+{ echo "### $COMPANY - installimage"
 echo "# Loopback device:"
 echo "auto lo"
 echo "iface lo inet loopback"
@@ -49,11 +49,11 @@ Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is usel
 This good example is:
 ```bash
 {
-	echo "### $COMPANY - installimage"
-	echo "# Loopback device:"
-	echo "auto lo"
-	echo "iface lo inet loopback"
-	echo ""
+  echo "### $COMPANY - installimage"
+  echo "# Loopback device:"
+  echo "auto lo"
+  echo "iface lo inet loopback"
+  echo ""
 } > "$CONFIGFILE"
 ```
 
@@ -76,20 +76,20 @@ printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATT
 For security and performance reasons we should use bash builtins whereever possible. Bad example for iterations:
 ```bash
 for i in $(seq 1 $COUNT_DRIVES) ; do
-	if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
-		local disk="$(eval echo "\$DRIVE"$i)"
-		execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
-	fi
+  if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
+    local disk="$(eval echo "\$DRIVE"$i)"
+    execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+  fi
 done
 ```
 
 and a good example:
 ```bash
 for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-	if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-		local disk; disk="$(eval echo "\$DRIVE"$i)"
-		execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
-	fi
+  if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
+    local disk; disk="$(eval echo "\$DRIVE"$i)"
+    execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+  fi
 done
 ```
 

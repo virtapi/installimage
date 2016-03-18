@@ -79,8 +79,10 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       echo "$OPT_CONFIGFILE" | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
       cp "$OPT_CONFIGFILE" /autosetup
       if grep -q PASSWD /autosetup ; then
-        echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
-        echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
+        echo ''
+        echo ''
+        echo -e "${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
+        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
         echo ""
         echo -n "PASSWORD:  "
         read -r -s imagepasswd
@@ -97,12 +99,12 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
       echo "$OPT_POSTINSTALLFILE" | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
-      ln -fs "$OPT_POSTINSTALLFILE" /post-install
+      ln -sf "$OPT_POSTINSTALLFILE" /post-install
     ;;
 
     # automatic mode
@@ -112,7 +114,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     n)
       OPT_HOSTNAME="$OPTARG"
       if [ -e /autosetup ]; then
-	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
+        sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
       fi
     ;;
 
@@ -202,13 +204,13 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       esac
     ;;
 
-	s)
-    export OPT_LANGUAGE="$OPTARG"
-  ;;
+    s)
+      export OPT_LANGUAGE="$OPTARG"
+    ;;
 
-	z)
-    export OPT_INSTALL="$OPTARG"
-  ;;
+    z)
+      export OPT_INSTALL="$OPTARG"
+    ;;
 
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.

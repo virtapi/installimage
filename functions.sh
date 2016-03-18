@@ -1071,7 +1071,7 @@ validate_vars() {
 
     done
     if [ "$WARNBTRFS" = "1" ]; then
-	graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
+      graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
     fi
   else
    graph_error "ERROR: The config has no partitions"
@@ -1728,8 +1728,8 @@ create_partitions() {
 
 #    if [ "$SWRAID" = "1" ]; then
 #      if [ "$SECTOR_DIFF" -lt "250" ]; then
-#	part_end_diff=$((250-SECTOR_DIFF))
-#	NEW_LAST_PART_END=$((LAST_PART_END-part_end_diff))
+#       part_end_diff=$((250-SECTOR_DIFF))
+#       NEW_LAST_PART_END=$((LAST_PART_END-part_end_diff))
 
 #        parted -s $1 mkfs $PART_COUNT linux-swap >/dev/null 2>/tmp/$$.tmp
 #        parted -s $1 unit s resize ${PART_COUNT} ${LAST_PART_START} ${NEW_LAST_PART_END} >/dev/null 2>/tmp/$$.tmp
@@ -2611,7 +2611,7 @@ generate_hosts() {
     } > "$HOSTSFILE"
     if [ "$2" ]; then
       if [ "$PROXMOX" = 'true' ] && [ "$PROXMOX_VERSION" = '3' ]; then
-	debug "not adding ipv6 fqdn to hosts for Proxmox3"
+        debug "not adding ipv6 fqdn to hosts for Proxmox3"
       else
         echo "$2 $FULLHOSTNAME $HOSTNAME" >> "$HOSTSFILE"
       fi
@@ -3181,6 +3181,113 @@ create_hostname() {
 
 }
 
+# Executes a command within a systemd-nspawn container <command>
+execute_nspawn_command() {
+  local command="${1}"
+
+  local mount_point_blacklist=/dev
+  mount_point_blacklist="${mount_point_blacklist} /proc"
+  mount_point_blacklist="${mount_point_blacklist} /sys"
+
+  local container_root_dir=${FOLD}/hdd
+  local working_dir=${FOLD}
+
+  local temp_io_fifo=${container_root_dir}/temp_io.fifo
+  local temp_retval_fifo=${container_root_dir}/temp_retval.fifo
+  local temp_helper_script=${container_root_dir}/temp_helper.sh
+  local temp_helper_service_file=${container_root_dir}/etc/systemd/system/multi-user.target.wants/temp_helper.service
+  local temp_container_service_file=/lib/systemd/system/temp_container.service
+  local temp_umounted_mount_point_list=${working_dir}/temp_umounted_mount_points.txt
+
+  local command_retval=
+
+  local temp_files=${temp_io_fifo}
+  temp_files="${temp_files} ${temp_retval_fifo}"
+  temp_files="${temp_files} ${temp_helper_script}"
+  temp_files="${temp_files} ${temp_helper_service_file}"
+  temp_files="${temp_files} ${temp_container_service_file}"
+  temp_files="${temp_files} ${temp_umounted_mount_point_list}"
+
+  echo "Executing \"${command}\" within a systemd nspawn container" | debugoutput
+
+  mkfifo "$temp_io_fifo"
+  mkfifo "$temp_retval_fifo"
+
+  ### ### ### ### ### ### ### ### ### ###
+
+  cat <<HEREDOC > ${temp_helper_script}
+#!/usr/bin/env bash
+### $COMPANY installimage
+trap "poweroff" 0
+\$(cat /$(basename "$temp_io_fifo")) &> /$(basename "$temp_io_fifo")
+echo \${?} > /$(basename "$temp_retval_fifo")
+HEREDOC
+
+  chmod a+x "$temp_helper_script"
+
+  ### ### ### ### ### ### ### ### ### ###
+
+  cat <<HEREDOC > ${temp_helper_service_file}
+### $COMPANY installimage
+[Unit]
+Description=Temporary helper service
+After=network.target
+[Service]
+ExecStart=/$(basename "$temp_helper_script")
+HEREDOC
+
+  ### ### ### ### ### ### ### ### ### ###
+
+  cat <<HEREDOC > $temp_container_service_file
+### $COMPANY installimage
+[Unit]
+Description=Temporary container service
+[Service]
+ExecStart=/usr/bin/systemd-nspawn \
+  --boot \
+  --directory=$container_root_dir \
+  --quiet
+HEREDOC
+
+  ### ### ### ### ### ### ### ### ### ###
+
+  touch "$temp_umounted_mount_point_list"
+
+  echo "Temporarily umounting blacklisted mount points in order to start the systemd nspawn container" | debugoutput
+
+  while read -r entry; do
+    for blacklisted_mount_point in ${mount_point_blacklist}; do
+      while read -r subentry; do
+        umount --verbose "$(echo "$subentry" | awk '{ print $2 }')" 2>&1 | debugoutput || return 1
+        echo "$subentry" | cat - "$temp_umounted_mount_point_list" | uniq --unique > "$temp_umounted_mount_point_list"2
+        mv "$temp_umounted_mount_point_list"2 "$temp_umounted_mount_point_list"
+      done < <(echo "$entry" | grep "$container_root_dir$blacklisted_mount_point")
+    done
+  done < <(tac /proc/mounts)
+
+  echo "Starting the systemd nspawn container" | debugoutput
+
+  systemctl daemon-reload 2>&1 | debugoutput || return 1
+  systemctl start "$(basename $temp_container_service_file)" 2>&1 | debugoutput || return 1
+
+  echo "$command" > "$temp_io_fifo"
+  debugoutput < "$temp_io_fifo"
+  command_retval="$(cat "$temp_retval_fifo")"
+
+  while systemctl is-active "$(basename $temp_container_service_file)" &> /dev/null; do
+    sleep 2
+  done
+
+  echo "The systemd nspawn container shut down" | debugoutput
+
+  echo "Remounting temporarily umounted mount points" | debugoutput
+
+  mount --all --fstab "$temp_umounted_mount_point_list" --verbose 2>&1 | debugoutput || return 1
+
+  rm --force "$temp_files"
+
+  return "$command_retval"
+}
 
 # check for latest subversion of Plesk
 check_plesk_subversion() {
