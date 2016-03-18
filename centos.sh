@@ -332,7 +332,7 @@ write_grub() {
     for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
-        execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" 
+        execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1"
         declare -i EXITCODE=$?
       fi
     done
