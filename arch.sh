@@ -183,7 +183,7 @@ extract_image() {
     execute_chroot_command "locale-gen"
 
     {
-      echo "LANG=de_DE.UTF-8"
+      echo "LANG=en_US.UTF-8"
       echo "LC_MESSAGES=C"
     } > "$FOLD/hdd/etc/locale.conf"
 
