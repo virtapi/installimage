@@ -3182,7 +3182,7 @@ create_hostname() {
 }
 
 # Executes a command within a systemd-nspawn container <command>
-execute_command_within_a_systemd_nspawn_container() {
+execute_nspawn_command() {
   local command="${1}"
 
   local mount_point_blacklist=/dev
