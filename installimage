@@ -8,11 +8,11 @@
 
 # simple params - restart with other params
 case $1 in
-  proxmox)		exec "$0" -c proxmox -x proxmox ;;
-  hsa-baculadir)        exec "$0" -c hsa-baculadir -x hsa-baculadir ;;
-  hsa-minimal64)        exec "$0" -c hsa-minimal64 -x hsa-minimal64 ;;
-  hsa-managed)		exec "$0" -c hsa-managed -x hsa-managed ;;
-  hsa-sql)		exec "$0" -c hsa-sql -x hsa-sql ;;
+  proxmox)        exec "$0" -c proxmox -x proxmox ;;
+  hsa-baculadir)  exec "$0" -c hsa-baculadir -x hsa-baculadir ;;
+  hsa-minimal64)  exec "$0" -c hsa-minimal64 -x hsa-minimal64 ;;
+  hsa-managed)    exec "$0" -c hsa-managed -x hsa-managed ;;
+  hsa-sql)        exec "$0" -c hsa-sql -x hsa-sql ;;
 esac
 
 

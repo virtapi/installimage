@@ -1071,7 +1071,7 @@ validate_vars() {
 
     done
     if [ "$WARNBTRFS" = "1" ]; then
-	graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
+      graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
     fi
   else
    graph_error "ERROR: The config has no partitions"
@@ -1728,8 +1728,8 @@ create_partitions() {
 
 #    if [ "$SWRAID" = "1" ]; then
 #      if [ "$SECTOR_DIFF" -lt "250" ]; then
-#	part_end_diff=$((250-SECTOR_DIFF))
-#	NEW_LAST_PART_END=$((LAST_PART_END-part_end_diff))
+#       part_end_diff=$((250-SECTOR_DIFF))
+#       NEW_LAST_PART_END=$((LAST_PART_END-part_end_diff))
 
 #        parted -s $1 mkfs $PART_COUNT linux-swap >/dev/null 2>/tmp/$$.tmp
 #        parted -s $1 unit s resize ${PART_COUNT} ${LAST_PART_START} ${NEW_LAST_PART_END} >/dev/null 2>/tmp/$$.tmp
@@ -2611,7 +2611,7 @@ generate_hosts() {
     } > "$HOSTSFILE"
     if [ "$2" ]; then
       if [ "$PROXMOX" = 'true' ] && [ "$PROXMOX_VERSION" = '3' ]; then
-	debug "not adding ipv6 fqdn to hosts for Proxmox3"
+        debug "not adding ipv6 fqdn to hosts for Proxmox3"
       else
         echo "$2 $FULLHOSTNAME $HOSTNAME" >> "$HOSTSFILE"
       fi

@@ -429,13 +429,13 @@ if [ "$OPT_INSTALL" ]; then
         status_busy_nostep "  Installing PLESK Control Panel"
         debug "# installing PLESK"
         install_plesk "$opt_item"
-	status_donefailed $?
+        status_donefailed $?
         ;;
       omsa)
         status_busy_nostep "  Installing Open Manage"
         debug "# installing OMSA"
         install_omsa
-	status_donefailed $?
+        status_donefailed $?
         ;;
     esac
   done
