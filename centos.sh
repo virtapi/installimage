@@ -192,8 +192,6 @@ generate_new_ramdisk() {
   fi
 }
 
-
-
 setup_cpufreq() {
   if [ -n "$1" ]; then
     if isVServer; then
@@ -206,24 +204,26 @@ setup_cpufreq() {
       debug "no cpufreq configuration necessary"
     else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
-      local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
+      local cpufreqconf="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
       {
         echo "#!/bin/sh"
         echo "### $COMPANY - installimage"
         echo "# cpu frequency scaling"
         echo "# this gets started by /etc/rc.sysinit"
-      } > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      } > "$cpufreqconf"
 
       if [ "$(check_cpu)" = "intel" ]; then
         debug "# Setting: cpufreq modprobe to intel"
-        echo "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-        echo "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        {
+          echo "modprobe intel_pstate >> /dev/null 2>&1"
+          echo "modprobe acpi-cpufreq >> /dev/null 2>&1"
+        } >> "$cpufreqconf"
       else
         debug "# Setting: cpufreq modprobe to amd"
-        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$cpufreqconf"
       fi
-      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      chmod a+x "$CPUFREQCONF" >> "$DEBUGFILE"
+      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$cpufreqconf"
+      chmod a+x "$cpufreqconf" 2>> "$DEBUGFILE"
 
     return 0
     fi
