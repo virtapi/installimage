@@ -6,6 +6,7 @@
 # (c) 2008-2016, Hetzner Online GmbH
 #
 
+
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
@@ -20,6 +21,7 @@ setup_network_config() {
       echo "# device: $1"
       printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
     } > "$UDEVFILE"
+
     local upper_mac="${2^^*}"
 
     NETWORKFILE="$FOLD/hdd/etc/sysconfig/network"
@@ -29,17 +31,22 @@ setup_network_config() {
       echo "NETWORKING=yes"
     } > "$NETWORKFILE"
 
+    rm -f "$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-en*"
+
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-$1"
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network-scripts/route-$1"
 
-    echo "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "#"
+    } > "$CONFIGFILE"
+
     if ! is_private_ip "$3"; then
       {
         echo "# Note for customers who want to create bridged networking for virtualisation:"
         echo "# Gateway is set in separate file"
         echo "# Do not forget to change interface in file route-$1 and rename this file"
-      } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      } >> "$CONFIGFILE"
     fi
     {
       echo "#"
@@ -47,16 +54,24 @@ setup_network_config() {
       echo "DEVICE=$1"
       echo "BOOTPROTO=none"
       echo "ONBOOT=yes"
-    } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    } >> "$CONFIGFILE"
+
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "HWADDR=$upper_mac"
+        echo "IPADDR=$3"
+      } >> "$CONFIGFILE"
+
       if is_private_ip "$3"; then
-        echo "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        {
+          echo "NETMASK=$5"
+          echo "GATEWAY=$6"
+        } >> "$CONFIGFILE"
       else
-        echo "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        {
+          echo "NETMASK=255.255.255.255"
+          echo "SCOPE=\"peer $6\""
+        } >> "$CONFIGFILE"
 
         {
           echo "### $COMPANY - installimage"
@@ -64,24 +79,24 @@ setup_network_config() {
           echo "ADDRESS0=0.0.0.0"
           echo "NETMASK0=0.0.0.0"
           echo "GATEWAY0=$6"
-        } > "$ROUTEFILE" 2>> "$DEBUGFILE"
+        } > "$ROUTEFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
+      echo "NETWORKING_IPV6=yes" >> "$NETWORKFILE"
       {
-        echo "NETWORKING_IPV6=yes"
         echo "IPV6INIT=yes"
         echo "IPV6ADDR=$8/$9"
         echo "IPV6_DEFAULTGW=${10}"
         echo "IPV6_DEFAULTDEV=$1"
-      } >> "$NETWORKFILE" 2>> "$DEBUGFILE"
+      } >> "$CONFIGFILE"
     fi
 
     # set duplex/speed
     if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
     fi
 
     # remove all hardware info from image (CentOS 5)
