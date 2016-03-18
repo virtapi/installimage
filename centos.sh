@@ -414,9 +414,9 @@ randomize_cpanel_mysql_passwords() {
 # set the content of /var/cpanel/mainip correct
 #
 change_mainIP() {
-  MAINIPFILE="/var/cpanel/mainip"
-  debug "changing content of ${MAINIPFILE}"
-  execute_chroot_command "echo -n ${IPADDR} > $MAINIPFILE"
+  local mainipfile="/var/cpanel/mainip"
+  debug "changing content of ${mainipfile}"
+  echo -n "${IPADDR}" > "$FOLD/hdd/$mainipfile"
 }
 
 #
