@@ -421,21 +421,23 @@ change_mainIP() {
 
 #
 # set the correct hostname, IP and nameserver in /etc/wwwacct.conf
-#
 modify_wwwacct() {
-  WWWACCT="/etc/wwwacct.conf"
-  NS="ns1.first-ns.de"
-  NS2="robotns2.second-ns.de"
-  NS3="robotns3.second-ns.com"
+  local wwwacct="/etc/wwwacct.conf"
+  local wfile="$FOLD/hdd/$wwwacct"
 
-  debug "setting hostname in ${WWWACCT}"
-  execute_chroot_command "echo \"HOST ${SETHOSTNAME}\" >> $WWWACCT"
-  debug "setting IP in ${WWWACCT}"
-  execute_chroot_command "echo \"ADDR ${IPADDR}\" >> $WWWACCT"
-  debug "setting NS in ${WWWACCT}"
-  execute_chroot_command "echo \"NS ${NS}\" >> $WWWACCT"
-  execute_chroot_command "echo \"NS2 ${NS2}\" >> $WWWACCT"
-  execute_chroot_command "echo \"NS3 ${NS3}\" >> $WWWACCT"
+  debug "setting hostname in ${wwwacct}"
+  echo "HOST ${NEWHOSTNAME}" >> "$wfile"
+
+  debug "setting IP in ${wwwacct}"
+  echo "ADDR ${IPADDR}" >> "$wfile"
+
+  debug "setting NS in ${wwwacct}"
+  {
+    echo "NS ${AUTH_DNS1}"
+    echo "NS2 ${AUTH_DNS2}"
+    echo "NS3 ${AUTH_DNS3}"
+  } >> "$wfile"
+
 }
 
 # vim: ai:ts=2:sw=2:et
