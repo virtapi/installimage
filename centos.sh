@@ -362,13 +362,13 @@ run_os_specific_functions() {
   #
   debug "# Testing and setup of cpanel image"
   if [ -f "$FOLD/hdd/etc/wwwacct.conf" ] && [ -f "$FOLD/hdd/etc/cpupdate.conf" ] ; then
-    grep -q -i cpanel <<< "$IMAGENAME" && {
+    grep -q -i cpanel <<< "$IMAGE_FILE" && {
       setup_cpanel || return 1
     }
   fi
 
   # selinux autorelabel if enabled
-  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux)" &&
+  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux" &&
     touch "$FOLD/hdd/.autorelabel"
 
   return 0
