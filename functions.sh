@@ -595,7 +595,7 @@ getdrives() {
 # read all variables from config file
 # read_vars "CONFIGFILE"
 read_vars(){
-if [ "$1" ]; then
+if [ -n "$1" ]; then
   # count disks again, for setting COUNT_DRIVES correct after restarting installimage
   getdrives
 
@@ -622,20 +622,20 @@ if [ "$1" ]; then
 
   # get all disks from configfile
   local used_disks=1
-  for i in $(seq 1 $COUNT_DRIVES) ; do
-    disk="$(grep -m1 -e ^DRIVE"$i" "$1" | awk '{print $2}')"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    disk="$(grep -m1 -e ^DRIVE$i "$1" | awk '{print $2}')"
     if [ -n "$disk" ] ; then
       export DRIVE$i
-      eval DRIVE"$i"="$disk"
+      eval DRIVE$i="$disk"
       let used_disks=used_disks+1
     else
-      unset DRIVE"$i"
+      unset DRIVE$i
     fi
-    format_disk="$(grep -m1 -e ^FORMATDRIVE"$i" "$1" | awk '{print $2}')"
+    format_disk="$(grep -m1 -e ^FORMATDRIVE$i "$1" | awk '{print $2}')"
     export FORMAT_DRIVE$i
-    eval FORMAT_DRIVE"$i"=0
+    eval FORMAT_DRIVE$i="0"
     if [ -n "$format_disk" ] ; then
-      eval FORMAT_DRIVE"$i"=1
+      eval FORMAT_DRIVE$i="1"
     fi
   done
 
@@ -677,7 +677,7 @@ if [ "$1" ]; then
     fi
     echo "${PART_MOUNT[$i]} : ${PART_SIZE[$i]}" | debugoutput
     if [ "${PART_SIZE[$i]}" != "all" ]; then
-      PARTS_SUM_SIZE="$(echo ${PART_SIZE[$i]} + $PARTS_SUM_SIZE | bc)"
+      PARTS_SUM_SIZE=$(( ${PART_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${PART_MOUNT[$i]}" = "/" ]; then
       HASROOT="true"
@@ -690,10 +690,10 @@ if [ "$1" ]; then
 
   # void the check var
   LVM_VG_CHECK=""
-  for i in $(seq 1 "$LVM_VG_COUNT"); do
-    LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n"$i" | tail -n1)"
-    #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print \$2}')"
-    LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n"$i" | tail -n1 | cut -d: -f1)
+  for ((i=1; i<=LVM_VG_COUNT; i++)); do
+    LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n$i | tail -n1)"
+    #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print $2}')"
+    LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n$i | tail -n1 | cut -d: -f1)
     LVM_VG_NAME[$i]="$(echo "$LVM_VG_LINE" | awk '{print $3}')"
     LVM_VG_SIZE[$i]="$(translate_unit "$(echo "$LVM_VG_LINE" | awk '{print $4}')")"
 
@@ -705,7 +705,7 @@ if [ "$1" ]; then
   # get LVM logical volume config
   LVM_LV_COUNT="$(grep -c -e "^LV " "$1")"
   LVM_LV_ALL="$(grep -e "^LV " "$1")"
-  for i in $(seq 1 "$LVM_LV_COUNT"); do
+  for ((i=1; i<=LVM_LV_COUNT; i++)); do
     LVM_LV_LINE="$(echo "$LVM_LV_ALL" | head -n"$i" | tail -n1)"
     LVM_LV_VG[$i]="$(echo "$LVM_LV_LINE" | awk '{print $2}')"
     LVM_LV_VG_SIZE[$i]="$(echo "$LVM_VG_ALL" | grep "${LVM_LV_VG[$i]}" | awk '{print $4}')"
@@ -716,7 +716,7 @@ if [ "$1" ]; then
     # we only add LV sizes to PART_SUM_SIZE if the appropiate volume group has
     # "all" as size (otherwise we would count twice: SIZE of VG + SIZE of LVs of VG)
     if [ "${LVM_LV_SIZE[$i]}" != "all" ] && [ "${LVM_LV_VG_SIZE[$i]}" == "all" ]; then
-      PARTS_SUM_SIZE="$(echo "${LVM_LV_SIZE[$i]}" + "$PARTS_SUM_SIZE" | bc)"
+      PARTS_SUM_SIZE=$(( ${LVM_LV_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${LVM_LV_MOUNT[$i]}" = "/" ]; then
       HASROOT="true"
@@ -752,17 +752,14 @@ if [ "$1" ]; then
   if [ "$BOOTLOADER" = "" ]; then
     BOOTLOADER=$(echo "$DEFAULTLOADER" | awk '{ print $2 }')
   fi
-  BOOTLOADER=$(echo "$BOOTLOADER" | tr "[:upper:]" "[:lower:]")
+  BOOTLOADER="${BOOTLOADER,,}"
 
   NEWHOSTNAME=$(grep -m1 -e ^HOSTNAME "$1" | awk '{print $2}')
 
   GOVERNOR="$(grep -m1 -e ^GOVERNOR "$1" |awk '{print $2}')"
-  if [ "$GOVERNOR" = "" ]; then GOVERNOR="ondemand"; fi
+  if [ "$GOVERNOR" = "" ]; then GOVERNOR="$DEFAULTGOVERNOR"; fi
 
   SYSTEMDEVICE="$DRIVE1"
-  # this var appear to be unused. keep it for safety
-  #SYSTEMREALDEVICE="$DRIVE1"
-
 fi
 }
 
@@ -1127,7 +1124,7 @@ validate_vars() {
     fi
   fi
 
-  CHECK=$(echo $GOVERNOR |grep -i -e "^powersave$\|^performance$\|^ondemand$")
+  CHECK=$(echo "$GOVERNOR" |grep -i -e "^powersave$\|^performance$\|^ondemand$")
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid GOVERNOR"
    return 1
