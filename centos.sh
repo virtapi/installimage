@@ -385,26 +385,57 @@ setup_cpanel() {
 # randomize mysql passwords in cpanel image
 #
 randomize_cpanel_mysql_passwords() {
-  CPHULKDCONF="$FOLD/hdd/var/cpanel/hulkd/password"
-  CPHULKDPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
-  ROOTPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
-  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
-  UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
-  echo "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
+  local cphulkdconf; cphulkdconf="$FOLD/hdd/var/cpanel/hulkd/password"
+  local cphulkdpass; cphulkdpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local rootpass; rootpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
+  local mysqlcommand;
+  mysqlcommand="UPDATE mysql.user SET password=PASSWORD('$cphulkdpass') WHERE user='cphulkd'; \
+    UPDATE mysql.user SET password=PASSWORD('$rootpass') WHERE user='root'; \
+    FLUSH PRIVILEGES;"
+  echo -e "$mysqlcommand" > "$FOLD/hdd/tmp/pwchange.sql"
   debug "changing mysql passwords"
-  execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; declare -i EXITCODE=$?
-  execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; declare -i EXITCODE=$?
-  execute_chroot_command "service mysql stop >/dev/null 2>&1"
-  cp "$CPHULKDCONF" "$CPHULKDCONF.old"
-  sed s/pass.*/"pass=\"$CPHULKDPASS\""/g "$CPHULKDCONF.old" > "$CPHULKDCONF"
+  if [ "$IMG_VERSION" -lt 70 ] ; then
+    execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; EXITCODE=$?
+    execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; EXITCODE=$?
+    execute_chroot_command "service mysql stop >/dev/null 2>&1"
+  else
+    local override_dir="$FOLD/hdd/etc/systemd/system/mysql.service.d"
+    local mysql_override="$override_dir/override.conf"
+    mkdir -p "$override_dir"
+    {
+      echo "[Service]"
+      echo "ExecStart="
+      echo "ExecStart=/usr/bin/mysqld_safe --skip-grant-tables --skip-networking"
+    } > "$mysql_override"
+    local helper_script=${FOLD}/hdd/helper.sh
+    {
+      echo '#!/usr/bin/env bash'
+      # shellcheck disable=SC2016
+      echo 'trap "rm ${0}" EXIT'
+      echo 'systemctl start mysql.service'
+      echo 'echo ERROR > /tmp/buff'
+      # mysql becomes unresponsive from time to time
+      echo 'while cat /tmp/buff | grep -q ERROR; do'
+      echo '  mysql < /tmp/pwchange.sql &> /tmp/buff'
+      echo 'done'
+      echo 'rm /tmp/buff'
+      echo 'systemctl stop mysql.service'
+    } > "${helper_script}"
+    chmod a+x "${helper_script}"
+    execute_command_within_a_systemd_nspawn_container "/helper.sh"; EXITCODE=$?
+    rm -rf "$override_dir"
+  fi
+
+  cp "$cphulkdconf" "$cphulkdconf.old"
+  sed s/pass.*/"pass=\"$cphulkdpass\""/g "$cphulkdconf.old" > "$cphulkdconf"
   rm "$FOLD/hdd/tmp/pwchange.sql"
-  rm "$CPHULKDCONF.old"
+  rm "$cphulkdconf.old"
 
   # write password file
   {
     echo "[client]"
     echo "user=root"
-    echo "pass=$ROOTPASS"
+    echo "password=$rootpass"
   } > "$FOLD/hdd/root/.my.cnf"
 
   return "$EXITCODE"
