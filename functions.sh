@@ -820,16 +820,18 @@ validate_vars() {
   fi
 
   # test if "$SWRAIDLEVEL" is either 0 or 1
-  if [ "$SWRAID" = "1" ] && [ "$SWRAIDLEVEL" != "0" ] && [ "$SWRAIDLEVEL" != "1" ] && [ "$SWRAIDLEVEL" != "5" ] && [ "$SWRAIDLEVEL" != "6" ] && [ "$SWRAIDLEVEL" != "10" ]; then
+  if [ "$SWRAID" = "1" ] && [ "$SWRAIDLEVEL" != "0" ] &&
+    [ "$SWRAIDLEVEL" != "1" ] && [ "$SWRAIDLEVEL" != "5" ] &&
+    [ "$SWRAIDLEVEL" != "6" ] && [ "$SWRAIDLEVEL" != "10" ]; then
     graph_error "ERROR: Value for SWRAIDLEVEL is not correct"
     return 1
   fi
 
   # check for valid drives
   local drive_array=( $DRIVE1 )
-  for i in $(seq 1 $COUNT_DRIVES) ; do
-    local format; format="$(eval echo \$FORMAT_DRIVE"$i")"
-    local drive; drive="$(eval echo \$DRIVE"$i")"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    local format; format="$(eval echo "\$FORMAT_DRIVE$i")"
+    local drive; drive="$(eval echo "\$DRIVE$i")"
     if [ "$i" -gt 1 ] ; then
       for j in $(seq 0 $((${#drive_array[@]} - 1))); do
         if [ "${drive_array[$j]}" = "$drive" ]; then
@@ -885,10 +887,11 @@ validate_vars() {
 
   # test if a /boot partition is defined when using software RAID 0
   if [ "$SWRAID" = "1" ]; then
-    if [ "$SWRAIDLEVEL" = "0" ] || [ "$SWRAIDLEVEL" = "5" ] || [ "$SWRAIDLEVEL" = "6" ] || [ "$SWRAIDLEVEL" = "10" ]; then
+    if [ "$SWRAIDLEVEL" = "0" ] || [ "$SWRAIDLEVEL" = "5" ] ||
+      [ "$SWRAIDLEVEL" = "6" ] || [ "$SWRAIDLEVEL" = "10" ]; then
       TMPCHECK=0
 
-      for i in $(seq 1 "$PART_COUNT"); do
+      for ((i=1; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
           TMPCHECK=1
         fi
@@ -923,11 +926,11 @@ validate_vars() {
     elif [ "$SWRAIDLEVEL" = "10" ]; then
       DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE * (COUNT_DRIVES / 2)))
     fi
-    echo "Calculated size of array is: $DRIVE_SUM_SIZE" | debugoutput
+    debug "Calculated size of array is: $DRIVE_SUM_SIZE"
   fi
 
   DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE / 1024 / 1024))
-  for i in $(seq 1 "$PART_COUNT"); do
+  for ((i=1; i<=PART_COUNT; i++)); do
     if [ "${PART_SIZE[$i]}" = "all" ]; then
       # make sure that the all partition has at least 1G available
       DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE - 1024))
@@ -938,14 +941,14 @@ validate_vars() {
   # test if /boot or / is mounted outside the LVM
   if [ "$LVM" = "1" ]; then
     TMPCHECK=0
-    for i in $(seq 1 "$PART_COUNT"); do
+    for ((i=1; i<=PART_COUNT; i++)); do
       if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
         TMPCHECK=1
       fi
     done
 
     if [ "$TMPCHECK" = "0" ]; then
-      for i in $(seq 1 "$PART_COUNT"); do
+      for ((i=1; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/" ]; then
           TMPCHECK=1
         fi
@@ -962,7 +965,7 @@ validate_vars() {
   if [ "$PART_COUNT" -gt 3 ]; then
     tmp=0
 
-    for i in $(seq 1 "$PART_COUNT"); do
+    for ((i=1; i<=PART_COUNT; i++)); do
       if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
         tmp=$i
         break
@@ -975,7 +978,7 @@ validate_vars() {
     fi
 
     if [ "$tmp" -eq 0 ]; then
-      for i in $(seq 4 "$PART_COUNT"); do
+      for ((i=4; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/" ]; then
           graph_error "ERROR: / must be mounted on a primary partition"
           return 1
@@ -989,7 +992,7 @@ validate_vars() {
   if [ "$PART_COUNT" -gt "0" ]; then
   WARNBTRFS=0
     # test each partition line
-    for i in $(seq 1 "$PART_COUNT"); do
+    for ((i=1; i<=PART_COUNT; i++)); do
 
       # test if the mountpoint is valid (start with / or swap or lvm)
       CHECK="$(echo "${PART_MOUNT[$i]}" | grep -e "^none\|^/\|^swap$\|^lvm$")"
@@ -1341,6 +1344,23 @@ validate_vars() {
   if [ -z "$NEWHOSTNAME" ]; then
     graph_error "ERROR: HOSTNAME may not be empty"
     return 1
+  fi
+
+  if [ "$MBTYPE" = "D3401-H1" ]; then
+    if [ "$IAM" = "debian" ] && [ "$IMG_VERSION" -lt 82 ]; then
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        echo "WARNING: Debian versions older than Debian 8.2 have no support for the Intel i219 NIC of this board." | debugoutput
+      else
+        graph_notice "WARNING: Debian versions older than Debian 8.2 have no support for the Intel i219 NIC of this board."
+      fi
+    fi
+    if [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -ge 70 ] && [ "$IMG_VERSION" -lt 72 ]; then
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        echo "WARNING: CentOS 7.0 and 7.1 have no support for the Intel i219 NIC of this board." | debugoutput
+      else
+        graph_notice "WARNING: CentOS 7.0 and 7.1 have no support for the Intel i219 NIC of this board."
+      fi
+    fi
   fi
 
  fi
