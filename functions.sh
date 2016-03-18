@@ -61,7 +61,7 @@ LILOEXTRABOOT=""
 ERROREXIT="0"
 FINALIMAGEPATH=""
 
-PLESK_STD_VERSION="PLESK_12_0_18"
+PLESK_STD_VERSION="PLESK_12_5_30"
 
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
@@ -85,32 +85,31 @@ echo_bold() {
 # generate_menu "SUBMENU"
 generate_menu() {
  # security check - just execute the function WITH parameters
- if [ "$1" ]; then
+ if [ -n "$1" ]; then
   # empty the menu
   MENULIST=""
   PROXMOX=false
   # find image-files and generate raw list
   # shellcheck disable=SC2153
   FINALIMAGEPATH="$IMAGESPATH"
-  if [ "$1" = "openSUSE" ]; then
-    # this got removed in newser versions
-    # shellcheck disable=SC1083
-    RAWLIST=$(ls -1 "$IMAGESPATH"/{,old_}{"$1",suse}* 2>/dev/null)
-  elif [ "$1" = "Virtualization" ]; then
+# don't go looking for old_openSUSE or suse images. That was a long time ago
+#  if [ "$1" = "openSUSE" ]; then
+#    RAWLIST=$(ls -1 "$IMAGESPATH" | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse")
+  if [ "$1" = "Virtualization" ]; then
     RAWLIST=""
-    RAWLIST=$(ls -1 "$IMAGESPATH"/CoreOS* 2>/dev/null)
+    RAWLIST=$(find "$IMAGESPATH"/ -maxdepth 1 -type f -name "CoreOS*" -a -not -name "*.sig" -printf '%f\n'|sort)
     RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Wheezy"
-  elif [ "$1" = "old images" ]; then
-    RAWLIST=$(ls -1 "$OLDIMAGESPATH")
+    RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Jessie"
+  elif [ "$1" = "old_images" ]; then
+    # skip CPANEL images and signatures files from list
+    RAWLIST=$(find "$OLDIMAGESPATH"/ -maxdepth 1 -type f -not -name "*.sig" -a -not -name "*cpanel*" -printf '%f\n'|sort)
     FINALIMAGEPATH="$OLDIMAGESPATH"
   else
-    RAWLIST=$(ls -1 "$IMAGESPATH"/{,old_}"$1"* 2>/dev/null)
+    # skip CPANEL images and signatures files from list
+    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\(old_\)\?$1.*" -a -not -regex '.*\.sig$' -printf '%f\n'|sort)
   fi
-  # Remove CPANEL image and signature files from list
-  RAWLIST="$(echo "$RAWLIST" |tr ' ' '\n' |egrep -i -v "cpanel|.sig$")"
   # check if 32-bit rescue is activated and disable 64-bit images then
-  ARCH="$(uname -m)"
-  if [ "$ARCH" != "x86_64" ]; then
+  if [ "$(uname -m)" != "x86_64" ]; then
     RAWLIST="$(echo "$RAWLIST" |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]")"
   fi
   # generate formatted list for usage with "dialog"
@@ -132,21 +131,21 @@ generate_menu() {
   MENULIST="$MENULIST"'back . '
 
   # show menu and get result
-  # don't quote MENULISt here because it has to expand
   # shellcheck disable=SC2086
-  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2>"$FOLD/submenu.chosen"
+  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2> "$FOLD/submenu.chosen"
   IMAGENAME=$(cat "$FOLD/submenu.chosen")
 
   # create proxmox post-install file if needed
-  case "$IMAGENAME" in
+  case $IMAGENAME in
     Proxmox-Virtualization-Environment*)
       case "$IMAGENAME" in
         Proxmox-Virtualization-Environment-on-Debian-Wheezy) export PROXMOX_VERSION="3" ;;
+        Proxmox-Virtualization-Environment-on-Debian-Jessie) export PROXMOX_VERSION="4" ;;
       esac
       cp "$SCRIPTPATH/post-install/proxmox$PROXMOX_VERSION" /post-install
       chmod 0755 /post-install
       PROXMOX=true
-      IMAGENAME=$(eval echo \\$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE)
+      IMAGENAME=$(eval echo \$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE)
       DEFAULTPARTS=""
       DEFAULTPARTS="$DEFAULTPARTS\nPART  /boot  ext3  512M"
       DEFAULTPARTS="$DEFAULTPARTS\nPART  lvm    vg0    all\n"
@@ -164,7 +163,6 @@ generate_menu() {
   whoami "$IMAGENAME"
  fi
 }
-
 # create new config file from standardconfig and misc options
 # create_config "IMAGENAME"
 create_config() {
