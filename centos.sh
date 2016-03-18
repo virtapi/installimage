@@ -247,10 +247,11 @@ generate_config_grub() {
     DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
+
   local -i i=0
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     local j; j="$((i - 1))"
-    local disk; disk="$(eval echo "\$DRIVE"$i)"
+    local disk; disk="$(eval echo "\$DRIVE$i")"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
@@ -285,16 +286,16 @@ generate_config_grub() {
       echo >> "$BFILE"
       echo "title CentOS ($1)"
       echo "root (hd0,$PARTNUM)"
-    } > "$BFILE" 2>> "$DEBUGFILE"
+    } > "$BFILE"
 
     # disable pcie active state power management. does not work as it should,
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
-    lspci -n | grep -q '8086:10d3' && ASPM='pcie_aspm=off' || ASPM=''
+    lspci -n | grep -q '8086:10d3' && aspm='pcie_aspm=off' || aspm=''
 
     if [ "$IMG_VERSION" -ge 60 ]; then
-      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $ASPM" >> "$BFILE" 2>> "$DEBUGFILE"
+      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $aspm" >> "$BFILE"
     else
-      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE nomodeset" >> "$BFILE" 2>> "$DEBUGFILE"
+      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE nomodeset" >> "$BFILE"
     fi
     INITRD=''
     if [ -f "$FOLD/hdd/boot/initrd-$1.img" ]; then
@@ -303,19 +304,14 @@ generate_config_grub() {
     if [ -f "$FOLD/hdd/boot/initramfs-$1.img" ]; then
      INITRD="initramfs"
     fi
-    if [ $INITRD ]; then
-      echo "initrd /boot/$INITRD-$1.img" >> "$BFILE" 2>> "$DEBUGFILE"
+    if [ -n "$INITRD" ]; then
+      echo "initrd /boot/$INITRD-$1.img" >> "$BFILE"
     fi
 
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
+    echo >> "$BFILE"
 
     uuid_bugfix
-  # TODO: let grubby add its own stuff (SYSFONT, LANG, KEYTABLE)
-#  if [ $IMG_VERSION -lt 60 ] ; then
-#   execute_chroot_command "/sbin/new-kernel-pkg --package kernel --install $VERSION"; declare -i EXITCODE="$?"
-#  else
-#   execute_chroot_command "/sbin/new-kernel-pkg --install $VERSION"; declare -i EXITCODE="$?"
-#  fi
+  # TODO: add grubby stuff (SYSFONT, LANG, KEYTABLE)
   else
     if isVServer; then
       execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"nomodeset rd.auto=1 crashkernel=auto elevator=noop\"/"'
