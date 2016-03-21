@@ -2340,8 +2340,8 @@ gather_network_information() {
   fi
 
   # ipv6
-  # check for our global ipv6
-  DOIPV6=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:')
+  # check for non-link-local ipv6
+  DOIPV6=$(ip -6 addr show dev "$ETHDEV" | grep -v fe80 | grep -m1 'inet6')
   if [ -n "$DOIPV6" ]; then
     local INET6ADDR; INET6ADDR=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:' | awk '{print $2}')
     export IP6ADDR; IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
