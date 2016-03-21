@@ -3095,18 +3095,6 @@ write_grub() {
 #TODO: this needs to be fixed in general, as all distros now install the
 #      bootloader in generate_grub_config instead
 
-#  # Delete existing lilo.conf
-#  execute_chroot_command "rm -rf /etc/lilo.conf"
-#
-#  execute_chroot_command "echo -e \"device (hd0) $DRIVE1\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
-#  [ $? -ne 0 ] && return $?
-#
-#  # Install GRUB also on the second HDD when software RAID is enabled.
-#  if [ "$SWRAID" -eq "1" ]; then
-#    execute_chroot_command "echo -e \"device (hd0) $DRIVE2\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
-#  fi
-
-#  return $?
 }
 
 generate_config_lilo() {
@@ -3436,13 +3424,15 @@ install_plesk() {
     execute_chroot_command "mkdir -p /run/lock"
   fi
 
-# old  COMPONENTS="base psa-autoinstaller mod-bw mod_python qmail ruby mailman horde psa-firewall spamassassin pmm backup"
-  COMPONENTS="common psa-autoinstaller mod-bw mod_phyton postfix ruby mailman horde psa-firewall spamassassin pmm bind"
+  COMPONENTS="awstats bind config-troubleshooter dovecot drweb heavy-metal-skin horde l10n mailman mod-bw mod_fcgid mod_python mysqlgroup nginx panel php5.6 phpgroup pmm postfix proftpd psa-firewall roundcube spamassassin Troubleshooter webalizer web-hosting webservers"
   COMPONENTLIST="$(for component in $COMPONENTS; do echo -n "--install-component $component "; done)"
 
-  execute_chroot_command "/pleskinstaller  --select-product-id plesk --select-release-id $plesk_version $COMPONENTLIST"; EXITCODE=$?
-  rm -rf "$FOLD/hdd/pleskinstaller" >/dev/null 2>&1
-
+  if readlink --canonicalize /sbin/init | grep --quiet systemd && readlink --canonicalize "$FOLD"/hdd/sbin/init | grep --quiet systemd; then
+    execute_nspawn_command "/pleskinstaller --select-product-id plesk --select-release-id $plesk_version --download-retry-count 99 $COMPONENTLIST"; EXITCODE=$?
+  else
+    execute_chroot_command "/pleskinstaller --select-product-id plesk --select-release-id $plesk_version --download-retry-count 99 $COMPONENTLIST"; EXITCODE=$?
+  fi
+  rm -rf "$FOLD"/hdd/pleskinstaller >/dev/null 2>&1
   return "$EXITCODE"
 
 }
