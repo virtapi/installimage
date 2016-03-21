@@ -180,10 +180,6 @@ generate_config_grub() {
 
   local grubdefconf="$FOLD/hdd/etc/default/grub"
 
-  # do we still actually need this? grub-install should/will copy this, if not
-  # already present in image
-  execute_chroot_command "mkdir -p /boot/grub/; cp -r /usr/lib/grub/* /boot/grub >> /dev/null 2>&1"
-
   # set linux_default in grub
   local grub_linux_default="nomodeset"
   if isVServer; then
@@ -191,6 +187,7 @@ generate_config_grub() {
   fi
 
   sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
+  sed -i "$grubdefconf" -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"${grub_linux_default}\"/"
   # need to sort escapes of this cmd to use without execute_chroot
   execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
 
