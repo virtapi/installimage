@@ -1466,7 +1466,7 @@ stop_lvm_raid() {
   test -x /etc/init.d/lvm && /etc/init.d/lvm stop &>/dev/null
   test -x /etc/init.d/lvm2 && /etc/init.d/lvm2 stop &>/dev/null
 
-  dmsetup remove_all
+  dmsetup remove_all > /dev/null 2>&1
 
   if [ -x "$(which mdadm)" ] && [ -f /proc/mdstat ]; then
     grep md /proc/mdstat | cut -d ' ' -f1 | while read -r i; do
