@@ -4004,7 +4004,7 @@ set_udev_rules() {
 # Rename eth device (ethX to eth0)
 #
 fix_eth_naming() {
- if [ "$1" ]; then
+ if [ -n "$1" ]; then
    debug "# fix eth naming"
 
    # for Debian and Debian derivatives
@@ -4059,7 +4059,7 @@ suse_netdev_fix() {
 }
 
 is_private_ip() {
- if [ "$1" ]; then
+ if [ -n "$1" ]; then
    local first; first="$(echo "$1" | cut -d '.' -f 1)"
    local second; second="$(echo "$1" | cut -d '.' -f 2)"
    case "$first" in
