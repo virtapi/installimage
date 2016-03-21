@@ -2530,7 +2530,7 @@ generate_resolvconf() {
   fi
 #  else
     NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
-    echo "### Hetzner Online GmbH installimage" > "$NAMESERVERFILE"
+    echo "### $COMPANY installimage" > "$NAMESERVERFILE"
     echo "# nameserver config" >> "$NAMESERVERFILE"
 
     # IPV4
