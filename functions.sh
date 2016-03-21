@@ -2995,7 +2995,7 @@ EOF
 
 # get_rootpassword "/etc/shadow"
 get_rootpassword() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     ROOTHASH="$(awk -F: '/^root/ {print $2}' "$1")"
     if [ "$ROOTHASH" ]; then
       return 0
@@ -3007,7 +3007,7 @@ get_rootpassword() {
 
 # set_rootpassword "$FOLD/hdd/etc/shadow" "ROOTHASH"
 set_rootpassword() {
-  if [ "$1" ] && [ "$2" ]; then
+  if [ -n "$1" ] && [ -n "$2" ]; then
     grep -v "^root" "${1}" > /tmp/shadow.tmp
     local GECOS; GECOS="$(awk -F: '/^root/ {print $3":"$4":"$5":"$6":"$7":"$8":"}' "${1}")"
     echo "root:$2:$GECOS" > "$1"
@@ -3020,7 +3020,7 @@ set_rootpassword() {
 
 # fetch_ssh_keys "$OPT_SSHKEYS_URL"
 fetch_ssh_keys() {
-   if [ "$1" ]; then
+   if [ -n "$1" ]; then
      local key_url="$1"
      case "$key_url" in
        https:*|http:*|ftp:*)
@@ -3044,7 +3044,7 @@ fetch_ssh_keys() {
 copy_ssh_keys() {
    local targetuser='root'
 
-   if [ "$1" ]; then
+   if [ -n "$1" ]; then
      targetuser="home/$1"
    fi
 
@@ -3060,7 +3060,7 @@ copy_ssh_keys() {
 
 # set sshd PermitRootLogin
 set_ssh_rootlogin() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
      local permit="$1"
      case "$permit" in
        yes|no|without-password|forced-commands-only)
@@ -3077,7 +3077,7 @@ set_ssh_rootlogin() {
 }
 
 generate_config_grub() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     return 1
   fi
 }
@@ -3088,7 +3088,7 @@ generate_config_grub() {
 # Write the GRUB bootloader into the MBR
 #
 write_grub() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     return 0
   fi
 
@@ -3110,7 +3110,7 @@ write_grub() {
 }
 
 generate_config_lilo() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
   BFILE="$FOLD/hdd/etc/lilo.conf"
   rm -rf "$FOLD/hdd/boot/grub/menu.lst" >>/dev/null 2>&1
   {
@@ -3148,7 +3148,7 @@ generate_config_lilo() {
 }
 
 write_lilo() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     execute_chroot_command "yes |/sbin/lilo -F" | debugoutput
     EXITCODE=$?
     return "$EXITCODE"
