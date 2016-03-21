@@ -2337,7 +2337,7 @@ function get_active_eth_dev() {
   done
 }
 
-# gather_network_information "$ETHDEV"
+# gather_network_information "$ETH"
 gather_network_information() {
   # requires ipcalc from centos/rhel
   # removed INETADDR which was ip.ip.ip.ip/CIDR - only used in arch.sh
@@ -2361,7 +2361,7 @@ gather_network_information() {
   # check for non-link-local ipv6
   DOIPV6=$(ip -6 addr show dev "$ETHDEV" | grep -v fe80 | grep -m1 'inet6')
   if [ -n "$DOIPV6" ]; then
-    local INET6ADDR; INET6ADDR=$(ip -6 addr show dev "$ETHDEV" | grep 'inet6 2a01:4f8:' | awk '{print $2}')
+    local INET6ADDR; INET6ADDR=$(ip -6 addr show dev "$ETHDEV" | grep -m1 'inet6' | awk '{print $2}')
     export IP6ADDR; IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
     export IP6PREFLEN; IP6PREFLEN=$(echo "$INET6ADDR" | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
