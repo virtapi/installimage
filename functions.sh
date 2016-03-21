@@ -2784,6 +2784,17 @@ set_ntp_time() {
   local ntp_pid
   local count=0
   local running=1
+  local systemd=0
+
+  if [ -x /bin/systemd-notify ]; then
+    systemd-notify --booted && systemd=1
+  fi
+
+  # if systemd is running and timesyncd too, then return
+  if [ $systemd -eq 1 ]; then
+    systemctl status systemd-timesyncd 1>/dev/null 2>&1 && return 0
+  fi
+
   service ntp status 1>/dev/null 2>&1 && running=0
 
   # stop ntp daemon first
