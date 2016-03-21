@@ -72,7 +72,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
@@ -187,8 +187,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: sda,sdb | sda
     d)
       OPT_DRIVES="$OPTARG"
-      # shellcheck disable=SC2001
-      sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
+      sel_drives="${OPT_DRIVES/,/ }"
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
@@ -229,7 +228,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
      else
         msg="=> FAILED: cannot install ssh-keys without a source"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
      fi
      ;;
@@ -249,7 +248,7 @@ fi
 if [ -n "$OPT_USE_SSHKEYS" ] && [ -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
 fi
 
