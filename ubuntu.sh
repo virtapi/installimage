@@ -17,6 +17,9 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
+
+    [ -d "$FOLD/hdd/etc/systemd/network" ] && rm -f "$FOLD"/hdd/etc/systemd/network/*
+
     {
       echo "### $COMPANY - installimage"
       echo "# device: $1"
@@ -31,6 +34,7 @@ setup_network_config() {
         echo "# Loopback device:"
         echo "auto lo"
         echo "iface lo inet loopback"
+        echo "iface lo inet6 loopback"
         echo ""
       } > "$CONFIGFILE"
       if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
@@ -254,8 +258,8 @@ generate_config_grub() {
   fi
 
   sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
-  # need to sort escapes of this cmd to use without execute_chroot
-  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
+  sed -i "$grubdefconf" -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"${grub_linux_default}\"/"
+
   {
     echo ""
     echo "# only use text mode - other modes may scramble screen"
