@@ -3135,42 +3135,73 @@ write_lilo() {
 }
 
 generate_ntp_config() {
-  local CFGNTP="/etc/ntp.conf"
-  local CFGCHRONY="/etc/chrony/chrony.conf"
-  local CFGTIMESYNCD="/etc/systemd/timesyncd.conf"
-  local CFG="$CFGNTP"
+  local cfgntp="/etc/ntp.conf"
+  local cfgchrony="/etc/chrony/chrony.conf"
+  local cfgtimesyncd="/etc/systemd/timesyncd.conf"
+  local cfg="$cfgntp"
 
   # find out versions
-  # we currently don't need debian_version and ubuntu_version
-  #local debian_version=0
+  local debian_version=0
+	# for future use
   #local ubuntu_version=0
   local suse_version=0
-  #[ "$IAM" == 'debian' ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
+  [ "$IAM" == 'debian' ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
+	# for future use
   #[ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
 
-  if [ -f "$FOLD/hdd/$CFGNTP" ] || [ -f "$FOLD/hdd/$CFGCHRONY" ] || [ -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
-    if [ -f "$FOLD/hdd/$CFGTIMESYNCD" ]; then
-      local cfgdir="$FOLD/hdd/$CFGTIMESYNCD.d"
+  if [ -f "$FOLD/hdd/$cfgntp" ] || [ -f "$FOLD/hdd/$cfgchrony" ] || [ -f "$FOLD/hdd/$cfgtimesyncd" ] ; then
+    if [ -f "$FOLD/hdd/$cfgtimesyncd" ]; then
+      debug "# using systemd-timesyncd"
+      local cfgdir="$FOLD/hdd/$cfgtimesyncd.d"
       local cfgparam='NTP'
-      [ "$IAM" = "debian" ] && cfgparam='Servers'
-      mkdir -p "$cfgdir" | debugoutput
-      CFG="$cfgdir/hetzner.conf"
-      echo -e "[Time]\n$cfgparam=ntp1.hetzner.de ntp2.hetzner.com ntp3.hetzner.net\n" > "$CFG" | debugoutput
-    elif [ -f "$FOLD/hdd/$CFGCHRONY" ]; then
-      echo "using chrony" | debugoutput
-      CFG="$CFGCHRONY"
-      execute_chroot_command 'echo -e "\n\n# hetzner ntp servers \nserver ntp1.hetzner.de offline minpoll 8\nserver ntp2.hetzner.com offline minpoll 8\nserver ntp3.hetzner.net offline minpoll 8\n" >> '"$CFG" | debugoutput
+      # jessie systemd does not recognize drop-ins for systemd-timesyncd
+      if [ "$IAM" = "debian" ] && [ "$debian_version" -eq 8 ]; then
+        cfgparam='Servers'
+        CFG="$FOLD/hdd/$cfgtimesyncd"
+      else
+        mkdir -p "$cfgdir"
+        CFG="$cfgdir/$C_SHORT.conf"
+      fi
+      {
+        echo "[Time]"
+        echo -n "$cfgparam="
+        for i in "${NTPSERVERS[@]}"; do
+          echo -n "$i "
+        done
+        echo ""
+      } > "$CFG" | debugoutput
+    elif [ -f "$FOLD/hdd/$cfgchrony" ]; then
+      debug "# using chrony"
+      CFG="$FOLD/hdd/$cfgchrony"
+      {
+        echo ""
+        echo "# $C_SHORT ntp servers"
+        for i in "${NTPSERVERS[@]}"; do
+          echo "server $i offline minpoll 8"
+        done
+      } >> "$CFG" | debugoutput
     else
-      CFG="$CFGNTP"
-      echo "using ntp.conf" | debugoutput
-      execute_chroot_command 'sed -e "s/^server \(.*\)$/## server \1   ## see end of file/" -i '"$CFG" | debugoutput
-      execute_chroot_command 'echo -e "\n\n# hetzner ntp servers \nserver ntp1.hetzner.de iburst\nserver ntp2.hetzner.com iburst\nserver ntp3.hetzner.net iburst\n" >> '"$CFG" | debugoutput
-      [ "$IAM" = "suse" ] && execute_chroot_command 'echo -e "\n# local clock\nserver 127.127.1.0" >> '"$CFG" | debugoutput
+      CFG="$FOLD/hdd/$cfgntp"
+      debug "# using NTP"
+      sed -e "s/^server \(.*\)$/## server \1   ## see end of file/" -i "$cfg"
+      {
+        echo ""
+        echo "# $C_SHORT ntp servers"
+        for i in "${NTPSERVERS[@]}"; do
+          echo "server $i offline iburst"
+        done
+      } >> "$CFG" | debugoutput
+      if [ "$IAM" = "suse" ]; then
+        {
+          echo ""
+          echo "# local clock"
+          echo "server 127.127.1.0"
+        } >> "$CFG" | debugoutput
+      fi
     fi
   else
-    msg="ntp config '$CFG' not found, ignoring"
-    echo "$msg" | debugoutput
+    debug "no ntp config found, ignoring"
   fi
   return 0
 }
