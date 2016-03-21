@@ -579,7 +579,7 @@ getdrives() {
 
   for drive in ${drives[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
-    if [ ${#drives[@]} -eq 1 ] || [ ! "$(fdisk -s "$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
+    if [ ${#drives[@]} -eq 1 ] || [ ! "$(fdisk -s "/dev/$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
       eval DRIVE$i="/dev/$drive"
       let i=i+1
     fi
