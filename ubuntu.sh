@@ -17,6 +17,9 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
+
+    [ -d "$FOLD/hdd/etc/systemd/network" ] && rm -f "$FOLD"/hdd/etc/systemd/network/*
+
     {
       echo "### $COMPANY - installimage"
       echo "# device: $1"
@@ -31,6 +34,7 @@ setup_network_config() {
         echo "# Loopback device:"
         echo "auto lo"
         echo "iface lo inet loopback"
+        echo "iface lo inet6 loopback"
         echo ""
       } > "$CONFIGFILE"
       if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
