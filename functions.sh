@@ -226,7 +226,7 @@ create_config() {
           echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks"
         } >> "$CNF"
       fi
-		fi
+    fi
     echo "" >> "$CNF"
 
     # software-raid
@@ -318,7 +318,6 @@ create_config() {
         echo "## Do not change. This image does not include or support lilo (grub only)!:"
         echo ""
         echo "BOOTLOADER grub"
-        echo ""
       } >> "$CNF"
     else
       {
@@ -342,6 +341,7 @@ create_config() {
       echo "## =========="
       echo "##  HOSTNAME:"
       echo "## =========="
+      echo ""
       echo "## which hostname should be set?"
       echo "##"
       echo ""
