@@ -1833,7 +1833,7 @@ next_partnum() {
 
 
 make_swraid() {
-  if [ "$1" ] ; then
+  if [ -n "$1" ] ; then
     fstab=$1
 
     dmsetup remove_all
@@ -1852,32 +1852,40 @@ make_swraid() {
     mv "$fstab" "$fstab".tmp
 
     debug "# create software raid array(s)"
-    METADATA="--metadata=1.2"
+    local metadata="--metadata=1.2"
+    local metadata_boot=$metadata
 
     #centos 6.x metadata
     if [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -lt 70 ]; then
       if [ "$IMG_VERSION" -ge 60 ]; then
-        METADATA="--metadata=1.0"
+        metadata="--metadata=1.0"
+        metadata_boot="--metadata=0.90"
       else
-        METADATA="--metadata=0.90"
+        metadata="--metadata=0.90"
       fi
     fi
 
-    local metadata_boot="$METADATA"
-    [ "$IAM" == "ubuntu" ] && [ "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
-
-    while read -r line ; do
+    # we always use /dev/mdX in Ubuntu 10.04. In all other distributions we
+    # use it when we have Metadata format 0.90 in Ubuntu 11.04 we have to use
+    # /boot with metadata format 0.90
+    if [ "$IAM" == "ubuntu" ] && [ "$IMG_VERSION" -lt 1204 ]; then
+      if [ "$IMG_VERSION" -le 1004 ]; then
+        metadata="--metadata=0.90"
+      else
+        metadata_boot="--metadata=0.90"
+      fi
+    fi
+    [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 123 ] && metadata="--metadata=0.90"
+    while -r read line ; do
       PARTNUM="$(next_partnum $count)"
-
       echo "Line is: \"$line\"" | debugoutput
-      # we always use /dev/mdX in Ubuntu 10.04. In all other distributions we use it when we have Metadata format 0.90
-      # in Ubuntu 11.04 we have to use /boot with metadata format 0.90
-      if echo "$line" | grep -q "/boot" && [  "$metadata_boot" == "--metadata=0.90" ] || [ "$METADATA" == "--metadata=0.90" ] ||  [ "$IAM" == "ubuntu"  ] && [  "$IMG_VERSION" == "1004" ] || [ "$IAM" == "suse" ] || [ "$IAM" == "centos" ]; then
+      # shellcheck disable=SC2015
+      if echo "$line" | grep -q "/boot" && [ "$metadata_boot" == "--metadata=0.90" ] || [ "$metadata" == "--metadata=0.90" ]; then
         # update fstab - replace /dev/sdaX with /dev/mdY
-        echo "$line" | sed "s/$SEDHDD[[:digit:]]\{1,2\}/\/dev\/md$count/g" >> "$fstab"
+        echo "$line" | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md$count/g" >> "$fstab"
       else
         # update fstab - replace /dev/sdaX with /dev/md/Y
-        echo "$line" | sed "s/$SEDHDD[[:digit:]]\{1,2\}/\/dev\/md\/$count/g" >> "$fstab"
+        echo "$line" | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md\/$count/g" >> "$fstab"
       fi
 
       # create raid array
@@ -1888,17 +1896,19 @@ make_swraid() {
         local n=0
         for n in $(seq 1 $COUNT_DRIVES) ; do
           TARGETDISK="$(eval echo \$DRIVE"${n}")"
-          components="$components $TARGETDISK$PARTNUM"
+          local p; p="$(echo "$TARGETDISK" | grep nvme)"
+          [ -n "$p" ] && p='p'
+          components="$components $TARGETDISK$p$PARTNUM"
         done
 
-        local array_metadata="$METADATA"
+        local array_metadata="$metadata"
         local array_raidlevel="$SWRAIDLEVEL"
         local can_assume_clean=''
 
         # lilo and GRUB can't boot from a RAID0/5/6 or 10 partition, so make /boot always RAID1
         if echo "$line" | grep -q "/boot"; then
           array_raidlevel="1"
-          array_metadata="$metadata_boot"
+          array_metadata=$metadata_boot
         # make swap partiton RAID1 for all levels except RAID0
         elif echo "$line" | grep -q "swap" && [ "$SWRAIDLEVEL" != "0" ]; then
           array_raidlevel="1"
@@ -1909,8 +1919,9 @@ make_swraid() {
             can_assume_clean='--assume-clean'
           fi
         fi
-        echo "Array RAID Level is: \"$array_raidlevel\" - $can_assume_clean" | debugoutput
-        echo "Array metadata is: \"$array_metadata\"" | debugoutput
+        debug "Array RAID Level is: '$array_raidlevel' - $can_assume_clean"
+        debug "Array metadata is: '$array_metadata'"
+
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
         # shellcheck disable=SC2069
         yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "$components" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
