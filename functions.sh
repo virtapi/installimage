@@ -1539,47 +1539,47 @@ function get_end_of_extended() {
 # function which calculates the end of the partition
 # get_end_of_partition "PARTITION"
 function get_end_of_partition {
-  local DEV=$1
-  local START=$2
-  local NR=$3
-  local LIMIT=2199023255040
-  local SECTORSIZE; SECTORSIZE=$(blockdev --getss "$DEV")
-  local SECTORLIMIT=$(((LIMIT / SECTORSIZE) - 1))
-  local END_EXTENDED; END_EXTENDED="$(parted -s "$DEV" unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
-  local DEVSIZE; DEVSIZE=$(blockdev --getsize64 "$DEV")
-  START=$((START * SECTORSIZE))
+  local dev=$1
+  local start=$2
+  local nr=$3
+  local limit=2199023255040
+  local sectorsize; sectorsize=$(blockdev --getss "$dev")
+  local sectorlimit=$(((limit / sectorsize) - 1))
+  local end_extended; end_extended="$(parted -s "$dev" unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
+  local devsize; devsize=$(blockdev --getsize64 "$dev")
+  start=$((start * sectorsize))
   # use the smallest hdd as reference when using swraid
   # to determine the end of a partition
   local smallest_hdd; smallest_hdd=$(smallest_hd)
   local smallest_hdd_space; smallest_hdd_space="$(blockdev --getsize64 "$smallest_hdd")"
-  if [ "$SWRAID" -eq "1" ] && [ "$DEVSIZE" -gt "$smallest_hdd_space" ]; then
-    DEV="$smallest_hdd"
+  if [ "$SWRAID" -eq "1" ] && [ "$devsize" -gt "$smallest_hdd_space" ]; then
+    dev="$smallest_hdd"
   fi
 
-  local LAST; LAST=$(blockdev --getsize64 "$DEV")
+  local last; last=$(blockdev --getsize64 "$dev")
   # make the partition at least 1 MiB if all else fails
-  local END=$((START+1048576))
+  local end=$((start+1048576))
 
   if [ "$(echo ${PART_SIZE[$NR]} | tr "[:upper:]" "[:lower:]")" = "all" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$((LAST-1048576))
+    end=$((last-1048576))
   else
-    END="$(echo "$START+(${PART_SIZE[$NR]}* 1024 * 1024)" | bc)"
+    end="$(echo "$start+(${PART_SIZE[$nr]}* 1024 * 1024)" | bc)"
     # trough alignment the calculated end could be a little bit over drive size
     # or too close to the end. Always leave 1MiB space
     # (may be needed for mdadm or for later conversion to GPT)
-    if [ "$END" -ge "$LAST" ] || [ $((LAST - END)) -lt 1048576 ]; then
-      END=$((LAST-1048576))
+    if [ "$end" -ge "$last" ] || [ $((last - end)) -lt 1048576 ]; then
+      end=$((last-1048576))
     fi
   fi
   # check if end of logical partition is over the end extended partition
-  if [ "$PCOUNT" -gt 4 ] && [ "$END" -gt "$END_EXTENDED" ]; then
+  if [ "$PCOUNT" -gt 4 ] && [ "$end" -gt "$end_extended" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$((END_EXTENDED-1048576))
+    end=$((end_extended-1048576))
   fi
 
-  END=$((END / SECTORSIZE))
-  echo "$END"
+  end=$((end / sectorsize))
+  echo "$end"
 }
 
 
