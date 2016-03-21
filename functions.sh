@@ -3615,12 +3615,12 @@ exit_function() {
 
   test "$1" && echo_red "$1"
   echo
-  echo "$RED         An error occured while installing the new system!$NOCOL"
-  echo "$RED          See the debug file $DEBUGFILE for details.$NOCOL"
+  echo -e "$RED         An error occured while installing the new system!$NOCOL"
+  echo -e "$RED          See the debug file $DEBUGFILE for details.$NOCOL"
   echo
   echo "Please check our wiki for a description of the error:"
   echo
-  echo "http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
+  echo "http://wiki.hetzner.de/index.php/Installimage/en"
   echo
   echo "If your problem is not described there, try booting into a fresh"
   echo "rescue system and restart the installation. If the installation"
@@ -3685,10 +3685,15 @@ function getUSBFlashDrives() {
   for i in $(seq 1 $COUNT_DRIVES); do
     DEV=$(eval echo "\$DRIVE$i")
     # remove string '/dev/'
-    DEV=$(echo "$DEV" | sed -e 's/\/dev\///')
-    # shellcheck disable=SC2010
-    if ls -l "/sys/block/$DEV/" | grep -q usb; then
-      echo "/dev/${DEV}"
+    local withoutdev; withoutdev=${DEV##*/}
+    local removable;
+    if [ -e "/sys/block/$withoutdev/removable" ]; then
+      removable=$(cat "/sys/block/$withoutdev/removable")
+    else
+      removable=0
+    fi
+    if [ "$removable" -eq 1 ]; then
+      echo "${DEV}"
     fi
   done
 
