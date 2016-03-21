@@ -2598,7 +2598,7 @@ set_hostname() {
     local fqdn_name="$sethostname"
     [ "$sethostname" = "$shortname" ] && fqdn_name=''
     {
-      echo "### Hetzner Online GmbH installimage"
+      echo "### $COMPANY installimage"
       echo "# nameserver config"
       echo "# IPv4"
       echo "127.0.0.1 localhost.localdomain localhost"
