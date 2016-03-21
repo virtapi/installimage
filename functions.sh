@@ -2555,7 +2555,7 @@ generate_resolvconf() {
 
 # set_hostname "HOSTNAME"
 set_hostname() {
-  if [ "$1" ] && [ "$2" ]; then
+  if [ -n "$1" ] && [ -n "$2" ]; then
     local sethostname="$1"
 
     local mailname="$sethostname"
@@ -2628,7 +2628,7 @@ set_hostname() {
 
 # generate_hosts "IP"
 generate_hosts() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     HOSTSFILE="$FOLD/hdd/etc/hosts"
     [ -f "$FOLD/hdd/etc/hostname" ] && HOSTNAMEFILE="$FOLD/hdd/etc/hostname"
     [ -f "$FOLD/hdd/etc/HOSTNAME" ] && HOSTNAMEFILE="$FOLD/hdd/etc/HOSTNAME"
@@ -2671,7 +2671,7 @@ generate_hosts() {
 
 #  execute_chroot_command "COMMMAND"
 execute_chroot_command() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     debug "# chroot_command: $1"
     chroot "$FOLD/hdd/" /bin/bash -c "$1" 2>&1 | debugoutput ; EXITCODE=$?
     return "$EXITCODE"
@@ -2680,7 +2680,7 @@ execute_chroot_command() {
 
 # execute chroot command but without debugoutput
 execute_chroot_command_wo_debug() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     chroot "$FOLD/hdd/" /bin/bash -c "$1" 2>&1; EXITCODE=$?
     return "$EXITCODE"
   fi
@@ -2688,7 +2688,7 @@ execute_chroot_command_wo_debug() {
 
 # copy_mtab "NIL"
 copy_mtab() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     if [ -L "$FOLD/hdd/etc/mtab" ]; then
       debug "mtab is already a symlink"
       return 0
