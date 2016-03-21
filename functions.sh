@@ -1785,31 +1785,38 @@ create_partitions() {
 # create fstab entries
 # make_fstab_entry "DRIVE" "NUMBER" "MOUNTPOINT" "FILESYSTEM"
 make_fstab_entry() {
- if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ]; then
-  ENTRY=""
+  if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ]; then
+    local entry=""
+    local p; p="$(echo "$1" | grep nvme)"
+    [ -n "$p" ] && p='p'
 
-  if [ "$4" = "swap" ] ; then
-   ENTRY="$1$2 none swap sw 0 0"
- elif [ "$3" = "lvm" ] ; then
-   ENTRY="# $1$2  belongs to LVM volume group '$4'"
-  else
-   ENTRY="$1$2 $3 $4 defaults 0 0"
-  fi
+    if [ "$4" = "swap" ] ; then
+      entry="$1$p$2 none swap sw 0 0"
+    elif [ "$3" = "lvm" ] ; then
+      entry="# $1$2  belongs to LVM volume group '$4'"
+    else
+      if [ "$SYSTYPE" = "vServer" ] && [ "$4" = 'ext4' ]; then
+        entry="$1$p$2 $3 $4 defaults,discard 0 0"
+      else
+        entry="$1$p$2 $3 $4 defaults 0 0"
+      fi
+    fi
 
-  echo "$ENTRY" >> "$FOLD/fstab"
+    echo "$entry" >> "$FOLD/fstab"
 
-  if [ "$3" = "/" ]; then
+    if [ "$3" = "/" ]; then
+      SYSTEMREALROOTDEVICE="$1$p$2"
+      export SYSTEMREALROOTDEVICE
     if [ -z "$SYSTEMREALBOOTDEVICE" ]; then
-      SYSTEMREALBOOTDEVICE="$1$2"
+      SYSTEMREALBOOTDEVICE="$1$p$2"
     fi
   fi
   if [ "$3" = "/boot" ]; then
-    SYSTEMREALBOOTDEVICE="$1$2"
+    SYSTEMREALBOOTDEVICE="$1$p$2"
   fi
 
  fi
 }
-
 
 next_partnum() {
   num="$1"
