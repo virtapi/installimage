@@ -2242,8 +2242,8 @@ import_imagekey() {
   if [ -n "$IMAGE_PUBKEY" ] && [ -e "$IMAGE_PUBKEY" ] ; then
     PUBKEY="$IMAGE_PUBKEY"
   elif [ -e "$COMPANY_PUBKEY" ] ; then
-    # if no special pubkey given, use the hetzner key
-    echo "Using standard pubkey: $COMPANY_PUBKEY" | debugoutput
+    # if no special pubkey given, use the standard company key
+    echo "Using standard $COMPANY pubkey: $COMPANY_PUBKEY" | debugoutput
     PUBKEY="$COMPANY_PUBKEY"
   fi
   if [ -n "$PUBKEY" ] ; then
