@@ -1504,31 +1504,31 @@ delete_partitions() {
 # function which gets the end of the extended partition
 # get_end_of_extended "DRIVE"
 function get_end_of_extended() {
-  local DEV="$1"
-  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$DEV")
-  local SECTORSIZE; SECTORSIZE=$(blockdev --getss "$DEV")
+  local dev="$1"
+  local drive_size; drive_size=$(blockdev --getsize64 "$DEV")
+  local sectorsize; sectorsize=$(blockdev --getss "$DEV")
 
   local end=0
   local sum=0
-  local LIMIT=2199023255040
+  local limit=2199023255040
   # get sector limit
-  local SECTORLIMIT=$(((LIMIT / SECTORSIZE) - 1))
-  local STARTSEC; STARTSEC=$(sgdisk --first-aligned-in-largest "$1" | tail -n1)
+  local sectorlimit=$(((limit / sectorsize) - 1))
+  local startsec; startsec=$(sgdisk --first-aligned-in-largest "$1" | tail -n1)
 
   for i in $(seq 1 3); do
     sum=$(echo "$sum + ${PART_SIZE[$i]}" | bc)
   done
-  rest=$(echo "$DRIVE_SIZE - ($sum * 1024 * 1024)" | bc)
+  rest=$(echo "$drive_size - ($sum * 1024 * 1024)" | bc)
 
-  end=$((DRIVE_SIZE / SECTORSIZE))
+  end=$((drive_size / sectorsize))
 
-  if [ "$DRIVE_SIZE" -lt "$LIMIT" ]; then
+  if [ "$drive_size" -lt "$limit" ]; then
     echo "$((end-1))"
   else
-    if [ "$rest" -gt "$LIMIT" ]; then
+    if [ "$rest" -gt "$limit" ]; then
       # if the remaining space is more than 2 TiB, the end of the extended
       # partition is the current sector plus 2^32-1 sectors (2TiB-512 Byte)
-      echo "$STARTSEC+$SECTORLIMIT" | bc
+      echo "$startsec+$sectorlimit" | bc
     else
       # otherwise the end is the number of sectors - 1
       echo "$((end-1))"
