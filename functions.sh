@@ -2702,7 +2702,6 @@ copy_mtab() {
 
 generate_new_sshkeys() {
   if [ "$1" ]; then
-#    rm -rf "$FOLD"/hdd/etc/ssh/ssh_host_* 2>&1 | debugoutput
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_k* 2>&1 | debugoutput
@@ -2734,12 +2733,6 @@ generate_new_sshkeys() {
       debug "skipping rsa key gen"
     fi
 
-    # create ecdsa keys for Ubuntu 11.04, Opensuse 12.1, Debian 7.0, CentOS 7.0 and any version above
-#    if [ "$IAM" = "arch" ] ||
-#       [ "$IAM" = "ubuntu"  ] && [  "$IMG_VERSION" -ge 1104 ] ||
-#       [ "$IAM" = "suse"  ] && [  "$IMG_VERSION" -ge 121 ] ||
-#       [ "$IAM" = "debian" ] && [  "$IMG_VERSION" -ge 70 ] ||
-#       [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -ge 70 ]; then
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ecdsa_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' >/dev/null"; EXITCODE=$?
@@ -2750,10 +2743,6 @@ generate_new_sshkeys() {
       debug "skipping ecdsa key gen"
     fi
 
-#    if [ "$IAM" = "arch" ] ||
-#       [ "$IAM" = "debian" ] && [  "$IMG_VERSION" -ge 80 ] ||
-#       [ "$IAM" = "ubuntu" ] && [  "$IMG_VERSION" -ge 1404 ] ||
-#       [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -ge 132 ]; then
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25519_key" ]; then
       rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
@@ -2771,7 +2760,10 @@ generate_new_sshkeys() {
         file="/etc/ssh/ssh_host_${key_type}_key.pub"
         key_json="\"key_type\": \"${key_type}\""
         if [ -f "$FOLD/hdd/$file" ]; then
-          execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
+          # The default key hashing algorithm used when displaying key fingerprints changes from MD5 to SHA256 in OpenSSH 6.8
+          if ! execute_chroot_command "ssh-keygen -l -f ${file} -E md5 > /tmp/${key_type} 2> /dev/null"; then
+            execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
+          fi
           # shellcheck disable=SC2034
           while read -r bits fingerprint name type ; do
             key_json="${key_json}, \"key_bits\": \"${bits}\", \"key_fingerprint\": \"${fingerprint}\", \"key_name\": \"${name}\""
