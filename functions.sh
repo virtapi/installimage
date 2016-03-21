@@ -65,8 +65,7 @@ PLESK_STD_VERSION="PLESK_12_5_30"
 
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
-# this var is probably not used anymore. keep it for safety
-# MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
+MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
 
 # functions
 # show text in a different color
