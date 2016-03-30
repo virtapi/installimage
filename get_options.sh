@@ -3,10 +3,8 @@
 # read config
 #. /tmp/install.vars
 #
-# originally written by David Mayr
-# (c) 2009-2015, Hetzner Online GmbH
+# (c) 2009-2016, Hetzner Online GmbH
 #
-
 
 
 # check command line params / options
@@ -74,15 +72,17 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
       echo "$OPT_CONFIGFILE" | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
       cp "$OPT_CONFIGFILE" /autosetup
       if grep -q PASSWD /autosetup ; then
-        echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
-        echo "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
+        echo ''
+        echo ''
+        echo -e "${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
+        echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}"
         echo ""
         echo -n "PASSWORD:  "
         read -r -s imagepasswd
@@ -99,12 +99,12 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
       echo "$OPT_POSTINSTALLFILE" | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
-      ln -fs "$OPT_POSTINSTALLFILE" /post-install
+      ln -sf "$OPT_POSTINSTALLFILE" /post-install
     ;;
 
     # automatic mode
@@ -114,7 +114,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     n)
       OPT_HOSTNAME="$OPTARG"
       if [ -e /autosetup ]; then
-	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
+        sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
       fi
     ;;
 
@@ -187,8 +187,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: sda,sdb | sda
     d)
       OPT_DRIVES="$OPTARG"
-      # shellcheck disable=SC2001
-      sel_drives="$(echo "$OPT_DRIVES" | sed s/,/\\n/g)"
+      sel_drives="${OPT_DRIVES/,/ }"
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
@@ -204,13 +203,13 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       esac
     ;;
 
-	s)
-    export OPT_LANGUAGE="$OPTARG"
-  ;;
+    s)
+      export OPT_LANGUAGE="$OPTARG"
+    ;;
 
-	z)
-    export OPT_INSTALL="$OPTARG"
-  ;;
+    z)
+      export OPT_INSTALL="$OPTARG"
+    ;;
 
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
@@ -229,7 +228,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
      else
         msg="=> FAILED: cannot install ssh-keys without a source"
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
      fi
      ;;
@@ -249,7 +248,7 @@ fi
 if [ -n "$OPT_USE_SSHKEYS" ] && [ -z "$OPT_SSHKEYS_URL" ]; then
         msg="=> FAILED: Should install SSH keys, but key URL not set."
         debug "$msg"
-        echo "${RED}$msg${NOCOL}"
+        echo -e "${RED}$msg${NOCOL}"
         exit 1
 fi
 

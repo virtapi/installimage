@@ -3,36 +3,22 @@
 #
 # Archlinux specific functions
 #
-# originally written by Markus Schade
-# (c) 2013-2015, Hetzner Online GmbH
+# (c) 2013-2016, Hetzner Online GmbH
 #
-# changed and extended by Thore Bödecker, 2015-10-05
-# changed and extended by Tim Meusel
-# changed and extended by Dominik Hannen
-#
-
-
-# netmask_cidr_conv "$SUBNETMASK"
-netmask_cidr_conv() {
-  oct2nils=( [255]=0 [254]=1 [252]=2 [248]=3 [240]=4 [224]=5 [192]=6 [128]=7 [0]=8 )
-  local IFS='.' cidr; cidr=0
-  for oct in $1; do
-    cidr=$((cidr + oct2nils[oct]))
-  done
-  echo $cidr
-}
 
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
   if [ -n "$1" ] && [ -n "$2" ]; then
     # good we have a device and a MAC
-    CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-hetzner.network"
+    CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-$C_SHORT.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
     local CIDR; CIDR=$(netmask_cidr_conv "$SUBNETMASK")
 
-    echo "### ${COMPANY} - installimage" > "$UDEVFILE"
-    echo "# device: $1" >> "$UDEVFILE"
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
 
     {
       echo "### $COMPANY - installimage"
@@ -45,21 +31,27 @@ setup_network_config() {
     echo "[Network]" >> "$CONFIGFILE"
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
-      { echo "Address=$8/$9"
-      echo "Gateway=${10}"
-      echo ""; } >> "$CONFIGFILE"
+      {
+        echo "Address=$8/$9"
+        echo "Gateway=${10}"
+        echo ""
+      } >> "$CONFIGFILE"
     fi
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
       debug "setting up ipv4 networking $3/$5 via $6"
-      { echo "Address=$3/$CIDR"
-      echo "Gateway=$6"
-      echo ""; } >> "$CONFIGFILE"
+      {
+        echo "Address=$3/$CIDR"
+        echo "Gateway=$6"
+        echo ""
+      } >> "$CONFIGFILE"
 
       if ! is_private_ip "$3"; then
-        { echo "[Route]"
-        echo "Destination=$7/$CIDR"
-        echo "Gateway=$6"; } >> "$CONFIGFILE"
+        {
+          echo "[Route]"
+          echo "Destination=$7/$CIDR"
+          echo "Gateway=$6"
+        } >> "$CONFIGFILE"
       fi
     fi
 
@@ -71,11 +63,13 @@ setup_network_config() {
 
 # generate_mdadmconf "NIL"
 generate_config_mdadm() {
-  if [ "$1" ]; then
-    MDADMCONF="/etc/mdadm.conf"
-    echo "DEVICES /dev/[hs]d*" > "$FOLD/hdd$MDADMCONF"
-    echo "MAILADDR root" >> "$FOLD/hdd$MDADMCONF"
-    execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; EXITCODE=$?
+  if [ -n "$1" ]; then
+    local mdadmconf="/etc/mdadm.conf"
+    {
+      echo "DEVICE partitions"
+      echo "MAILADDR root"
+    } > "$FOLD/hdd$mdadmconf"
+    execute_chroot_command "mdadm --examine --scan >> $mdadmconf"; declare -i EXITCODE=$?
     return "$EXITCODE"
   fi
 }
@@ -83,8 +77,8 @@ generate_config_mdadm() {
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
-  if [ "$1" ]; then
-    local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+  if [ -n "$1" ]; then
+    local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
     {
       echo "### $COMPANY - installimage"
       echo "### silence any onboard speaker"
@@ -106,10 +100,11 @@ generate_new_ramdisk() {
 }
 
 setup_cpufreq() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     if ! isVServer; then
-      CPUFREQCONF="$FOLD/hdd/etc/default/cpupower"
-      sed -i -e "s/#governor=.*/governor'$1'/" "$CPUFREQCONF"
+      local cpufreqconf=''
+      cpufreqconf="$FOLD/hdd/etc/default/cpupower"
+      sed -i -e "s/#governor=.*/governor'$1'/" "$cpufreqconf"
       execute_chroot_command "systemctl enable cpupower"
     fi
 
@@ -118,7 +113,7 @@ setup_cpufreq() {
 }
 
 #
-# generate_config_grub <version>
+# generate_config_grub
 #
 # Generate the GRUB bootloader configuration.
 #
@@ -130,18 +125,19 @@ generate_config_grub() {
 
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
-  execute_chroot_command "grub-install --no-floppy --recheck $DRIVE1 2>&1"; EXITCODE=$?
+  execute_chroot_command "grub-install --no-floppy --recheck $DRIVE1 2>&1";
+  declare -i EXITCODE=$?
 
   # only install grub2 in mbr of all other drives if we use swraid
   if [ "$SWRAID" = "1" ] ;  then
     local i=2
     while [ "$(eval echo "\$DRIVE"$i)" ]; do
-      local TARGETDRIVE=''
-      TARGETDRIVE="$(eval echo "\$DRIVE"$i)"
-      execute_chroot_command "grub-install --no-floppy --recheck $TARGETDRIVE 2>&1"
+      local targetdrive; targetdrive="$(eval echo "\$DRIVE$i")"
+      execute_chroot_command "grub-install --no-floppy --recheck $targetdrive 2>&1"
+      declare -i EXITCODE=$?
       let i=i+1
     done
-  fi
+fi
   uuid_bugfix
 
   return "$EXITCODE"
@@ -173,29 +169,32 @@ validate_image() {
 # extract image file to hdd
 extract_image() {
   LANG=C pacstrap -m -a "$FOLD/hdd" base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget 2>&1 | debugoutput
+  declare -i EXITCODE=$?
 
   if [ "$EXITCODE" -eq "0" ]; then
     cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" 2>&1 | debugoutput
 
     #timezone - we are in Germany
     execute_chroot_command "ln -s /usr/share/timezone/Europe/Berlin /etc/localtime"
-    echo en_US.UTF-8 UTF-8 > "$FOLD/hdd/etc/locale.gen"
-    echo de_DE.UTF-8 UTF-8 >> "$FOLD/hdd/etc/locale.gen"
+    {
+      echo "en_US.UTF-8 UTF-8"
+      echo "de_DE.UTF-8 UTF-8"
+    } > "$FOLD/hdd/etc/locale.gen"
     execute_chroot_command "locale-gen"
 
-    echo > "$FOLD/hdd/etc/locale.conf"
-    echo "LANG=de_DE.UTF-8" >> "$FOLD/hdd/etc/locale.conf"
-    echo "LC_MESSAGES=C" >> "$FOLD/hdd/etc/locale.conf"
+    {
+      echo "LANG=en_US.UTF-8"
+      echo "LC_MESSAGES=C"
+    } > "$FOLD/hdd/etc/locale.conf"
 
-    echo > "$FOLD/hdd/etc/vconsole.conf"
-    echo "KEYMAP=de" >> "$FOLD/hdd/etc/vconsole.conf"
-    echo "FONT=LatArCyrHeb-16" >> "$FOLD/hdd/etc/vconsole.conf"
-
+    {
+      echo "KEYMAP=de"
+      echo "FONT=LatArCyrHeb-16"
+    } > "$FOLD/hdd/etc/vconsole.conf"
 
     return 0
   else
     return 1
   fi
 }
-
 # vim: ai:ts=2:sw=2:et

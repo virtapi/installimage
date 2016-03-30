@@ -3,12 +3,9 @@
 #
 # CentOS specific functions
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2008-2015, Hetzner Online GmbH
+# (c) 2008-2016, Hetzner Online GmbH
 #
-# changed and extended by Thore Bödecker, 2015-10-05
-# changed and extended by Tim Meusel
-#
+
 
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 setup_network_config() {
@@ -24,6 +21,7 @@ setup_network_config() {
       echo "# device: $1"
       printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
     } > "$UDEVFILE"
+
     local upper_mac="${2^^*}"
 
     NETWORKFILE="$FOLD/hdd/etc/sysconfig/network"
@@ -33,17 +31,22 @@ setup_network_config() {
       echo "NETWORKING=yes"
     } > "$NETWORKFILE"
 
+    rm -f "$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-en*"
+
     CONFIGFILE="$FOLD/hdd/etc/sysconfig/network-scripts/ifcfg-$1"
     ROUTEFILE="$FOLD/hdd/etc/sysconfig/network-scripts/route-$1"
 
-    echo "### $COMPANY - installimage" > "$CONFIGFILE" 2>> "$DEBUGFILE"
-    echo "#" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "#"
+    } > "$CONFIGFILE"
+
     if ! is_private_ip "$3"; then
       {
         echo "# Note for customers who want to create bridged networking for virtualisation:"
         echo "# Gateway is set in separate file"
         echo "# Do not forget to change interface in file route-$1 and rename this file"
-      } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      } >> "$CONFIGFILE"
     fi
     {
       echo "#"
@@ -51,16 +54,24 @@ setup_network_config() {
       echo "DEVICE=$1"
       echo "BOOTPROTO=none"
       echo "ONBOOT=yes"
-    } >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+    } >> "$CONFIGFILE"
+
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      echo "HWADDR=$upper_mac" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-      echo "IPADDR=$3" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      {
+        echo "HWADDR=$upper_mac"
+        echo "IPADDR=$3"
+      } >> "$CONFIGFILE"
+
       if is_private_ip "$3"; then
-        echo "NETMASK=$5" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo "GATEWAY=$6" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        {
+          echo "NETMASK=$5"
+          echo "GATEWAY=$6"
+        } >> "$CONFIGFILE"
       else
-        echo "NETMASK=255.255.255.255" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
-        echo "SCOPE=\"peer $6\"" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+        {
+          echo "NETMASK=255.255.255.255"
+          echo "SCOPE=\"peer $6\""
+        } >> "$CONFIGFILE"
 
         {
           echo "### $COMPANY - installimage"
@@ -68,24 +79,24 @@ setup_network_config() {
           echo "ADDRESS0=0.0.0.0"
           echo "NETMASK0=0.0.0.0"
           echo "GATEWAY0=$6"
-        } > "$ROUTEFILE" 2>> "$DEBUGFILE"
+        } > "$ROUTEFILE"
       fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
       debug "setting up ipv6 networking $8/$9 via ${10}"
+      echo "NETWORKING_IPV6=yes" >> "$NETWORKFILE"
       {
-        echo "NETWORKING_IPV6=yes"
         echo "IPV6INIT=yes"
         echo "IPV6ADDR=$8/$9"
         echo "IPV6_DEFAULTGW=${10}"
         echo "IPV6_DEFAULTDEV=$1"
-      } >> "$NETWORKFILE" 2>> "$DEBUGFILE"
+      } >> "$CONFIGFILE"
     fi
 
     # set duplex/speed
     if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE" 2>> "$DEBUGFILE"
+      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
     fi
 
     # remove all hardware info from image (CentOS 5)
@@ -97,26 +108,28 @@ setup_network_config() {
   fi
 }
 
-# generate_mdadmconf "NIL"
+# generate_config_mdadm "NIL"
 generate_config_mdadm() {
   if [ -n "$1" ]; then
-    MDADMCONF="/etc/mdadm.conf"
-    echo "DEVICES /dev/[hs]d*" > "$FOLD/hdd$MDADMCONF"
-    echo "MAILADDR root" >> "$FOLD/hdd$MDADMCONF"
-    execute_chroot_command "mdadm --examine --scan >> $MDADMCONF"; declare -i EXITCODE=$?
-    return "$EXITCODE"
+    local mdadmconf="/etc/mdadm.conf"
+    {
+      echo "DEVICE partitions"
+      echo "MAILADDR root"
+    } > "$FOLD/hdd$mdadmconf"
+    execute_chroot_command "mdadm --examine --scan >> $mdadmconf"; declare -i EXITCODE=$?
+    return $EXITCODE
   fi
 }
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
 
     # pick the latest kernel
     for file in "$FOLD/hdd/boot/vmlinuz-"*; do VERSION="${file#*-}"; done
 
     if [ "$IMG_VERSION" -lt 60 ] ; then
-      declare -r MODULESFILE="$FOLD/hdd/etc/modprobe.conf"
+      local modulesfile="$FOLD/hdd/etc/modprobe.conf"
       # previously we added an alias for eth0 based on the niclist (static
       # pci-id->driver mapping) of the old rescue. But the new rescue mdev/udev
       # So we only add aliases for the controller
@@ -125,19 +138,19 @@ generate_new_ramdisk() {
         echo "# load all modules"
         echo ""
         echo "# hdds"
-      } > "$MODULESFILE" 2>> "$DEBUGFILE"
+      } > "$modulesfile"
 
       HDDDEV=""
       for hddmodule in $MODULES; do
         if [ "$hddmodule" != "powernow-k8" ] && [ "$hddmodule" != "via82cxxx" ] && [ "$hddmodule" != "atiixp" ]; then
-          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+          echo "alias scsi_hostadapter$HDDDEV $hddmodule" >> "$modulesfile"
           HDDDEV="$((HDDDEV + 1))"
         fi
       done
-      echo "" >> "$MODULESFILE" 2>> "$DEBUGFILE"
+      echo "" >> "$modulesfile"
     elif [ "$IMG_VERSION" -ge 60 ] ; then
       # blacklist some kernel modules due to bugs and/or stability issues or annoyance
-      local -r blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
       {
         echo "### $COMPANY - installimage"
         echo "### silence any onboard speaker"
@@ -149,30 +162,35 @@ generate_new_ramdisk() {
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
-      declare -r DRACUTFILE="$FOLD/hdd/etc/dracut.conf.d/hetzner.conf"
+      local dracutfile="$FOLD/hdd/etc/dracut.conf.d/99-$C_SHORT.conf"
       {
-        echo 'add_dracutmodules+="mdraid lvm"'
-        echo 'add_drivers+="raid1 raid10 raid0 raid456"'
-        echo 'mdadmconf="yes"'
-        echo 'lvmconf="yes"'
+        echo "### $COMPANY - installimage"
+        echo 'add_dracutmodules+="lvm mdraid"'
+        echo 'add_drivers+="raid0 raid1 raid10 raid456"'
+        #echo 'early_microcode="no"'
         echo 'hostonly="no"'
-        echo 'early_microcode="no"'
-      } >> "$DRACUTFILE"
+        echo 'hostonly_cmdline="no"'
+        echo 'lvmconf="yes"'
+        echo 'mdadmconf="yes"'
+        echo 'persistent_policy="by-uuid"'
+      } > "$dracutfile"
     fi
 
     if [ "$IMG_VERSION" -ge 70 ] ; then
-      execute_chroot_command "/sbin/dracut -f --kver $VERSION"; declare -i EXITCODE=$?
+      execute_chroot_command "/sbin/dracut -f --kver $VERSION"
+      declare -i EXITCODE=$?
     else
       if [ "$IMG_VERSION" -ge 60 ] ; then
-        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"; declare -i EXITCODE="$?"
+        execute_chroot_command "/sbin/new-kernel-pkg --mkinitrd --dracut --depmod --install $VERSION"
+        declare -i EXITCODE=$?
       else
-        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"; declare -i EXITCODE="$?"
+        execute_chroot_command "/sbin/new-kernel-pkg --package kernel --mkinitrd --depmod --install $VERSION"
+        declare -i EXITCODE=$?
       fi
     fi
     return "$EXITCODE"
   fi
 }
-
 
 setup_cpufreq() {
   if [ -n "$1" ]; then
@@ -186,24 +204,26 @@ setup_cpufreq() {
       debug "no cpufreq configuration necessary"
     else
       #https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/sec-Persistent_Module_Loading.html
-      local CPUFREQCONF="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
+      local cpufreqconf="$FOLD/hdd/etc/sysconfig/modules/cpufreq.modules"
       {
         echo "#!/bin/sh"
         echo "### $COMPANY - installimage"
         echo "# cpu frequency scaling"
         echo "# this gets started by /etc/rc.sysinit"
-      } > "$CPUFREQCONF" 2>> "$DEBUGFILE"
+      } > "$cpufreqconf"
 
       if [ "$(check_cpu)" = "intel" ]; then
         debug "# Setting: cpufreq modprobe to intel"
-        echo "modprobe intel_pstate >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-        echo "modprobe acpi-cpufreq >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        {
+          echo "modprobe intel_pstate >> /dev/null 2>&1"
+          echo "modprobe acpi-cpufreq >> /dev/null 2>&1"
+        } >> "$cpufreqconf"
       else
         debug "# Setting: cpufreq modprobe to amd"
-        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
+        echo "modprobe powernow-k8 >> /dev/null 2>&1" >> "$cpufreqconf"
       fi
-      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$CPUFREQCONF" 2>> "$DEBUGFILE"
-      chmod a+x "$CPUFREQCONF" >> "$DEBUGFILE"
+      echo "cpupower frequency-set --governor $1 >> /dev/null 2>&1" >> "$cpufreqconf"
+      chmod a+x "$cpufreqconf" 2>> "$DEBUGFILE"
 
     return 0
     fi
@@ -227,10 +247,11 @@ generate_config_grub() {
     DMAPFILE="$FOLD/hdd/boot/grub2/device.map"
   fi
   [ -f "$DMAPFILE" ] && rm "$DMAPFILE"
+
   local -i i=0
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     local j; j="$((i - 1))"
-    local disk; disk="$(eval echo "\$DRIVE"$i)"
+    local disk; disk="$(eval echo "\$DRIVE$i")"
     echo "(hd$j) $disk" >> "$DMAPFILE"
   done
   cat "$DMAPFILE" >> "$DEBUGFILE"
@@ -265,16 +286,16 @@ generate_config_grub() {
       echo >> "$BFILE"
       echo "title CentOS ($1)"
       echo "root (hd0,$PARTNUM)"
-    } > "$BFILE" 2>> "$DEBUGFILE"
+    } > "$BFILE"
 
     # disable pcie active state power management. does not work as it should,
     # and causes problems with Intel 82574L NICs (onboard-NIC Asus P8B WS - EX6/EX8, addon NICs)
-    lspci -n | grep -q '8086:10d3' && ASPM='pcie_aspm=off' || ASPM=''
+    lspci -n | grep -q '8086:10d3' && aspm='pcie_aspm=off' || aspm=''
 
     if [ "$IMG_VERSION" -ge 60 ]; then
-      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $ASPM" >> "$BFILE" 2>> "$DEBUGFILE"
+      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE rd_NO_LUKS rd_NO_DM nomodeset $elevator $aspm" >> "$BFILE"
     else
-      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE nomodeset" >> "$BFILE" 2>> "$DEBUGFILE"
+      echo "kernel /boot/vmlinuz-$1 ro root=$SYSTEMROOTDEVICE nomodeset" >> "$BFILE"
     fi
     INITRD=''
     if [ -f "$FOLD/hdd/boot/initrd-$1.img" ]; then
@@ -283,19 +304,14 @@ generate_config_grub() {
     if [ -f "$FOLD/hdd/boot/initramfs-$1.img" ]; then
      INITRD="initramfs"
     fi
-    if [ $INITRD ]; then
-      echo "initrd /boot/$INITRD-$1.img" >> "$BFILE" 2>> "$DEBUGFILE"
+    if [ -n "$INITRD" ]; then
+      echo "initrd /boot/$INITRD-$1.img" >> "$BFILE"
     fi
 
-    echo >> "$BFILE" 2>> "$DEBUGFILE"
+    echo >> "$BFILE"
 
     uuid_bugfix
-  # TODO: let grubby add its own stuff (SYSFONT, LANG, KEYTABLE)
-#  if [ $IMG_VERSION -lt 60 ] ; then
-#   execute_chroot_command "/sbin/new-kernel-pkg --package kernel --install $VERSION"; declare -i EXITCODE="$?"
-#  else
-#   execute_chroot_command "/sbin/new-kernel-pkg --install $VERSION"; declare -i EXITCODE="$?"
-#  fi
+  # TODO: add grubby stuff (SYSFONT, LANG, KEYTABLE)
   else
     if isVServer; then
       execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"nomodeset rd.auto=1 crashkernel=auto elevator=noop\"/"'
@@ -316,19 +332,21 @@ write_grub() {
     for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
-        execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1" declare -i EXITCODE=$?
+        execute_chroot_command "grub2-install --no-floppy --recheck $disk 2>&1"
+        declare -i EXITCODE=$?
       fi
     done
   else
     for ((i=1; i<=COUNT_DRIVES; i++)); do
-      if [ "$SWRAID" -eq 1 ] || [ $i -eq 1 ] ;  then
+      if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
         execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
+        declare -i EXITCODE=$?
       fi
     done
   fi
 
-  return $?
+  return "$EXITCODE"
 }
 
 #
@@ -344,13 +362,13 @@ run_os_specific_functions() {
   #
   debug "# Testing and setup of cpanel image"
   if [ -f "$FOLD/hdd/etc/wwwacct.conf" ] && [ -f "$FOLD/hdd/etc/cpupdate.conf" ] ; then
-    grep -q -i cpanel <<< "$IMAGENAME" && {
+    grep -q -i cpanel <<< "$IMAGE_FILE" && {
       setup_cpanel || return 1
     }
   fi
 
   # selinux autorelabel if enabled
-  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux)" &&
+  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux" &&
     touch "$FOLD/hdd/.autorelabel"
 
   return 0
@@ -367,26 +385,57 @@ setup_cpanel() {
 # randomize mysql passwords in cpanel image
 #
 randomize_cpanel_mysql_passwords() {
-  CPHULKDCONF="$FOLD/hdd/var/cpanel/hulkd/password"
-  CPHULKDPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
-  ROOTPASS=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
-  MYSQLCOMMAND="UPDATE mysql.user SET password=PASSWORD(\"$CPHULKDPASS\") WHERE user='cphulkd'; \
-  UPDATE mysql.user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';\nFLUSH PRIVILEGES;"
-  echo "$MYSQLCOMMAND" > "$FOLD/hdd/tmp/pwchange.sql"
+  local cphulkdconf; cphulkdconf="$FOLD/hdd/var/cpanel/hulkd/password"
+  local cphulkdpass; cphulkdpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local rootpass; rootpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c8)
+  local mysqlcommand;
+  mysqlcommand="UPDATE mysql.user SET password=PASSWORD('$cphulkdpass') WHERE user='cphulkd'; \
+    UPDATE mysql.user SET password=PASSWORD('$rootpass') WHERE user='root'; \
+    FLUSH PRIVILEGES;"
+  echo -e "$mysqlcommand" > "$FOLD/hdd/tmp/pwchange.sql"
   debug "changing mysql passwords"
-  execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; declare -i EXITCODE=$?
-  execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; declare -i EXITCODE=$?
-  execute_chroot_command "service mysql stop >/dev/null 2>&1"
-  cp "$CPHULKDCONF" "$CPHULKDCONF.old"
-  sed s/pass.*/"pass=\"$CPHULKDPASS\""/g "$CPHULKDCONF.old" > "$CPHULKDCONF"
+  if [ "$IMG_VERSION" -lt 70 ] ; then
+    execute_chroot_command "service mysql start --skip-grant-tables --skip-networking >/dev/null 2>&1"; EXITCODE=$?
+    execute_chroot_command "mysql < /tmp/pwchange.sql >/dev/null 2>&1"; EXITCODE=$?
+    execute_chroot_command "service mysql stop >/dev/null 2>&1"
+  else
+    local override_dir="$FOLD/hdd/etc/systemd/system/mysql.service.d"
+    local mysql_override="$override_dir/override.conf"
+    mkdir -p "$override_dir"
+    {
+      echo "[Service]"
+      echo "ExecStart="
+      echo "ExecStart=/usr/bin/mysqld_safe --skip-grant-tables --skip-networking"
+    } > "$mysql_override"
+    local helper_script=${FOLD}/hdd/helper.sh
+    {
+      echo '#!/usr/bin/env bash'
+      # shellcheck disable=SC2016
+      echo 'trap "rm ${0}" EXIT'
+      echo 'systemctl start mysql.service'
+      echo 'echo ERROR > /tmp/buff'
+      # mysql becomes unresponsive from time to time
+      echo 'while cat /tmp/buff | grep -q ERROR; do'
+      echo '  mysql < /tmp/pwchange.sql &> /tmp/buff'
+      echo 'done'
+      echo 'rm /tmp/buff'
+      echo 'systemctl stop mysql.service'
+    } > "${helper_script}"
+    chmod a+x "${helper_script}"
+    execute_nspawn_command "/helper.sh"; EXITCODE=$?
+    rm -rf "$override_dir"
+  fi
+
+  cp "$cphulkdconf" "$cphulkdconf.old"
+  sed s/pass.*/"pass=\"$cphulkdpass\""/g "$cphulkdconf.old" > "$cphulkdconf"
   rm "$FOLD/hdd/tmp/pwchange.sql"
-  rm "$CPHULKDCONF.old"
+  rm "$cphulkdconf.old"
 
   # write password file
   {
     echo "[client]"
     echo "user=root"
-    echo "pass=$ROOTPASS"
+    echo "password=$rootpass"
   } > "$FOLD/hdd/root/.my.cnf"
 
   return "$EXITCODE"
@@ -396,28 +445,30 @@ randomize_cpanel_mysql_passwords() {
 # set the content of /var/cpanel/mainip correct
 #
 change_mainIP() {
-  MAINIPFILE="/var/cpanel/mainip"
-  debug "changing content of ${MAINIPFILE}"
-  execute_chroot_command "echo -n ${IPADDR} > $MAINIPFILE"
+  local mainipfile="/var/cpanel/mainip"
+  debug "changing content of ${mainipfile}"
+  echo -n "${IPADDR}" > "$FOLD/hdd/$mainipfile"
 }
 
 #
 # set the correct hostname, IP and nameserver in /etc/wwwacct.conf
-#
 modify_wwwacct() {
-  WWWACCT="/etc/wwwacct.conf"
-  NS="ns1.first-ns.de"
-  NS2="robotns2.second-ns.de"
-  NS3="robotns3.second-ns.com"
+  local wwwacct="/etc/wwwacct.conf"
+  local wfile="$FOLD/hdd/$wwwacct"
 
-  debug "setting hostname in ${WWWACCT}"
-  execute_chroot_command "echo \"HOST ${SETHOSTNAME}\" >> $WWWACCT"
-  debug "setting IP in ${WWWACCT}"
-  execute_chroot_command "echo \"ADDR ${IPADDR}\" >> $WWWACCT"
-  debug "setting NS in ${WWWACCT}"
-  execute_chroot_command "echo \"NS ${NS}\" >> $WWWACCT"
-  execute_chroot_command "echo \"NS2 ${NS2}\" >> $WWWACCT"
-  execute_chroot_command "echo \"NS3 ${NS3}\" >> $WWWACCT"
+  debug "setting hostname in ${wwwacct}"
+  echo "HOST ${NEWHOSTNAME}" >> "$wfile"
+
+  debug "setting IP in ${wwwacct}"
+  echo "ADDR ${IPADDR}" >> "$wfile"
+
+  debug "setting NS in ${wwwacct}"
+  {
+    echo "NS ${AUTH_DNS1}"
+    echo "NS2 ${AUTH_DNS2}"
+    echo "NS3 ${AUTH_DNS3}"
+  } >> "$wfile"
+
 }
 
 # vim: ai:ts=2:sw=2:et

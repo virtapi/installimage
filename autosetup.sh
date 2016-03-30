@@ -3,10 +3,8 @@
 #
 # skip menu - use "autosetup" file
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2008-2015, Hetzner Online GmbH
+# (c) 2008-2016, Hetzner Online GmbH
 #
-
 
 # read global variables and functions
 # shellcheck disable=SC1091
@@ -73,16 +71,14 @@ echo -e "\033[01;33m  Press X to continue immediately ...\033[00m"
 echo -e "\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
 echo -e "\033[01;33m  Press CTRL-C to abort now!\033[00m"
 echo -n "  => "
-declare -i i=0
-while ((i < 20)); do
-  printf "."
+for ((i=1; i<=20; i++)); do
+  echo -n "."
   read -r -t1 -n1 anykey
   if [ "$anykey" = "x" ] || [ "$anykey" = "X" ]; then
     break
   fi
-  i="$((i+1))"
 done
-echo
+echo ""
 #
 debug "# executing installfile ..."
 if [ -f "$INSTALLFILE" ] && [ "$VALIDATED" = "true" ] ; then

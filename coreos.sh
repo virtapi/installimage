@@ -3,11 +3,7 @@
 #
 # CoreOS specific functions
 #
-# originally written by Markus Schade
-# (c) 2014-2015, Hetzner Online GmbH
-#
-# changed and extended by Thore Bödecker, 2015-10-05
-# changed and extended by Tim Meusel
+# (c) 2014-2016, Hetzner Online GmbH
 #
 # This file isn't ready for production!
 #
@@ -64,12 +60,19 @@ extract_image() {
        ;;
       *)return 1;;
     esac
-    #TODO: what happens if COMPRESSION is empty because $2 is "bin"?
+
     # extract image with given compression
-    "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"; EXITCODE=$?
+    if [ -n "$COMPRESSION" ]; then
+      "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"
+      EXITCODE=$?
+    else
+      # or write binary file directly to disk
+      dd if="$EXTRACTFROM" of="${DRIVE1}" bs=1M
+      EXITCODE=$?
+    fi
 
     if [ "$EXITCODE" -eq "0" ]; then
-      echo "sucess " | debugoutput
+      debug "# sucess"
       # inform the OS of partition table changes
       blockdev --rereadpt "${DRIVE1}"
       return 0
@@ -84,7 +87,7 @@ setup_network_config() {
   return 0
 }
 
-# generate_mdadmconf "NIL"
+# generate_config_mdadm "NIL"
 generate_config_mdadm() {
   return 0
 }
@@ -197,7 +200,7 @@ set_rootpassword() {
 
 # set sshd PermitRootLogin
 set_ssh_rootlogin() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
      local permit="$1"
      case "$permit" in
        yes|no|without-password|forced-commands-only)
@@ -227,7 +230,7 @@ EOF
 
 # copy_ssh_keys "$OPT_SSHKEYS_URL"
 copy_ssh_keys() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local key_url="$1"
     echo "ssh_authorized_keys:" >> "$CLOUDINIT"
     case "$key_url" in
@@ -258,7 +261,7 @@ write_grub() {
 }
 
 add_coreos_oem_scripts() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local mntpath=$1
 
     # add netname simplify script (use eth names)
@@ -280,8 +283,8 @@ EOF
 
 INTERFACES=\$(ip link show | gawk -F ':' '/^[0-9]+/ { print \$2 }' | tr -d ' ' | sed 's/lo//')
 for iface in \${INTERFACES}; do
-	ip link set \${iface} down
-	udevadm test /sys/class/net/\${iface}
+  ip link set \${iface} down
+  udevadm test /sys/class/net/\${iface}
 done
 EOF
     chmod a+x "$scriptfile"
@@ -289,7 +292,7 @@ EOF
 }
 
 add_coreos_oem_cloudconfig() {
-  if [ "$1" ]; then
+  if [ -n "$1" ]; then
     local mntpath=$1
     local cloudconfig="$mntpath/cloud-config.yml"
     echo "#cloud-config" > "$cloudconfig"
@@ -347,28 +350,28 @@ EOF
 # for purpose of e.g. debian-sys-maint mysql user password in debian/ubuntu LAMP
 #
 run_os_specific_functions() {
-    local ROOT_DEV; ROOT_DEV=$(blkid -t "LABEL=ROOT" -o device "${DRIVE1}"*)
-    local OEM_DEV; OEM_DEV=$(blkid -t "LABEL=OEM" -o device "${DRIVE1}"*)
-    local is_ext4; is_ext4=$(blkid -o value "$ROOT_DEV" | grep ext4)
-    if [ -n "$is_ext4" ]; then
-      mount "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
-    else
-      mount -t btrfs -o subvol=root "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
-    fi
-    [ "$EXITCODE" -ne "0" ] && return 1
+  local ROOT_DEV; ROOT_DEV=$(blkid -t "LABEL=ROOT" -o device "${DRIVE1}"*)
+  local OEM_DEV; OEM_DEV=$(blkid -t "LABEL=OEM" -o device "${DRIVE1}"*)
+  local is_ext4; is_ext4=$(blkid -o value "$ROOT_DEV" | grep ext4)
+  if [ -n "$is_ext4" ]; then
+    mount "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
+  else
+    mount -t btrfs -o subvol=root "${ROOT_DEV}" "$FOLD/hdd" 2>&1 | debugoutput ; EXITCODE=$?
+  fi
+  [ "$EXITCODE" -ne "0" ] && return 1
 
-   # mount OEM partition as well
-    mount "${OEM_DEV}" "$FOLD/hdd/usr" 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
+ # mount OEM partition as well
+  mount "${OEM_DEV}" "$FOLD/hdd/usr" 2>&1 | debugoutput ; EXITCODE=$?
+  [ "$EXITCODE" -ne "0" ] && return 1
 
-    if ! isVServer; then
-      add_coreos_oem_scripts "$FOLD/hdd/usr"
-    fi
-    add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
+  if ! isVServer; then
+    add_coreos_oem_scripts "$FOLD/hdd/usr"
+  fi
+  add_coreos_oem_cloudconfig "$FOLD/hdd/usr"
 
-    mkdir -p "$FOLD/hdd/var/lib/coreos-install"
-    debugoutput <  "$CLOUDINIT"
-    cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
+  mkdir -p "$FOLD/hdd/var/lib/coreos-install"
+  debugoutput < "$CLOUDINIT"
+  cp "$CLOUDINIT" "$FOLD/hdd/var/lib/coreos-install/user_data"
 
   return 0
 }

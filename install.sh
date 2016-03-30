@@ -3,8 +3,7 @@
 #
 # install - installation commands
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2016, Hetzner Online GmbH
 #
 
 STATUS_POSITION="\033[60G"
@@ -69,7 +68,7 @@ status_donefailed() {
 }
 
 echo
-echo_bold "                Hetzner Online GmbH - installimage\n"
+echo_bold "                $COMPANY - installimage\n"
 echo_bold "  Your server will be installed now, this will take some minutes"
 echo_bold "             You can abort at any time with CTRL+C ...\n"
 
@@ -430,13 +429,13 @@ if [ "$OPT_INSTALL" ]; then
         status_busy_nostep "  Installing PLESK Control Panel"
         debug "# installing PLESK"
         install_plesk "$opt_item"
-	status_donefailed $?
+        status_donefailed $?
         ;;
       omsa)
         status_busy_nostep "  Installing Open Manage"
         debug "# installing OMSA"
         install_omsa
-	status_donefailed $?
+        status_donefailed $?
         ;;
     esac
   done
@@ -507,7 +506,7 @@ report_debuglog "$report_id"
 #
 (
   echo "#"
-  echo "# Hetzner Online GmbH - installimage"
+  echo "# $COMPANY - installimage"
   echo "#"
   echo "# This file contains the configuration used to install this"
   echo "# system via installimage script. Comments have been removed."

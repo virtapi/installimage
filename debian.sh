@@ -3,11 +3,7 @@
 #
 # Debian specific functions
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2008-2015, Hetzner Online GmbH
-#
-# changed and extended by Thore Bödecker, 2015-10-05
-# changed and extended by Tim Meusel
+# (c) 2008-2016, Hetzner Online GmbH
 #
 
 # setup_network_config "$device" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
@@ -23,30 +19,41 @@ setup_network_config() {
     else
       UDEVFILE="/dev/null"
     fi
-    echo "### $COMPANY - installimage" > "$UDEVFILE"
-    echo "# device: $1" >> $UDEVFILE
-    printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1" >> "$UDEVFILE"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# device: $1"
+      printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL=="eth*", NAME="%s"\n' "$2" "$1"
+    } > "$UDEVFILE"
+
     {
       echo "### $COMPANY - installimage"
       echo "# Loopback device:"
       echo "auto lo"
       echo "iface lo inet loopback"
+      echo "iface lo inet6 loopback"
       echo ""
     } > "$CONFIGFILE"
 
     if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      {
-        echo "# device: $1"
-        echo "auto  $1"
-        echo "iface $1 inet static"
-        echo "  address   $3"
-        echo "  netmask   $5"
-        echo "  gateway   $6"
-        if ! is_private_ip "$3"; then
-          echo "  # default route to access subnet"
-          echo "  up route add -net $7 netmask $5 gw $6 $1"
-        fi
-      } >> "$CONFIGFILE"
+      echo "# device: $1" >> "$CONFIGFILE"
+      if is_private_ip "$3" && isVServer; then
+        {
+          echo "auto  $1"
+          echo "iface $1 inet dhcp"
+        } >> "$CONFIGFILE"
+      else
+        {
+          echo "auto  $1"
+          echo "iface $1 inet static"
+          echo "  address   $3"
+          echo "  netmask   $5"
+          echo "  gateway   $6"
+          if ! is_private_ip "$3"; then
+            echo "  # default route to access subnet"
+            echo "  up route add -net $7 netmask $5 gw $6 $1"
+          fi
+        } >> "$CONFIGFILE"
+      fi
     fi
 
     if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
@@ -64,8 +71,10 @@ setup_network_config() {
     # set duplex speed
     #
     if ! isNegotiated && ! isVServer; then
-      echo "  # force full-duplex for ports without auto-neg" >> "$CONFIGFILE"
-      echo "  post-up mii-tool -F 100baseTx-FD $1" >> "$CONFIGFILE"
+      {
+        echo "  # force full-duplex for ports without auto-neg"
+        echo "  post-up mii-tool -F 100baseTx-FD $1"
+      } >> "$CONFIGFILE"
     fi
 
     return 0
@@ -74,41 +83,35 @@ setup_network_config() {
 
 # generate_config_mdadm "NIL"
 generate_config_mdadm() {
-  if [ -n "$1" ]; then
-    MDADMCONF="/etc/mdadm/mdadm.conf"
-    # echo "DEVICES /dev/[hs]d*" > $FOLD/hdd$MDADMCONF
-    # execute_chroot_command "mdadm --detail --scan | sed -e 's/metadata=00.90/metadata=0.90/g' >> $MDADMCONF"; declare -i EXITCODE=$?
-    execute_chroot_command "/usr/share/mdadm/mkconf > $MDADMCONF"; declare -i EXITCODE=$?
+  local mdadmconf="/etc/mdadm/mdadm.conf"
+  execute_chroot_command "/usr/share/mdadm/mkconf > $mdadmconf"; declare -i EXITCODE=$?
 
-    #
-    # Enable mdadm
-    #
-    sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
-    sed -i -e "s/^INITRDSTART=.*/INITRDSTART='all' # modified by installimage/" \
-      "$FOLD/hdd/etc/default/mdadm"
+  #
+  # Enable mdadm
+  #
+  local mdadmdefconf="$FOLD/hdd/etc/default/mdadm"
+  sed -i "s/AUTOCHECK=false/AUTOCHECK=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i "s/AUTOSTART=false/AUTOSTART=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i "s/START_DAEMON=false/START_DAEMON=true # modified by installimage/" \
+    "$mdadmdefconf"
+  sed -i -e "s/^INITRDSTART=.*/INITRDSTART='all' # modified by installimage/" \
+    "$mdadmdefconf"
 
-    return "$EXITCODE"
-  fi
+  return "$EXITCODE"
 }
 
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    OUTFILE=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex ".*\(gz\|bak\)" -printf "%f\n" | sort -nr | head -n1)
-    VERSION=$(echo "$OUTFILE" |cut -d "-" -f2-)
-    echo "Kernel Version found: $VERSION" | debugoutput
+    local outfile; outfile=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex ".*\(gz\|bak\)" -printf "%f\n" | sort -nr | head -n1)
+    local kvers; kvers=$(echo "$outfile" |cut -d "-" -f2-)
+    debug "# Kernel Version found: $kvers"
 
     if [ "$IMG_VERSION" -ge 60 ]; then
-
-      #
-      # blacklist i915 driver due to many bugs and stability issues
-      #
-      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-hetzner.conf"
+      local blacklist_conf="$FOLD/hdd/etc/modprobe.d/blacklist-$C_SHORT.conf"
+      # blacklist various driver due to bugs and stability issues
       {
         echo "### $COMPANY - installimage"
         echo "### silence any onboard speaker"
@@ -123,14 +126,24 @@ generate_new_ramdisk() {
       } > "$blacklist_conf"
     fi
 
-    #
+    # apparently sometimes the mdadm assembly bugfix introduced with the recent mdadm release does not work
+    # however, the problem is limited to H8SGL boards
+    # see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=784070
+    if [ "$IMG_VERSION" -ge 80 ] && [ "$MBTYPE" = 'H8SGL' ]; then
+      local script="$FOLD/hdd/usr/share/initramfs-tools/scripts/local-block/mdadmpatch"
+      cp "$SCRIPTPATH/h8sgl-deb8-md.sh" "$script"
+      chmod a+x "$script"
+    fi
+
     # just make sure that we do not accidentally try to install a bootloader
     # when we haven't configured grub yet
     # Debian won't install a boot loader anyway, but display an error message,
     # that needs to be confirmed
-    #
     sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
-    execute_chroot_command "update-initramfs -u -k $VERSION"; declare -i EXITCODE=$?
+
+    # well, we might just as well update all initramfs and stop findling around
+    # to find out which kernel version is the latest
+    execute_chroot_command "update-initramfs -u -k $kvers"; EXITCODE=$?
 
     return "$EXITCODE"
   fi
@@ -138,20 +151,22 @@ generate_new_ramdisk() {
 
 setup_cpufreq() {
   if [ -n "$1" ]; then
-    LOADCPUFREQCONF="$FOLD/hdd/etc/default/loadcpufreq"
-    CPUFREQCONF="$FOLD/hdd/etc/default/cpufrequtils"
-    echo "### $COMPANY - installimage" > "$CPUFREQCONF"
-    echo '# cpu frequency scaling' >> "$CPUFREQCONF"
+    local loadcpufreqconf="$FOLD/hdd/etc/default/loadcpufreq"
+    local cpufreqconf="$FOLD/hdd/etc/default/cpufrequtils"
+    {
+      echo "### $COMPANY - installimage"
+      echo "# cpu frequency scaling"
+    } > "$cpufreqconf"
     if isVServer; then
-      echo 'ENABLE="false"' > "$LOADCPUFREQCONF"
-      echo 'ENABLE="false"' >> "$CPUFREQCONF"
+      echo 'ENABLE="false"' > "$loadcpufreqconf"
+      echo 'ENABLE="false"' >> "$cpufreqconf"
     else
       {
         echo 'ENABLE="true"'
         printf 'GOVERNOR="%s"', "$1"
         echo 'MAX_SPEED="0"'
         echo 'MIN_SPEED="0"'
-      } >> "$CPUFREQCONF"
+      } >> "$cpufreqconf"
     fi
 
     return 0
@@ -159,25 +174,25 @@ setup_cpufreq() {
 }
 
 #
-# generate_config_grub <version>
-#
 # Generate the GRUB bootloader configuration.
 #
 generate_config_grub() {
   declare -i EXITCODE=0
-  [ -n "$1" ] || return
 
-  execute_chroot_command "mkdir -p /boot/grub/; cp -r /usr/lib/grub/* /boot/grub >> /dev/null 2>&1"
-  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"'
+  local grubdefconf="$FOLD/hdd/etc/default/grub"
+
+  # set linux_default in grub
+  local grub_linux_default="nomodeset"
   if isVServer; then
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset elevator=noop\"/"'
-  else
-    execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset\"/"'
+     grub_linux_default="${grub_linux_default} elevator=noop"
   fi
 
-  #
+  sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
+  sed -i "$grubdefconf" -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"${grub_linux_default}\"/"
+  # need to sort escapes of this cmd to use without execute_chroot
+  execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
+
   # only install grub2 in mbr of all other drives if we use swraid
-  #
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk; disk="$(eval echo "\$DRIVE"$i)"
@@ -217,7 +232,7 @@ run_os_specific_functions() {
   #
   debug "# Testing if mysql is installed and if this is a LAMP image and setting new debian-sys-maint password"
   if [ -f "$FOLD/hdd/etc/mysql/debian.cnf" ] ; then
-    if [[ "$IMAGENAME" =~ lamp ]]; then
+    if [[ "${IMAGE_FILE,,}" =~ lamp ]]; then
       randomize_maint_mysql_pass || return 1
     fi
   fi
@@ -226,15 +241,15 @@ run_os_specific_functions() {
 }
 
 randomize_mdadm_checkarray_cronjob_time() {
-  if [ -e "$FOLD/hdd/etc/cron.d/mdadm" ] && grep -q checkarray "$FOLD/hdd/etc/cron.d/mdadm"; then
+  local mdcron="$FOLD/hdd/etc/cron.d/mdadm"
+  if [ -f "$mdcron" ] && grep -q checkarray "$mdcron"; then
     declare -i hour minute day
     minute=$(((RANDOM % 59) + 1))
     hour=$(((RANDOM % 4) + 1))
     day=$(((RANDOM % 28) + 1))
     debug "# Randomizing cronjob run time for mdadm checkarray: day $day @ $hour:$minute"
 
-    sed -i -e "s/^[* 0-9]*root/$minute $hour $day * * root/" -e "s/ &&.*]//" \
-      "$FOLD/hdd/etc/cron.d/mdadm"
+    sed -i -e "s/^[* 0-9]*root/$minute $hour $day * * root/" -e "s/ &&.*]//" "$mdcron"
   else
     debug "# No /etc/cron.d/mdadm found to randomize cronjob run time"
   fi
@@ -244,32 +259,29 @@ randomize_mdadm_checkarray_cronjob_time() {
 # randomize mysql password for debian-sys-maint in LAMP image
 #
 randomize_maint_mysql_pass() {
-  local SQLCONFIG="$FOLD/hdd/etc/mysql/debian.cnf"
-  local MYCNF="$FOLD/hdd/root/.my.cnf"
-  local PMA_DBC_CNF="$FOLD/hdd/etc/dbconfig-common/phpmyadmin.conf"
-  local PMA_SEC_CNF="$FOLD/hdd/var/lib/phpmyadmin/blowfish_secret.inc.php"
-
-  #
+  local sqlconfig; sqlconfig="$FOLD/hdd/etc/mysql/debian.cnf"
+  local mycnf; mycnf="$FOLD/hdd/root/.my.cnf"
+  local pma_dbc_cnf; pma_dbc_cnf="$FOLD/hdd/etc/dbconfig-common/phpmyadmin.conf"
+  local pma_sec_cnf; pma_sec_cnf="$FOLD/hdd/var/lib/phpmyadmin/blowfish_secret.inc.php"
   # generate PW for user debian-sys-maint, root and phpmyadmin
-  #
-  # NEWPASS=$(cat /dev/urandom | strings | head -c 512 | md5sum | cut -b -16)
-  # ROOTPASS=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c8)
-  local DEBIANPASS; DEBIANPASS=$(pwgen -s 16 1)
-  local ROOTPASS; ROOTPASS=$(pwgen -s 16 1)
-  local PMAPASS; PMAPASS=$(pwgen -s 16 1)
-  local PMASEC; PMASEC=$(pwgen -s 24 1)
-  if [ -f "$PMA_SEC_CNF" ]; then
-    echo -e "<?php\n\$cfg['blowfish_secret'] = '$PMASEC';" > "$PMA_SEC_CNF"
+  local debianpass; debianpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local rootpass; rootpass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local pma_pass; pma_pass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
+  local pma_sec; pma_sec=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c24)
+  if [ -f "$pma_sec_cnf" ]; then
+    echo -e "<?php\n\$cfg['blowfish_secret'] = '$pma_sec';" > "$pma_sec_cnf"
   fi
-  MYSQLCOMMAND="USE mysql;\nUPDATE user SET password=PASSWORD(\"$DEBIANPASS\") WHERE user='debian-sys-maint';
-    UPDATE user SET password=PASSWORD(\"$ROOTPASS\") WHERE user='root';
-    UPDATE user SET password=PASSWORD(\"$PMAPASS\") WHERE user='phpmyadmin'; FLUSH PRIVILEGES;"
-  echo "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
+  MYSQLCOMMAND="USE mysql; \
+  UPDATE user SET password=PASSWORD('$debianpass') WHERE user='debian-sys-maint'; \
+  UPDATE user SET password=PASSWORD('$rootpass') WHERE user='root'; \
+  UPDATE user SET password=PASSWORD('$pma_pass') WHERE user='phpmyadmin'; \
+  FLUSH PRIVILEGES;"
+  echo -e "$MYSQLCOMMAND" > "$FOLD/hdd/etc/mysql/pwchange.sql"
   execute_chroot_command "/etc/init.d/mysql start >>/dev/null 2>&1"
-  execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; declare -i EXITCODE=$?
+  execute_chroot_command "mysql --defaults-file=/etc/mysql/debian.cnf < /etc/mysql/pwchange.sql >>/dev/null 2>&1"; EXITCODE=$?
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"
-  sed -i s/password.*/"password = $DEBIANPASS"/g "$SQLCONFIG"
-  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$PMAPASS'"/g "$PMA_DBC_CNF"
+  sed -i s/password.*/"password = $debianpass"/g "$sqlconfig"
+  sed -i s/dbc_dbpass=.*/"dbc_dbpass='$pma_pass'"/g "$pma_dbc_cnf"
   execute_chroot_command "DEBIAN_FRONTEND=noninteractive dpkg-reconfigure phpmyadmin"
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 
@@ -279,16 +291,14 @@ randomize_maint_mysql_pass() {
   {
     echo "[client]"
     echo "user=root"
-    echo "password=$ROOTPASS"
-  } > "$MYCNF"
+    echo "password=$rootpass"
+  } > "$mycnf"
 
-  #
   # write password file and erase script
-  #
   cp "$SCRIPTPATH/password.txt" "$FOLD/hdd/"
-  sed -i -e "s#<password>#$ROOTPASS#" "$FOLD/hdd/password.txt"
+  sed -i -e "s#<password>#$rootpass#" "$FOLD/hdd/password.txt"
   chmod 600 "$FOLD/hdd/password.txt"
-  printf '\nNote: Your MySQL password is in /password.txt (delete this with "erase_password_note")\n' >> "$FOLD/hdd/etc/motd.tail"
+  echo -e "\nNote: Your MySQL password is in /password.txt (delete this with \"erase_password_note\")\n" >> "$FOLD/hdd/etc/motd.tail"
   cp "$SCRIPTPATH/erase_password_note" "$FOLD/hdd/usr/local/bin/"
   chmod +x "$FOLD/hdd/usr/local/bin/erase_password_note"
 
@@ -296,14 +306,15 @@ randomize_maint_mysql_pass() {
 }
 
 debian_grub_fix() {
-  MAPPER="$FOLD/hdd/dev/mapper"
+  local mapper="$FOLD/hdd/dev/mapper"
 
-  find "$MAPPER" -type l -printf '%f.%l\n' | while read -r line; do
-    VOLGROUP="$(echo "$line" | cut -d'.' -f1)"
-    DMDEVICE="$(echo "$line" | cut -d'/' -f2)"
+  find "$mapper" -type l -printf '%f.%l\n' | while read -r line; do
+    local dmdevice volgroup
+    volgroup="$(echo "$line" | cut -d'.' -f1)"
+    dmdevice="$(echo "$line" | cut -d'/' -f2)"
 
-    rm "$MAPPER/$VOLGROUP"
-    cp -R "$FOLD/hdd/dev/$DMDEVICE" "$MAPPER/$VOLGROUP"
+    rm "$mapper/$volgroup"
+    cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
   done
 }
 

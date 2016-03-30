@@ -11,6 +11,7 @@
 + [Multiple Parameter Validation](#multiple-parameter-validation)
 + [Brackets Notation](#brackets-notation)
 + [Comments in Files](#comments-in-files)
++ [Variable Convention](#variable-convention)
 + [Inspiration](#inspiration)
 
 ---
@@ -36,7 +37,7 @@ echo "" >> "$CONFIGFILE" 2>> "$DEBUGFILE"
 
 The `{` and the `}` have to be in own lines and the content between them indented by two spaces. Here is another bad example:
 ```bash
-{	echo "### $COMPANY - installimage"
+{ echo "### $COMPANY - installimage"
 echo "# Loopback device:"
 echo "auto lo"
 echo "iface lo inet loopback"
@@ -48,11 +49,11 @@ Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is usel
 This good example is:
 ```bash
 {
-	echo "### $COMPANY - installimage"
-	echo "# Loopback device:"
-	echo "auto lo"
-	echo "iface lo inet loopback"
-	echo ""
+  echo "### $COMPANY - installimage"
+  echo "# Loopback device:"
+  echo "auto lo"
+  echo "iface lo inet loopback"
+  echo ""
 } > "$CONFIGFILE"
 ```
 
@@ -75,20 +76,20 @@ printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATT
 For security and performance reasons we should use bash builtins whereever possible. Bad example for iterations:
 ```bash
 for i in $(seq 1 $COUNT_DRIVES) ; do
-	if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
-		local disk="$(eval echo "\$DRIVE"$i)"
-		execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
-	fi
+  if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
+    local disk="$(eval echo "\$DRIVE"$i)"
+    execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+  fi
 done
 ```
 
 and a good example:
 ```bash
 for ((i=1; i<="$COUNT_DRIVES"; i++)); do
-	if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
-		local disk; disk="$(eval echo "\$DRIVE"$i)"
-		execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
-	fi
+  if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
+    local disk; disk="$(eval echo "\$DRIVE"$i)"
+    execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+  fi
 done
 ```
 
@@ -116,6 +117,31 @@ awk '{print $2}'
 
 ## Comments in Files
 There are two kinds of comments, those that contain higher level descriptions should be easily and clearly visible --> Empty comment line before and after. Commented code lines are without any empty comment lines.
+
+## Variable Convention
+we've got two types of varibles:
+* global ones
+    * are uppercase
+    * explictly exported
+
+* local variables
+    * are lowercase
+    * used in functions
+    * defined with local
+
+Try to use local vars whereever possible. Complex variable names (consisting of multiple names) are always connected with a _, for example `COUNT_DRIVES` as a global one or `count_drives` as a local one.
+
+Variables that contain an array:
+Arrays should be indicated by name and the loop variable should resamble this. Good example (take a look at the singular/plural here):
+```bash
+declare -a harddrives
+declare -i harddrives_number="${#harddrives[@]}"
+if [[ $harddrives_number -gt 0 ]]; then
+  for harddrive in harddrives; do
+    echo "$harddrive"
+  done
+fi
+```
 
 ## Inspiration
 This is loosely based on:
