@@ -282,6 +282,9 @@ randomize_maint_mysql_pass() {
   execute_chroot_command "/etc/init.d/mysql stop >>/dev/null 2>&1"
   sed -i s/password.*/"password = $debianpass"/g "$sqlconfig"
   sed -i s/dbc_dbpass=.*/"dbc_dbpass='$pma_pass'"/g "$pma_dbc_cnf"
+  if [ "$IMG_VERSION" -ge 80 ]; then
+    mkdir "$FOLD/hdd/run/lock"
+  fi
   execute_chroot_command "DEBIAN_FRONTEND=noninteractive dpkg-reconfigure phpmyadmin"
   rm "$FOLD/hdd/etc/mysql/pwchange.sql"
 
@@ -297,8 +300,29 @@ randomize_maint_mysql_pass() {
   # write password file and erase script
   cp "$SCRIPTPATH/password.txt" "$FOLD/hdd/"
   sed -i -e "s#<password>#$rootpass#" "$FOLD/hdd/password.txt"
+  local motdfile;
+  if [ "$IMG_VERSION" -ge 80 ]; then
+     mkdir "$FOLD/hdd/etc/update-motd.d"
+     motdfile="$FOLD/hdd/etc/update-motd.d/99-hetzner-lamp"
+     {
+       echo "#!/bin/sh"
+       echo ""
+       echo 'echo ""'
+       echo "echo 'Note: Your MySQL password is in /password.txt (delete this with \"erase_password_note\")'"
+       echo 'echo ""'
+     } > "$motdfile"
+     chmod 755 "$motdfile"
+     # currently broken in jessie #743286
+     sed -i -e 's/motd.dynamic/motd/' "$FOLD/hdd/etc/pam.d/sshd"
+  else
+     motdfile="$FOLD/hdd/etc/motd.tail"
+    {
+      echo ''
+      echo 'Note: Your MySQL password is in /password.txt (delete this with "erase_password_note")'
+      echo ''
+    } >>  "$motdfile"
+  fi
   chmod 600 "$FOLD/hdd/password.txt"
-  echo -e "\nNote: Your MySQL password is in /password.txt (delete this with \"erase_password_note\")\n" >> "$FOLD/hdd/etc/motd.tail"
   cp "$SCRIPTPATH/erase_password_note" "$FOLD/hdd/usr/local/bin/"
   chmod +x "$FOLD/hdd/usr/local/bin/erase_password_note"
 
