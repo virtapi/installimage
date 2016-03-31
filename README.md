@@ -60,6 +60,7 @@ The installimage provides many CLI command options. They are all specified in th
 Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwords via the [install.sh](#install.sh).
 
 ###setup.sh
+installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, than a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#install.sh).
 
 ###install.sh
 
