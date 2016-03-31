@@ -43,6 +43,7 @@ This is the initial script that gets called if we automatically start the instal
 Here gets the [config.sh](#config.sh) executed to get many needed variables. Existing mounted partitions or active LVM/mdadm volumes will be stopped. It is possible to provide a custom file with varibles to overwrite default ones (for example the prefered hostname, the image to install), the installimage script checks if this custom file is present and sources it, than the unattended installation starts ([autosetup.sh](#autosetup.sh)). Otherwise the [setup.sh](setup.sh) will be called.
 
 ###config.sh
+The installimage needs a long list of default parameters, most ofthem are defined in the `config.sh`. They are simple bash variables that get exported. The file also executes the [functions.sh](#functions.sh).
 
 ###functions.sh
 
