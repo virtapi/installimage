@@ -37,8 +37,10 @@ We've got a small diagram showing the workflow during an installation process:
 ![installimage-workflow](https://rawgit.com/virtapi/installimage/master/installimage-workflow.svg)
 
 ###installimage.in_screen
+This is the initial script that gets called if we automatically start the installimage after a boot process. It adjusts the PATH environment variable because the one provided by the live system may not include all needed path that the system has that we install. The script restarts itself in a new screen session if it isn't already running in one. If it is running in a screen session it starts the actual [installimage](#installimage). It reboots the server after the successful installation or drops you into a bash if the installation failed.
 
 ###installimage
+
 
 ###config.sh
 
