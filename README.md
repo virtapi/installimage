@@ -46,7 +46,12 @@ Here gets the [config.sh](#config.sh) executed to get many needed variables. Exi
 The installimage needs a long list of default parameters, most ofthem are defined in the `config.sh`. They are simple bash variables that get exported. The file also executes the [functions.sh](#functions.sh).
 
 ###functions.sh
+The function is split into three parts:
+* define every variable that needs a function to be determind (IPADDR, HWADDR...)
+* the functions that fill up the variables (gather_network_information())
+* global functions to provision the image (generate_ntp_config())
 
+See also [$distro.sh]($distro.sh)
 
 ###get_options.sh
 The installimage provides many CLI command options. They are all specified in this file. They get parsed and validated and have some basic logic checks (it is not possible to provide every combination of params, and some require some others). The `get_options.sh` also holds a help message that you can reach by running `installimage -h`.
@@ -59,6 +64,7 @@ Every needed variable here will be validated, they are provided by the [config.s
 ###install.sh
 
 ###$distro.sh
+Some of the global functions don't work on every distribution, so they are overwritten in a distribution-specific file.
 
 ---
 
