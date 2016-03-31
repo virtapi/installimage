@@ -70,7 +70,7 @@ Some of the global functions don't work on every distribution, so they are overw
 ---
 
 ## Requirements
-TBD
+We currently don't have an exclusive list of all packages needed by the installimage, however our [LARS](https://github.com/virtapi/LARS#lars---live-arch-rescue-system) project holds a list of all [packages](https://github.com/virtapi/LARS/blob/master/packages.both) needed to create an Archlinux live system which is capable of running the installimage.
 
 ---
 
