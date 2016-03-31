@@ -24,7 +24,6 @@
 + [Styleguide](#styleguide)
 + [Contributor Code of Conduct](#contributor-code-of-conduct)
 + [Copyright and Contributors](#copyright-and-contributors)
-    - [Hetzner Online GmbH](#hetzner-online-gmbh)
     - [GitHub Users](#github-users)
     - [Original License](#original-license)
 + [Name origin](#name-origin)
@@ -110,13 +109,10 @@ We support the Contributor Covenant, you can find it [here](code_of_conduct.md).
 ---
 
 ## Copyright and Contributors
-### Hetzner Online GmbH
-* David Mayr
-* Markus Schade
-* Florian Wicke
+Hetzner Online GmbH started this project on their own as free software. This project here is based on their work but not associated with Hetzner. We try to keep a list of all authors and contributors in our [LICENSE](LICENSE.md).
 
 ### GitHub Users
-* [Contributors](https://github.com/virtapi/installimage/graphs/contributors)
+github.com is so nice to provide us a live list of all [Contributors](https://github.com/virtapi/installimage/graphs/contributors) to this repository.
 
 ### Original License
 * [Original License Statement](http://wiki.hetzner.de/index.php/Installimage/en#Who_is_the_author_of_the_script.3F_Can_I_use_it_freely.3F)
