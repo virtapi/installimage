@@ -48,6 +48,7 @@ Here gets the [config.sh](#config.sh) executed to get many needed variables. Exi
 
 
 ###get_options.sh
+The installimage provides many CLI command options. They are all specified in this file. They get parsed and validated and have some basic logic checks (it is not possible to provide every combination of params, and some require some others). The `get_options.sh` also holds a help message that you can reach by running `installimage -h`.
 
 ###autosetup.sh
 Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwords via the [install.sh](#install.sh).
