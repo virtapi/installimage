@@ -63,6 +63,7 @@ Every needed variable here will be validated, they are provided by the [config.s
 installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, than a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#install.sh).
 
 ###install.sh
+Here happens the actual installation. The script starts with the calculation of every needed step and prints a helpful menu which always shows you the current process, the amount of finished and needed tasks.
 
 ###$distro.sh
 Some of the global functions don't work on every distribution, so they are overwritten in a distribution-specific file.
