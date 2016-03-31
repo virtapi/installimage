@@ -46,9 +46,11 @@ Here gets the [config.sh](#config.sh) executed to get many needed variables. Exi
 
 ###functions.sh
 
+
 ###get_options.sh
 
 ###autosetup.sh
+Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwords via the [install.sh](#install.sh).
 
 ###setup.sh
 
