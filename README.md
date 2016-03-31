@@ -75,7 +75,36 @@ We currently don't have an exclusive list of all packages needed by the installi
 ---
 
 ## Configuration
-TBD
+We designed the installimage to be executed from a live environment - a linux system that isn't booted from the local hard disks but from a USB stick or PXE environment. The common setup is to boot a system via PXE and provide two NFS shares, one with the installimage itself and a different one with the images. We use it like this:
+* installimage is mounted on `/root/.installimage`
+* Images are mounted at `/root/images`
+
+The `.installimage` directory has to hold the root of this git repository, `images` is a flat directory holding all the images:
+```bash
+# find . -type f -name "*.tar.gz*"
+./CentOS-67-32-minimal.tar.gz.sig
+./Ubuntu-1404-trusty-64-minimal.tar.gz
+./Debian-83-jessie-64-LAMP.tar.gz
+./CentOS-67-32-minimal.tar.gz
+./Debian-83-jessie-64-minimal.tar.gz
+./Ubuntu-1510-wily-64-minimal.tar.gz.sig
+./CentOS-67-64-minimal.tar.gz.sig
+./Archlinux-2016-64-minmal.tar.gz.sig
+./openSUSE-421-64-minimal.tar.gz
+./Debian-79-wheezy-64-minimal.tar.gz
+./CentOS-67-64-minimal.tar.gz
+./CentOS-72-64-minimal.tar.gz
+./openSUSE-421-64-minimal.tar.gz.sig
+./Debian-79-wheezy-64-minimal.tar.gz.sig
+./Ubuntu-1404-trusty-64-minimal.tar.gz.sig
+./CentOS-72-64-cpanel.tar.gz
+./Debian-83-jessie-64-LAMP.tar.gz.sig
+./Ubuntu-1510-wily-64-minimal.tar.gz
+./Archlinux-2016-64-minmal.tar.gz
+./CentOS-72-64-cpanel.tar.gz.sig
+./CentOS-72-64-minimal.tar.gz.sig
+./Debian-83-jessie-64-minimal.tar.gz.sig
+```
 
 ---
 
