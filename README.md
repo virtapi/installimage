@@ -56,10 +56,10 @@ See also [$distro.sh]($distro.sh)
 The installimage provides many CLI command options. They are all specified in this file. They get parsed and validated and have some basic logic checks (it is not possible to provide every combination of params, and some require some others). The `get_options.sh` also holds a help message that you can reach by running `installimage -h`.
 
 ###autosetup.sh
-Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwords via the [install.sh](#install.sh).
+Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwards via the [install.sh](#install.sh).
 
 ###setup.sh
-installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, than a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#install.sh).
+installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, then a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#install.sh).
 
 ###install.sh
 Here happens the actual installation. The script starts with the calculation of every needed step and prints a helpful menu which always shows you the current process, the amount of finished and needed tasks.
