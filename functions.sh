@@ -3279,7 +3279,7 @@ execute_nspawn_command() {
   temp_files="${temp_files} ${temp_container_service_file}"
   temp_files="${temp_files} ${temp_umounted_mount_point_list}"
 
-  echo "Executing '${command}' within a systemd nspawn container" | debugoutput
+  debug "Executing '${command}' within a systemd nspawn container"
 
   mkfifo "$temp_io_fifo"
   mkfifo "$temp_retval_fifo"
@@ -3324,10 +3324,10 @@ HEREDOC
 
   touch "$temp_umounted_mount_point_list"
 
-  echo "Temporarily umounting blacklisted mount points in order to start the systemd nspawn container" | debugoutput
+  debug "Temporarily umounting blacklisted mount points in order to start the systemd nspawn container"
 
   while read -r entry; do
-    for blacklisted_mount_point in ${mount_point_blacklist}; do
+    for blacklisted_mount_point in $mount_point_blacklist; do
       while read -r subentry; do
         umount --verbose "$(echo "$subentry" | awk '{ print $2 }')" 2>&1 | debugoutput || return 1
         echo "$subentry" | cat - "$temp_umounted_mount_point_list" | uniq --unique > "$temp_umounted_mount_point_list"2
