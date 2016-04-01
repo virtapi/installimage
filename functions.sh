@@ -3279,7 +3279,7 @@ execute_nspawn_command() {
   temp_files="${temp_files} ${temp_container_service_file}"
   temp_files="${temp_files} ${temp_umounted_mount_point_list}"
 
-  echo "Executing \"${command}\" within a systemd nspawn container" | debugoutput
+  echo "Executing '${command}' within a systemd nspawn container" | debugoutput
 
   mkfifo "$temp_io_fifo"
   mkfifo "$temp_retval_fifo"
