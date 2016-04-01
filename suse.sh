@@ -169,11 +169,6 @@ setup_cpufreq() {
      # http://doc.opensuse.org/documentation/html/openSUSE/opensuse-tuning/cha.tuning.power.html
      # check release notes of furture releases carefully, if this has changed!
 
-#    CPUFREQCONF="$FOLD/hdd/etc/init.d/boot.local"
-#    echo "### $COMPANY - installimage" > $CPUFREQCONF 2>>$DEBUGFILE
-#    echo "# cpu frequency scaling" >> $CPUFREQCONF 2>>$DEBUGFILE
-#    echo "cpufreq-set -g $1 -r >> /dev/null 2>&1" >> $CPUFREQCONF 2>>$DEBUGFILE
-
     return 0
   fi
 }
