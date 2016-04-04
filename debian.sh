@@ -329,17 +329,4 @@ randomize_maint_mysql_pass() {
   return "$EXITCODE"
 }
 
-debian_grub_fix() {
-  local mapper="$FOLD/hdd/dev/mapper"
-
-  find "$mapper" -type l -printf '%f.%l\n' | while read -r line; do
-    local dmdevice volgroup
-    volgroup="$(echo "$line" | cut -d'.' -f1)"
-    dmdevice="$(echo "$line" | cut -d'/' -f2)"
-
-    rm "$mapper/$volgroup"
-    cp -R "$FOLD/hdd/dev/$dmdevice" "$mapper/$volgroup"
-  done
-}
-
 # vim: ai:ts=2:sw=2:et
