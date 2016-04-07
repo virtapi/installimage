@@ -151,11 +151,7 @@ generate_config_mdadm() {
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
     shopt -s extglob
-    local kvers;
-    for file in "$FOLD/hdd/boot/initrd.img-"!(*.bak|*.gz); do
-      kvers="${file##*/}"
-      kvers="${kvers#*-}"
-    done
+    local kvers; kvers="$(find "$FOLD/hdd/boot/" -name "vmlinuz-*" | cut -d '-' -f 2- | sort -V | tail -1)"
     shopt -u extglob
     echo "Kernel Version found: $kvers" | debugoutput
 
