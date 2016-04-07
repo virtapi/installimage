@@ -1,33 +1,37 @@
 # Checklist for contributing
+This module has grown over time based on a range of contributions from
+people using it. If you follow these contributing guidelines your patch
+will likely make it into a release a little quicker.
+Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms. [Contributor Code of Conduct](code_of_conduct.md).
 
 ---
 
 ## Short version
 + Commits:
-  - Make commits of logical units
-  - Check for unnecessary whitespace with "git diff --check" before committing
-  - Commit using Unix line endings (check the settings around "crlf" in git-config(1))
-  - Do not check in commented out code or unneeded files
-  - The first line of the commit message should be a short description (50 characters is the soft limit)
-  - The body should provide a meaningful commit message, which:
-    - uses the imperative, present tense: "change", not "changed" or "changes"
-    - includes motivation for the change, and contrasts its implementation with the previous behavior
-    - Make sure that you have tests for the bug you are fixing, or feature you are adding
-    - Make sure the test suites passes after your commit (if such a suite exists)
-  - When introducing a new feature, make sure it is properly documented in the README.md
-  - Add yourself to the Contributors list in LICENSE file
+    - Make commits of logical units
+    - Check for unnecessary whitespace with "git diff --check" before committing
+    - Commit using Unix line endings (check the settings around "crlf" in git-config(1))
+    - Do not check in commented out code or unneeded files
+    - The first line of the commit message should be a short description (50 characters is the soft limit)
+    - The body should provide a meaningful commit message, which:
+        - uses the imperative, present tense: "change", not "changed" or "changes"
+        - includes motivation for the change, and contrasts its implementation with the previous behavior
+        - Make sure that you have tests for the bug you are fixing, or feature you are adding
+        - Make sure the test suites passes after your commit (if such a suite exists)
+    - When introducing a new feature, make sure it is properly documented in the README.md
+    - Add yourself to the Contributors list in the README.md and README_DE.md
 + Submission:
-  + Pre-requisites:
-    + Make sure you have a [GitHub account](https://github.com/join)
-  + Preferred method:
-    - Fork the repository on GitHub
-    - Push your changes to a topic branch in your fork of the repository. (the format short_description_of_change is usually preferred for this project)
-    - Submit a pull request to the repository
-    - Rebase your stuff if you've multiple commits for one feature
-    - Please only submit multiple features in one branch if they are directly related
-  + Preferred for people with repo access:
-    - Don't fork the module, create a feature branch
-    - Everything else that is mentioned above
+    + Pre-requisites:
+        + Make sure you have a [GitHub account](https://github.com/join)
+    + Preferred method:
+        - Fork the repository on GitHub
+        - Push your changes to a topic branch in your fork of the repository. (the format short_description_of_change is usually preferred for this project)
+        - Submit a pull request to the repository
+        - Rebase your stuff if you've multiple commits for one feature
+        - Please only submit multiple features in one branch if they are directly related
+    + Preferred for people with repo access:
+        - Don't fork the module, create a feature branch
+        - Everything else that is mentioned above
 
 ---
 
@@ -41,4 +45,4 @@ Please break your commits down into logically consistent units which include new
 ### Update the related GitHub issue.
 If there is a GitHub issue associated with the change you submitted, then you should update the ticket to include the location of your branch, along with any other commentary you may wish to make.
 
-This guide is based on the CONTRIBUTING.md from Puppetlabs Inc.
+This guide is based on the CONTRIBUTING.md from Puppetlabs Inc and Vox Pupuli.

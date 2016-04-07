@@ -20,13 +20,14 @@
 + [Configuration](#configuration)
 + [Usage](#usage)
 + [How does it work](#how-does-it-work)
-+ [Issues](#issues)
 + [Styleguide](#styleguide)
-+ [Contributor Code of Conduct](#contributor-code-of-conduct)
++ [Name origin](#name-origin)
++ [Issues](#issues)
 + [Copyright and Contributors](#copyright-and-contributors)
     - [GitHub Users](#github-users)
     - [Original License](#original-license)
-+ [Name origin](#name-origin)
++ [Contact](#contact)
++ [Contribution](#contribution)
 
 ---
 
@@ -122,18 +123,17 @@ $ installimage ...
 
 ---
 
-## Issues
-[Github Issues](https://www.github.com/virtapi/installimage/issues)
-
----
-
 ## Styleguide
 We defined our own styleguide [here](styleguide-bash.md), this is a work-in-progress style. We discussed all points on IRC, most of them are based on shellcheck suggestions and our own opinion. We update the guide from time to time.
 
 ---
 
-## Contributor Code of Conduct
-We support the Contributor Covenant, you can find it [here](code_of_conduct.md).
+## Name Origin
+**installimage** installs Linux-distributions with the use of images.
+---
+
+## Issues
+[Github Issues](https://www.github.com/virtapi/installimage/issues)
 
 ---
 
@@ -148,5 +148,10 @@ github.com is so nice to provide us a live list of all [Contributors](https://gi
 
 ---
 
-## Name Origin
-**installimage** installs Linux-distributions with the use of images.
+## Contact
+You can meet us in #virtapi at freenode.
+
+---
+
+## Contribution
+We've defined our contribution rules in [CONTRIBUTING.md](CONTRIBUTING.md).
