@@ -3575,21 +3575,22 @@ report_config() {
   fi
 }
 
+report_debuglog "SERVER" "LOG"
 report_debuglog() {
-  local log_id="$1"
-  if [ -z "$log_id" ] ; then
-    echo "report_debuglog: no log_id given" | debugoutput
-    return 1
+  local report_ip="$1"
+  local log_id="$2"
+  if [ -n "$report_ip" ]; then
+    if [ -z "$log_id" ] ; then
+      echo "report_debuglog: no log_id given" | debugoutput
+      return 1
+    fi
+    local report_status=""
+
+    report_status="$(curl -m 10 -s -k -X POST -T "$DEBUGFILE" "https://${report_ip}/api/${HWADDR}/image/${log_id}/log")"
+    echo "report debug.txt to rz-admin: ${report_status}" | debugoutput
+
+    return 0
   fi
-  # currently use new rz-admin to report the install.conf
-  # TODO: change that later to rz-admin
-  local report_ip="213.133.99.103"
-  local report_status=""
-
-  report_status="$(curl -m 10 -s -k -X POST -T "$DEBUGFILE" "https://${report_ip}/api/${HWADDR}/image/${log_id}/log")"
-  echo "report debug.txt to rz-admin: ${report_status}" | debugoutput
-
-  return 0
 }
 
 #
@@ -3635,7 +3636,7 @@ exit_function() {
 
   report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
   report_id="$(report_config "$REPORTSERVER")"
-  report_debuglog "$report_id"
+  report_debuglog "$REPORTSERVER" "$report_id"
   cleanup
 }
 
