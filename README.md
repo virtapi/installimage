@@ -107,6 +107,8 @@ The `.installimage` directory has to hold the root of this git repository, `imag
 ./Debian-83-jessie-64-minimal.tar.gz.sig
 ```
 
+the installimage ships an example configuration file, `config-example.sh`, you've to copy it to `config.sh`.
+
 ---
 
 
