@@ -31,12 +31,11 @@ export COMPANY="Example Awesome Company"
 export C_SHORT="example"
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
-export STATSSERVER="rz-admin.hetzner.de"
-export REPORTSERVER="127.0.0.1" # we send install.conf + installimage.debug to that URL if variable is nonzero
+export STATSSERVER="127.0.0.1"
 export HDDMINSIZE="70000000"
 
-export NAMESERVER=("213.133.98.98" "213.133.99.99" "213.133.100.100")
-export DNSRESOLVER_V6=("2a01:4f8:0:a111::add:9898" "2a01:4f8:0:a102::add:9999" "2a01:4f8:0:a0a1::add:1010")
+export NAMESERVER=("85.214.20.141" "194.150.168.168" "213.73.91.35" )
+export DNSRESOLVER_V6=("2a01:4f8:161:4109::6" "2001:1608:10:195:3:dead:beef:cafe" "2a02:e00:fffd:139::9")
 export NTPSERVERS=("0.pool.ntp.org" "1.pool.ntp.org" "2.pool.ntp.org")
 export AUTH_DNS1="ns1.first-ns.de"
 export AUTH_DNS2="robotns2.second-ns.de"
