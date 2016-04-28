@@ -498,8 +498,8 @@ report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$E
 # Report install.conf to rz_admin
 # Report debug.txt to rz_admin
 #
-report_id="$(report_config)"
-report_debuglog "$report_id"
+report_id="$(report_config "$REPORTSERVER")"
+report_debuglog "$REPORTSERVER" "$report_id"
 
 #
 # Save installimage configuration and debug file on the new system
