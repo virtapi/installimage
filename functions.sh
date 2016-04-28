@@ -3575,7 +3575,7 @@ report_config() {
   fi
 }
 
-report_debuglog "SERVER" "LOG"
+# report_debuglog "SERVER" "LOG"
 report_debuglog() {
   local report_ip="$1"
   local log_id="$2"
