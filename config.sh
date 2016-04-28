@@ -32,6 +32,7 @@ export C_SHORT="example"
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
 export STATSSERVER="rz-admin.hetzner.de"
+export REPORTSERVER="127.0.0.1" # we send install.conf to that URL if variable is nonzero
 export HDDMINSIZE="70000000"
 
 export NAMESERVER=("213.133.98.98" "213.133.99.99" "213.133.100.100")

@@ -498,7 +498,7 @@ report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$E
 # Report install.conf to rz_admin
 # Report debug.txt to rz_admin
 #
-report_id="$(report_config)"
+report_id="$(report_config "$REPORTSERVER")"
 report_debuglog "$report_id"
 
 #
