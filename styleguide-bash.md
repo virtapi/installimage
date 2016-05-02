@@ -73,7 +73,7 @@ printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATT
 ```
 
 ## Preferred Usage of bash builtins
-For security and performance reasons we should use bash builtins whereever possible. Bad example for iterations:
+For security and performance reasons we should use bash builtins wherever possible. Bad example for iterations:
 ```bash
 for i in $(seq 1 $COUNT_DRIVES) ; do
   if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
