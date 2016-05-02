@@ -771,7 +771,6 @@ if [ -n "$1" ]; then
       nameserver_custom+=($nameserver)
     done
 
-    declare -a NAMESERVER
     NAMESERVER=(${nameserver_custom[@]})
   fi
 
