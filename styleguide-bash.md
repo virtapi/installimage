@@ -46,7 +46,7 @@ echo "" } > "$CONFIGFILE" 2>> "$DEBUGFILE"
 
 Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
 
-This good example is:
+A good example for this is:
 ```bash
 {
   echo "### $COMPANY - installimage"
