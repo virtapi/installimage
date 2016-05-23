@@ -26,7 +26,7 @@ set softtabstop=2
 ```
 
 ## Multiline Output to File
-Group the output of multiple commands with braces and redirect this once into a file. Also do not redict STDERR to a debugfile, this is useless for echos (`} > "$NETWORKFILE" 2>> "$DEBUGFILE"`).Here is a bad example:
+Group the output of multiple commands with braces and redirect this once into a file. Also do not redict STDERR to a debugfile, this is useless for echos (`} > "$NETWORKFILE" 2>> "$DEBUGFILE"`). Here is a bad example:
 ```bash
 echo "### $COMPANY - installimage" > "$CONFIGFILE"
 echo "# Loopback device:" >> "$CONFIGFILE"
@@ -46,7 +46,7 @@ echo "" } > "$CONFIGFILE" 2>> "$DEBUGFILE"
 
 Besides the formatting, this also redirects STDERR to `$DEBUGFILE`, this is useless because the brackets only encapsulate echos, you only need the redirect if you do something else that could actually fail.
 
-This good example is:
+A good example for this is:
 ```bash
 {
   echo "### $COMPANY - installimage"
@@ -73,7 +73,7 @@ printf 'SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="%s", ATT
 ```
 
 ## Preferred Usage of bash builtins
-For security and performance reasons we should use bash builtins whereever possible. Bad example for iterations:
+For security and performance reasons we should use bash builtins wherever possible. Bad example for iterations:
 ```bash
 for i in $(seq 1 $COUNT_DRIVES) ; do
   if [ $SWRAID -eq 1 -o $i -eq 1 ] ;  then
