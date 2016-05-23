@@ -761,7 +761,7 @@ if [ -n "$1" ]; then
   SYSTEMDEVICE="$DRIVE1"
 
   # if custom nameservers are set in the installimage config, replace the default
-  # nameservers from config.sh by those
+  # v4/v6 nameservers from config.sh by those
   local nameserver_count
   nameserver_count=$(grep -c -e ^NAMESERVER "${1}")
   if [ "${nameserver_count}" -gt 0 ]; then
@@ -772,6 +772,18 @@ if [ -n "$1" ]; then
     done < <(grep -e ^NAMESERVER "${1}" | awk '{print $2}')
 
     NAMESERVER=(${nameserver_custom[@]})
+  fi
+
+  local nameserver_v6_count
+  nameserver_v6_count=$(grep -c -e ^DNSRESOLVER_V6 "${1}")
+  if [ "${nameserver_v6_count}" -gt 0 ]; then
+    declare -a nameserver_v6_custom
+
+    while read -r nameserver_v6; do
+      nameserver_v6_custom+=($nameserver_v6)
+    done < <(grep -e ^DNSRESOLVER_V6 "${1}" | awk '{print $2}')
+
+    DNSRESOLVER_V6=(${nameserver_v6_custom[@]})
   fi
 
 fi
