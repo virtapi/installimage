@@ -3313,7 +3313,7 @@ execute_nspawn_command() {
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > ${temp_helper_script}
+  cat <<HEREDOC > "$temp_helper_script"
 #!/usr/bin/env bash
 ### $COMPANY installimage
 trap "poweroff" 0
@@ -3325,7 +3325,7 @@ HEREDOC
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > ${temp_helper_service_file}
+  cat <<HEREDOC > "$temp_helper_service_file"
 ### $COMPANY installimage
 [Unit]
 Description=Temporary helper service
@@ -3336,7 +3336,7 @@ HEREDOC
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > $temp_container_service_file
+  cat <<HEREDOC > "$temp_container_service_file"
 ### $COMPANY installimage
 [Unit]
 Description=Temporary container service
