@@ -792,6 +792,18 @@ if [ -n "$1" ]; then
     POSTINSTALLURL=${postinstall_url}
   fi
 
+  local company_custom
+  company_custom=$(grep -m1 -e ^COMPANY "${1}" | awk '{$1=""; print $0}')
+  if [ -n "${company_custom}" ]; then
+    COMPANY="${company_custom}"
+  fi
+
+  local c_short_custom
+  c_short_custom=$(grep -m1 -e ^C_SHORT "${1}" | awk '{print $2}')
+  if [ -n "${c_short_custom}" ]; then
+    C_SHORT="${c_short_custom}"
+  fi
+
 fi
 }
 
