@@ -759,6 +759,21 @@ if [ -n "$1" ]; then
   if [ "$GOVERNOR" = "" ]; then GOVERNOR="$DEFAULTGOVERNOR"; fi
 
   SYSTEMDEVICE="$DRIVE1"
+
+  # if custom nameservers are set in the installimage config, replace the default
+  # nameservers from config.sh by those
+  local nameserver_count
+  nameserver_count=$(grep -c -e ^NAMESERVER "${1}")
+  if [ "${nameserver_count}" -gt 0 ]; then
+    declare -a nameserver_custom
+
+    while read -r nameserver; do
+      nameserver_custom+=($nameserver)
+    done < <(grep -e ^NAMESERVER "${1}" | awk '{print $2}')
+
+    NAMESERVER=(${nameserver_custom[@]})
+  fi
+
 fi
 }
 
