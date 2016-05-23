@@ -786,16 +786,10 @@ if [ -n "$1" ]; then
     DNSRESOLVER_V6=(${nameserver_v6_custom[@]})
   fi
 
-  local company_custom
-  company_custom=$(grep -m1 -e ^COMPANY "${1}" | awk '{$1=""; print $0}')
-  if [ -n "${company_custom}" ]; then
-    COMPANY="${company_custom}"
-  fi
-
-  local c_short_custom
-  c_short_custom=$(grep -m1 -e ^C_SHORT "${1}" | awk '{print $2}')
-  if [ -n "${c_short_custom}" ]; then
-    C_SHORT="${c_short_custom}"
+  local postinstall_url
+  postinstall_url=$(grep -e ^POSTINSTALLURL "${1}" | awk '{print $2}')
+  if [ -n "${postinstall_url}" ]; then
+    POSTINSTALLURL=${postinstall_url}
   fi
 
 fi
@@ -1399,6 +1393,22 @@ validate_vars() {
         graph_notice "WARNING: CentOS 7.0 and 7.1 have no support for the Intel i219 NIC of this board."
       fi
     fi
+  fi
+
+  if [ -n "${POSTINSTALLURL}" ]; then
+    case "${POSTINSTALLURL}" in
+      https:*|http:*|ftp:*)
+        # test if the specified POSTINSTALLURL is available for downloading
+        if ! curl -s --insecure --connect-timeout 5 --head --fail "${POSTINSTALLURL}" 1>/dev/null; then
+          POSTINSTALLURL=""
+          debug "Can't download postinstall script from ${POSTINSTALLURL}"
+        fi
+      ;;
+      *)
+        POSTINSTALLURL=""
+        debug "Invalid URL for postinstall script"
+      ;;
+    esac
   fi
 
  fi
@@ -2913,9 +2923,19 @@ execute_postmount_script() {
 # Checks if a post installation script exists.
 #
 has_postinstall_script() {
-  local scripts="/root/post-install /post-install $FOLD/hdd/root/post-install $FOLD/hdd/root/post-install.sh"
-  for i in $scripts ; do test -e "$i" && return 0 ; done
-  return 1
+  if [ -n "${POSTINSTALLURL}" ]; then
+    if curl --insecure --connect-timeout 5 --max-time 10 -s --fail -o /root/post-install "${POSTINSTALLURL}"; then
+      chmod +x /root/post-install
+      return 0
+    else
+      debug "Couldn't download post-install script from ${POSTINSTALLURL}"
+      return 1
+    fi
+  else
+    local scripts="/root/post-install /post-install $FOLD/hdd/root/post-install $FOLD/hdd/root/post-install.sh"
+    for i in $scripts ; do test -e "$i" && return 0 ; done
+    return 1
+  fi
 }
 
 #
