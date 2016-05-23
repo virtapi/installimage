@@ -767,7 +767,7 @@ if [ -n "$1" ]; then
   if [ "${nameserver_count}" -gt 0 ]; then
     declare -a nameserver_custom
 
-    while read nameserver; do
+    while read -r nameserver; do
       nameserver_custom+=($nameserver)
     done < <(grep -e ^NAMESERVER "${1}" | awk '{print $2}')
 
