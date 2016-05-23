@@ -759,6 +759,33 @@ if [ -n "$1" ]; then
   if [ "$GOVERNOR" = "" ]; then GOVERNOR="$DEFAULTGOVERNOR"; fi
 
   SYSTEMDEVICE="$DRIVE1"
+
+  # if custom nameservers are set in the installimage config, replace the default
+  # v4/v6 nameservers from config.sh by those
+  local nameserver_count
+  nameserver_count=$(grep -c -e ^NAMESERVER "${1}")
+  if [ "${nameserver_count}" -gt 0 ]; then
+    declare -a nameserver_custom
+
+    while read -r nameserver; do
+      nameserver_custom+=($nameserver)
+    done < <(grep -e ^NAMESERVER "${1}" | awk '{print $2}')
+
+    NAMESERVER=(${nameserver_custom[@]})
+  fi
+
+  local nameserver_v6_count
+  nameserver_v6_count=$(grep -c -e ^DNSRESOLVER_V6 "${1}")
+  if [ "${nameserver_v6_count}" -gt 0 ]; then
+    declare -a nameserver_v6_custom
+
+    while read -r nameserver_v6; do
+      nameserver_v6_custom+=($nameserver_v6)
+    done < <(grep -e ^DNSRESOLVER_V6 "${1}" | awk '{print $2}')
+
+    DNSRESOLVER_V6=(${nameserver_v6_custom[@]})
+  fi
+
 fi
 }
 
@@ -3286,7 +3313,7 @@ execute_nspawn_command() {
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > ${temp_helper_script}
+  cat <<HEREDOC > "$temp_helper_script"
 #!/usr/bin/env bash
 ### $COMPANY installimage
 trap "poweroff" 0
@@ -3298,7 +3325,7 @@ HEREDOC
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > ${temp_helper_service_file}
+  cat <<HEREDOC > "$temp_helper_service_file"
 ### $COMPANY installimage
 [Unit]
 Description=Temporary helper service
@@ -3309,7 +3336,7 @@ HEREDOC
 
   ### ### ### ### ### ### ### ### ### ###
 
-  cat <<HEREDOC > $temp_container_service_file
+  cat <<HEREDOC > "$temp_container_service_file"
 ### $COMPANY installimage
 [Unit]
 Description=Temporary container service
