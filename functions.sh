@@ -3222,11 +3222,11 @@ generate_ntp_config() {
 
   # find out versions
   local debian_version=0
-	# for future use
+  # for future use
   #local ubuntu_version=0
   local suse_version=0
   [ "$IAM" == 'debian' ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
-	# for future use
+  # for future use
   #[ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
 
