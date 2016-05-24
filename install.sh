@@ -193,8 +193,9 @@ inc_step
 status_none "Formatting partitions"
 grep "^/dev/" "$FOLD/fstab" > /tmp/fstab.tmp
 while read -r line ; do
-  DEV="$(echo "$line" |cut -d " " -f 1)"
-  FS="$(echo "$line" |cut -d " " -f 3)"
+  echo "# parsed fstab line:$line" | debugoutput
+  DEV="$(echo "$line" | awk '{print $1}')"
+  FS="$(echo "$line" | awk '{print $3}')"
   status_busy_nostep "  formatting $DEV with $FS"
   format_partitions "$DEV" "$FS"
   status_donefailed $?
