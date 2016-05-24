@@ -1621,7 +1621,7 @@ function get_end_of_partition {
   # make the partition at least 1 MiB if all else fails
   local end=$((start+1048576))
 
-  if [ "$(echo ${PART_SIZE[$NR]} | tr "[:upper:]" "[:lower:]")" = "all" ]; then
+  if [ "$(echo ${PART_SIZE[$nr]} | tr "[:upper:]" "[:lower:]")" = "all" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
     end=$((last-1048576))
   else
