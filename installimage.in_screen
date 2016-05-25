@@ -8,7 +8,6 @@
 #
 
 
-TIMEOUT=20
 scriptdir="$(dirname "$0")"
 INSTALLIMAGE="$scriptdir/installimage"
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -30,20 +29,22 @@ case $1 in
         echo ''
         echo ''
         echo -"===>  Installation completed successfully."
-        echo "The system will be restarted in $TIMEOUT seconds!"
-        echo -n "Press any key to stop the reboot: "
-        # shellcheck disable=SC2034
-        for ((i=1; i<=TIMEOUT; i++)); do
-          echo -n "."
-          read -r -n1 -t1 key
-          if [ -n "$key" ] ; then
-            echo ''
-            echo ''
-            echo "Reboot cancelled."
-            exec /bin/bash
-            exit 0
-          fi
-        done
+        if [ "$SLEEP_BEFORE_REBOOT" -gt 0 ]; then
+          echo "The system will be restarted in $SLEEP_BEFORE_REBOOT seconds!"
+          echo -n "Press any key to stop the reboot: "
+          # shellcheck disable=SC2034
+          for ((i=0; i<=SLEEP_BEFORE_TIMEOUT; i++)); do
+            echo -n "."
+            read -r -n1 -t1 key
+            if [ -n "$key" ] ; then
+              echo ''
+              echo ''
+              echo "Reboot cancelled."
+              exec /bin/bash
+              exit 0
+            fi
+          done
+        fi
         echo ''
         echo ''
         echo "System is now rebooting..."
