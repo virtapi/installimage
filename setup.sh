@@ -64,19 +64,20 @@ if [ "$OPT_AUTOMODE" ] ; then
   echo ""
 
   # print warning
-  echo -e "\033[01;31mWARNING:"
-  echo -e "\033[01;33m  Starting installation in 20 seconds ..."
-  echo -e "\033[01;33m  Press X to continue immediately ...\033[00m"
-  echo -e "\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
-  echo -e "\033[01;33m  Press CTRL-C to abort now!\033[00m"
-  echo -n "  => "
-  for i in $(seq 1 20) ; do
-    echo -n "."
-    read -r -t1 -n1 anykey
-    if [ "$anykey" = "x" ] || [ "$anykey" = "X" ] ; then break ; fi
-  done
-  echo
-
+  if [ "$SLEEP_BEFORE_START" -gt 0 ]; then
+    echo -e "\033[01;31mWARNING:"
+    echo -e "\033[01;33m  Starting installation in $SLEEP_BEFORE_START seconds ..."
+    echo -e "\033[01;33m  Press X to continue immediately ...\033[00m"
+    echo -e "\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
+    echo -e "\033[01;33m  Press CTRL-C to abort now!\033[00m"
+    echo -n "  => "
+    for ((i=0; i<=SLEEP_BEFORE_START; i++)); do
+      echo -n "."
+      read -r -t1 -n1 anykey
+      if [ "$anykey" = "x" ] || [ "$anykey" = "X" ] ; then break ; fi
+    done
+    echo
+  fi
   # start install
   debug "# AUTOMATIC MODE: start installation"
   # shellcheck disable=SC1090
