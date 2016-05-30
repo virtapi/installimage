@@ -32,6 +32,7 @@ export COMPANY="Example Awesome Company"
 export C_SHORT="example"
 export SLEEP_BEFORE_START="20"
 export SLEEP_BEFORE_REBOOT="20"
+export INSTALLSTATUS_URL=""
 
 export MODULES="virtio_pci virtio_blk via82cxxx sata_via sata_sil sata_nv sd_mod ahci atiixp raid0 raid1 raid5 raid6 raid10 3w-xxxx 3w-9xxx aacraid powernow-k8"
 export STATSSERVER="127.0.0.1"
