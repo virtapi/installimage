@@ -16,12 +16,44 @@ clear
 # shellcheck disable=SC1091
 . /tmp/install.vars
 
+# get UUID from cmdline for installstatus reporting
+for param in $(< /proc/cmdline); do
+  case "${param}" in
+    UUID=*)
+      INSTALL_UUID=${param#*=}
+      ;;
+  esac
+done
+
+# installation step will be reported only if REPORT_STEP=1, this is needed for being able
+# to handle the not counted sub-steps correctly
+REPORT_STEP=0
+
+report_status() {
+  if [ -n "${INSTALL_UUID}" ] && [ "${REPORT_STEP}" -eq 1 ] && [ -n "${INSTALLSTATUS_URL}" ]; then
+    local status_code; status_code=${1}
+    shopt -s extglob
+    local step_description=${REPORT_STEP_DESCRIPTION##+([[:space:]])}
+    shopt -u extglob
+    local status_data
+    status_data="status_code=${status_code}&step_description=${step_description}&current_step=${CURSTEP}&total_steps=${TOTALSTEPS}"
+    curl -s -m 5 --data "${status_data}" "${INSTALLSTATUS_URL}"/"${INSTALL_UUID}"
+  fi
+}
+
+# used to report that the group of "status_none" sub tasks has completed
+report_nosteps_completed(){
+  REPORT_STEP=1
+  report_status 0
+}
 
 inc_step() {
   CURSTEP=$((CURSTEP + 1))
 }
 
 status_busy() {
+  REPORT_STEP=1
+  REPORT_STEP_DESCRIPTION="$*"
   local step="$CURSTEP"
   test "$CURSTEP" -lt 10 && step=" $CURSTEP"
   echo -n -e "  $step/$TOTALSTEPS  :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
@@ -29,10 +61,13 @@ status_busy() {
 }
 
 status_busy_nostep() {
+  REPORT_STEP=0
   echo -n -e "         :  $* $STATUS_POSITION${CYAN} busy $NOCOL"
 }
 
 status_none() {
+  REPORT_STEP=1
+  REPORT_STEP_DESCRIPTION="$*"
   local step="$CURSTEP"
   test "$CURSTEP" -lt 10 && step=" $CURSTEP"
   echo -e "  $step/$TOTALSTEPS  :  $*"
@@ -43,10 +78,13 @@ status_none_nostep() {
 }
 
 status_done() {
+  report_status 0
   echo -e "$STATUS_POSITION${GREEN} done $NOCOL"
 }
 
 status_failed() {
+  REPORT_STEP=1
+  report_status 1
   echo -e "$STATUS_POSITION${RED}failed$NOCOL"
   [ $# -gt 0 ] && echo "${RED}         :  $*${NOCOL}"
   debug "=> FAILED"
@@ -82,14 +120,16 @@ gather_network_information
 #
 # Read configuration
 #
-status_busy_nostep "Reading configuration"
+STEP_DESCRIPTION="Reading configuration"
+status_busy_nostep "${STEP_DESCRIPTION}"
 read_vars "$FOLD/install.conf"
 status_donefailed $?
 
 #
 # Load image variables
 #
-status_busy_nostep "Loading image file variables"
+STEP_DESCRIPTION="Loading image file variables"
+status_busy_nostep "${STEP_DESCRIPTION}"
 get_image_info "$IMAGE_PATH" "$IMAGE_PATH_TYPE" "$IMAGE_FILE"
 status_donefailed $?
 
@@ -98,7 +138,8 @@ status_donefailed $?
 check_dos_partitions "no_output"
 
 whoami "$IMAGE_FILE"
-status_busy_nostep "Loading $IAM specific functions "
+STEP_DESCRIPTION="Loading $IAM specific functions "
+status_busy_nostep "${STEP_DESCRIPTION}"
 debug "# load $IAM specific functions..."
 if [ -e "$SCRIPTPATH/$IAM.sh" ]; then
   # shellcheck disable=SC1090 disable=SC2069
@@ -117,7 +158,8 @@ test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$((TOTALSTEPS + 1))
 # Remove partitions
 #
 inc_step
-status_busy "Deleting partitions"
+STEP_DESCRIPTION="Deleting partitions"
+status_busy "${STEP_DESCRIPTION}"
 
 unmount_all
 stop_lvm_raid
@@ -136,7 +178,8 @@ status_done
 # Test partition size
 #
 inc_step
-status_busy "Test partition size"
+STEP_DESCRIPTION="Test partition size"
+status_busy "${STEP_DESCRIPTION}"
 part_test_size
 check_dos_partitions "no_output"
 status_done
@@ -146,7 +189,8 @@ status_done
 # Create partitions
 #
 inc_step
-status_busy "Creating partitions and /etc/fstab"
+STEP_DESCRIPTION="Creating partitions and /etc/fstab"
+status_busy "${STEP_DESCRIPTION}"
 
 for part_inc in $(seq 1 "$COUNT_DRIVES") ; do
   if [ "$SWRAID" = "1" ] || [ "$part_inc" -eq 1 ] ; then
@@ -164,7 +208,8 @@ status_done
 #
 if [ "$SWRAID" = "1" ]; then
   inc_step
-  status_busy "Creating software RAID level $SWRAIDLEVEL"
+  STEP_DESCRIPTION="Creating software RAID level $SWRAIDLEVEL"
+  status_busy "${STEP_DESCRIPTION}"
   make_swraid "$FOLD/fstab"
   status_donefailed $?
 fi
@@ -175,7 +220,8 @@ fi
 #
 if [ "$LVM" = "1" ]; then
   inc_step
-  status_busy "Creating LVM volumes"
+  STEP_DESCRIPTION="Creating LVM volumes"
+  status_busy "${STEP_DESCRIPTION}"
   make_lvm "$FOLD/fstab" "$DRIVE1" "$DRIVE2"
   LVM_EXIT=$?
   if [ $LVM_EXIT -eq 2 ] ; then
@@ -190,7 +236,8 @@ fi
 # Format partitions
 #
 inc_step
-status_none "Formatting partitions"
+STEP_DESCRIPTION="Formatting partitions"
+status_none "${STEP_DESCRIPTION}"
 grep "^/dev/" "$FOLD/fstab" > /tmp/fstab.tmp
 while read -r line ; do
   echo "# parsed fstab line:$line" | debugoutput
@@ -200,13 +247,15 @@ while read -r line ; do
   format_partitions "$DEV" "$FS"
   status_donefailed $?
 done < /tmp/fstab.tmp
+report_nosteps_completed
 
 
 #
 # Mount filesystems
 #
 inc_step
-status_busy "Mounting partitions"
+STEP_DESCRIPTION="Mounting partitions"
+status_busy "${STEP_DESCRIPTION}"
 mount_partitions "$FOLD/fstab" "$FOLD/hdd" || status_failed
 status_donefailed $?
 
@@ -226,7 +275,8 @@ fi
 # ntp resync
 #
 inc_step
-status_busy "Sync time via ntp"
+STEP_DESCRIPTION="Sync time via ntp"
+status_busy "${STEP_DESCRIPTION}"
 set_ntp_time
 status_donefailed $?
 
@@ -235,7 +285,8 @@ status_donefailed $?
 #
 if [ "$IMAGE_PATH_TYPE" = "http" ] ; then
   inc_step
-  status_busy "Downloading image ($IMAGE_PATH_TYPE)"
+  STEP_DESCRIPTION="Downloading image ($IMAGE_PATH_TYPE)"
+  status_busy "${STEP_DESCRIPTION}"
   get_image_url "$IMAGE_PATH" "$IMAGE_FILE"
   status_donefailed $?
 fi
@@ -243,7 +294,8 @@ fi
 #
 # Import public key for image validation
 #
-status_busy_nostep "Importing public key for image validation"
+STEP_DESCRIPTION="Importing public key for image validation"
+status_busy_nostep "${STEP_DESCRIPTION}"
 import_imagekey
 IMPORT_EXIT=$?
 if [ $IMPORT_EXIT -eq 2 ] ; then
@@ -256,7 +308,8 @@ fi
 # Validate image
 #
 inc_step
-status_busy "Validating image before starting extraction"
+STEP_DESCRIPTION="Validating image before starting extraction"
+status_busy "${STEP_DESCRIPTION}"
 validate_image
 VALIDATE_EXIT=$?
 if [ -n "$FORCE_SIGN" ] || [ -n "$OPT_FORCE_SIGN" ] && [ $VALIDATE_EXIT -gt 0 ] ; then
@@ -275,7 +328,8 @@ fi
 # Extract image
 #
 inc_step
-status_busy "Extracting image ($IMAGE_PATH_TYPE)"
+STEP_DESCRIPTION="Extracting image ($IMAGE_PATH_TYPE)"
+status_busy "${STEP_DESCRIPTION}"
 extract_image "$IMAGE_PATH_TYPE" "$IMAGE_FILE_TYPE"
 status_donefailed $?
 
@@ -283,7 +337,8 @@ status_donefailed $?
 # Setup network
 #
 inc_step
-status_busy "Setting up network for $ETHDEV"
+STEP_DESCRIPTION="Setting up network for $ETHDEV"
+status_busy "${STEP_DESCRIPTION}"
 setup_network_config "$ETHDEV" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
 status_donefailed $?
 
@@ -296,7 +351,8 @@ set_udev_rules
 # chroot commands
 #
 inc_step
-status_none "Executing additional commands"
+STEP_DESCRIPTION="Executing additional commands"
+status_none "${STEP_DESCRIPTION}"
 
 copy_mtab "NIL"
 
@@ -328,6 +384,7 @@ debug "# Generating ntp config"
 generate_ntp_config "NIL" || status_failed
 status_done
 
+report_nosteps_completed
 
 
 #
@@ -347,7 +404,8 @@ setup_cpufreq "$GOVERNOR" || {
 # Set up misc files
 #
 inc_step
-status_busy "Setting up miscellaneous files"
+STEP_DESCRIPTION="Setting up miscellaneous files"
+status_busy "${STEP_DESCRIPTION}"
 generate_resolvconf || status_failed
 # already done in set_hostname
 #generate_hosts "$IPADDR" "$IP6ADDR" || status_failed
@@ -359,44 +417,53 @@ status_done
 # Set root password and/or install ssh keys
 #
 inc_step
-status_none "Configuring authentication"
+STEP_DESCRIPTION="Configuring authentication"
+status_none "${STEP_DESCRIPTION}"
 
 if [ -n "$OPT_SSHKEYS_URL" ] ; then
-    status_busy_nostep "  Fetching SSH keys"
-    debug "# Fetch public SSH keys"
-    fetch_ssh_keys "$OPT_SSHKEYS_URL"
-    status_donefailed $?
+  STEP_DESCRIPTION="  Fetching SSH keys"
+  status_busy_nostep "${STEP_DESCRIPTION}"
+  debug "# Fetch public SSH keys"
+  fetch_ssh_keys "$OPT_SSHKEYS_URL"
+  status_donefailed $?
 fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" ] && [ -z "$FORCE_PASSWORD" ]; then
-  status_busy_nostep "  Disabling root password"
+  STEP_DESCRIPTION="  Disabling root password"
+  status_busy_nostep "${STEP_DESCRIPTION}"
   set_rootpassword "$FOLD/hdd/etc/shadow" "*"
   status_donefailed $?
   status_busy_nostep "  Disabling SSH root login without password"
   set_ssh_rootlogin "without-password"
   status_donefailed $?
 else
-  status_busy_nostep "  Setting root password"
+  STEP_DESCRIPTION="  Setting root password"
+  status_busy_nostep "${STEP_DESCRIPTION}"
   get_rootpassword "/etc/shadow" || status_failed
   set_rootpassword "$FOLD/hdd/etc/shadow" "$ROOTHASH"
   status_donefailed $?
-  status_busy_nostep "  Enabling SSH root login with password"
+  STEP_DESCRIPTION="  Enabling SSH root login with password"
+  status_busy_nostep "${STEP_DESCRIPTION}"
   set_ssh_rootlogin "yes"
   status_donefailed $?
 fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" ] ; then
-    status_busy_nostep "  Copying SSH keys"
+    STEP_DESCRIPTION="  Copying SSH keys"
+    status_busy_nostep "${STEP_DESCRIPTION}"
     debug "# Adding public SSH keys"
     copy_ssh_keys
     status_donefailed $?
 fi
 
+report_nosteps_completed
+
 #
 # Write Bootloader
 #
 inc_step
-status_busy "Installing bootloader $BOOTLOADER"
+STEP_DESCRIPTION="Installing bootloader $BOOTLOADER"
+status_busy "${STEP_DESCRIPTION}"
 
 debug "# Generating config for $BOOTLOADER"
 if [ "$BOOTLOADER" = "grub" ] || [ "$BOOTLOADER" = "GRUB" ]; then
@@ -420,20 +487,23 @@ status_done
 
 if [ "$OPT_INSTALL" ]; then
   inc_step
-  status_none "Installing additional software"
+  STEP_DESCRIPTION="Installing additional software"
+  status_none "${STEP_DESCRIPTION}"
   # shellcheck disable=SC2001
   opt_install_items="$(echo "$OPT_INSTALL" | sed s/,/\\n/g)"
   for opt_item in $opt_install_items; do
     opt_item=$(echo "$opt_item" | tr "[:upper:]" "[:lower:]")
     case "$opt_item" in
       plesk*)
-        status_busy_nostep "  Installing PLESK Control Panel"
+        STEP_DESCRIPTION="  Installing PLESK Control Panel"
+        status_busy_nostep "${STEP_DESCRIPTION}"
         debug "# installing PLESK"
         install_plesk "$opt_item"
         status_donefailed $?
         ;;
       omsa)
-        status_busy_nostep "  Installing Open Manage"
+        STEP_DESCRIPTION="  Installing Open Manage"
+        status_busy_nostep "${STEP_DESCRIPTION}"
         debug "# installing OMSA"
         install_omsa
         status_donefailed $?
@@ -448,7 +518,8 @@ fi
 # for purpose of e.g. debian-sys-maint mysql user password in debian/ubuntu LAMP
 #
 inc_step
-status_busy "Running some $IAM specific functions"
+STEP_DESCRIPTION="Running some $IAM specific functions"
+status_busy "${STEP_DESCRIPTION}"
 run_os_specific_functions || status_failed
 status_done
 
@@ -456,7 +527,8 @@ status_done
 # Clear log files
 #
 inc_step
-status_busy "Clearing log files"
+STEP_DESCRIPTION="Clearing log files"
+status_busy "${STEP_DESCRIPTION}"
 clear_logs "NIL"
 status_donefailed $?
 
