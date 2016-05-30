@@ -804,6 +804,15 @@ if [ -n "$1" ]; then
     C_SHORT="${c_short_custom}"
   fi
 
+  # overwrite SSH key settings from commandline
+  # you can set that also via -K, but configfile is superior
+  local sshkeys_url
+  sshkeys_url=$(grep -m1 -e ^SSHKEYS_URL "${1}" | awk '{print $2}')
+  if [ -n "$sshkeys_url" ]; then
+    export OPT_SSHKEYS_URL="$sshkeys_url"
+    export OPT_USE_SSHKEYS=1
+  fi
+
 fi
 }
 
