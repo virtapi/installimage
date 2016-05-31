@@ -1946,7 +1946,7 @@ make_swraid() {
       fi
     fi
     [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 123 ] && metadata="--metadata=0.90"
-    while -r read line ; do
+    while read -r line; do
       PARTNUM="$(next_partnum $count)"
       echo "Line is: \"$line\"" | debugoutput
       # shellcheck disable=SC2015
