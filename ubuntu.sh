@@ -104,6 +104,7 @@ setup_network_config() {
 
       if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
         debug "setting up ipv4 networking $3/$5 via $6"
+        local CIDR; CIDR=$(netmask_cidr_conv "$5")
         {
           echo "Address=$3/$CIDR"
           echo "Gateway=$6"
