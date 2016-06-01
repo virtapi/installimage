@@ -104,9 +104,9 @@ setup_network_config() {
 
       if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
         debug "setting up ipv4 networking $3/$5 via $6"
-        local CIDR; CIDR=$(netmask_cidr_conv "$5")
+        local cidr; cidr=$(netmask_cidr_conv "$5")
         {
-          echo "Address=$3/$CIDR"
+          echo "Address=$3/$cidr"
           echo "Gateway=$6"
           echo ""
         } >> "$CONFIGFILE"
@@ -114,7 +114,7 @@ setup_network_config() {
         if ! is_private_ip "$3"; then
           {
             echo "[Route]"
-            echo "Destination=$7/$CIDR"
+            echo "Destination=$7/$cidr"
             echo "Gateway=$6"
           } >> "$CONFIGFILE"
         fi
