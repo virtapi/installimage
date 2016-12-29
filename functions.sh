@@ -1538,13 +1538,10 @@ stop_lvm_raid() {
 
   dmsetup remove_all > /dev/null 2>&1
 
-  if [ -x "$(which mdadm)" ] && [ -f /proc/mdstat ]; then
-    grep md /proc/mdstat | cut -d ' ' -f1 | while read -r i; do
-      [ -e "/dev/$i" ] && mdadm -S "/dev/$i" >> /dev/null 2>&1
-    done
-  fi
+  test -x "$(which mdadm)" && for i in $(awk '/md/ {print $1}' /proc/mdstat); do
+    [ -e "/dev/$i" ] && mdadm -S "/dev/$i" >> /dev/null 2>&1
+  done
 }
-
 
 # delete partitiontable
 # delete_partitions "DRIVE"
