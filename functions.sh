@@ -1675,6 +1675,7 @@ create_partitions() {
 
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
   dmsetup remove_all 2>&1 | debugoutput
+  mkdir -p /run/lock
   dmraid -a no 2>&1 | debugoutput
 
   dd if=/dev/zero of="$1" bs=1M count=10  1>/dev/null 2>&1
@@ -1845,6 +1846,7 @@ create_partitions() {
   hdparm -z "$1" >/dev/null 2>&1
 
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
+  mkdir -p /run/lock
   dmraid -a no 2>&1 | debugoutput
   dmsetup remove_all 2>&1 | debugoutput
 
