@@ -2397,8 +2397,9 @@ extract_image() {
 
 function get_active_eth_dev() {
   local nic=""
-  for nic in /sys/class/net/eth*; do
+  for nic in /sys/class/net/*; do
     # remove path from ethX so we only have "ethX"
+    [[ $nic =~ ^(lo)$ ]] && continue
     nic=${nic##*/}
     #test if the interface has a ipv4 adress
     iptest=$(ip addr show dev "$nic" | grep "$nic"$ | awk '{print $2}')
