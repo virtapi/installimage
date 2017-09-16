@@ -684,15 +684,15 @@ if [ -n "$1" ]; then
   done < /tmp/part_lines.tmp
 
   # get LVM volume group config
-  LVM_VG_COUNT="$(egrep -c '^PART *lvm ' "$1")"
-  LVM_VG_ALL="$(egrep '^PART *lvm ' "$1")"
+  LVM_VG_COUNT="$(grep -c -e '^PART *lvm ' "$1")"
+  LVM_VG_ALL="$(grep -e '^PART *lvm ' "$1")"
 
   # void the check var
   LVM_VG_CHECK=""
   for ((i=1; i<=LVM_VG_COUNT; i++)); do
     LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n$i | tail -n1)"
     #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print $2}')"
-    LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n$i | tail -n1 | cut -d: -f1)
+    LVM_VG_PART[$i]=$(echo "$PART_LINES" | grep -n -e '^PART *lvm ' | head -n$i | tail -n1 | cut -d: -f1)
     LVM_VG_NAME[$i]="$(echo "$LVM_VG_LINE" | awk '{print $3}')"
     LVM_VG_SIZE[$i]="$(translate_unit "$(echo "$LVM_VG_LINE" | awk '{print $4}')")"
 
@@ -1155,7 +1155,7 @@ validate_vars() {
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
-    if [ "$(echo "$names" | egrep -v "^$" | sort | uniq -d | wc -l)" -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
+    if [ "$(echo "$names" | grep -v -e "^$" | sort | uniq -d | wc -l)" -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
       graph_error "ERROR: you cannot use more than one VG with lilo - use grub as bootloader"
       return 1
     fi
@@ -2551,7 +2551,7 @@ function template_replace() {
   if [ $# -eq 2 ] ; then
     # if just 2 params set, remove lines
     local file="$2"
-    if echo "$search" | egrep -q "GROUP|FILE"; then
+    if echo "$search" | grep -q -e "GROUP|FILE"; then
       # if search contains GROUP or FILE, remove both group lines
       search="${search}_\(START\|\END\)"
     fi
@@ -3477,7 +3477,7 @@ install_plesk() {
   if [ "$plesk_version" == "plesk" ]; then
     debug "install standard version"
     plesk_version="$PLESK_STD_VERSION"
-  elif echo "$plesk_version" | egrep -q "plesk_[0-9]+_[0-9]+_[0-9]+$"; then
+  elif echo "$plesk_version" | grep -q -e "plesk_[0-9]+_[0-9]+_[0-9]+$"; then
     plesk_version="$(echo "$plesk_version" | tr '[:lower:]' '[:upper:]')"
   else
     # check if we want a main version and should detect the latest subversion
@@ -3564,7 +3564,7 @@ translate_unit() {
     return 1
   fi
   for unit in M MiB G GiB T TiB; do
-    if echo "$1" | egrep -q "^[[:digit:]]+$unit$"; then
+    if echo "$1" | grep -q -e "^[[:digit:]]+$unit$"; then
       value=${1//$unit}
 
       case "$unit" in
