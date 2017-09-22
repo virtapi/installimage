@@ -168,7 +168,14 @@ validate_image() {
 
 # extract image file to hdd
 extract_image() {
-  LANG=C pacstrap -m -a "$FOLD/hdd" base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget ca-certificates-utils 2>&1 | debugoutput
+  mkdir -p "$FOLD/hdd/var/lib/pacman"
+  mkdir -p "$FOLD/hdd/var/cache/pacman/pkg"
+  LANG=C pacman \
+    --noconfirm \
+    --root "$FOLD/hdd" \
+    --dbpath "$FOLD/hdd/var/lib/pacman" \
+    --cachedir "$FOLD/hdd/var/cache/pacman/pkg" \
+    -Syyu base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget ca-certificates ca-certificates-utils pacman-mirrorlist 2>&1 | debugoutput
   declare -i EXITCODE=$?
 
   if [ "$EXITCODE" -eq "0" ]; then
