@@ -154,7 +154,6 @@ run_os_specific_functions() {
   execute_chroot_command "pacman-key --populate archlinux"
   execute_chroot_command "systemctl enable sshd"
   execute_chroot_command "systemctl enable haveged"
-  execute_chroot_command "systemctl enable cronie"
   execute_chroot_command "systemctl enable systemd-timesyncd"
 
   return 0
@@ -175,7 +174,7 @@ extract_image() {
     --root "$FOLD/hdd" \
     --dbpath "$FOLD/hdd/var/lib/pacman" \
     --cachedir "$FOLD/hdd/var/cache/pacman/pkg" \
-    -Syyu base btrfs-progs cpupower cronie findutils gptfdisk grub haveged openssh vim wget ca-certificates ca-certificates-utils pacman-mirrorlist 2>&1 | debugoutput
+    -Syyu base btrfs-progs cpupower findutils gptfdisk grub haveged openssh vim wget ca-certificates ca-certificates-utils pacman-mirrorlist 2>&1 | debugoutput
   declare -i EXITCODE=$?
 
   if [ "$EXITCODE" -eq "0" ]; then
