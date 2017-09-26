@@ -92,7 +92,7 @@ generate_new_ramdisk() {
       echo "blacklist mei-me"
     } > "$blacklist_conf"
 
-    execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base udev autodetect modconf block mdadm lvm2 filesystems keyboard fsck\"/"'
+    execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base systemd autodetect keyboard sd-vconsole modconf block mdadm_udev sd-lvm2 filesystems fsck\"/"'
     execute_chroot_command "mkinitcpio -p linux"; EXITCODE=$?
 
     return "$EXITCODE"
