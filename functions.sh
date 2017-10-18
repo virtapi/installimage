@@ -2139,7 +2139,7 @@ format_partitions() {
         if [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -lt 70 ]; then
           mkfs -t "$FS" -O ^64bit -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
         else
-          mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE
+          mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
         fi
       elif [ "$FS" = "btrfs" ]; then
         wipefs "$DEV" | debugoutput
