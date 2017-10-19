@@ -12,7 +12,6 @@ setup_network_config() {
     # good we have a device and a MAC
     CONFIGFILE="$FOLD/hdd/etc/systemd/network/50-$C_SHORT.network"
     UDEVFILE="$FOLD/hdd/etc/udev/rules.d/80-net-setup-link.rules"
-    local CIDR; CIDR=$(netmask_cidr_conv "$SUBNETMASK")
 
     {
       echo "### $COMPANY - installimage"
@@ -28,31 +27,39 @@ setup_network_config() {
       echo ""
     } > "$CONFIGFILE"
 
-    echo "[Network]" >> "$CONFIGFILE"
-    if [ -n "$8" ] && [ -n "$9" ] && [ -n "${10}" ]; then
-      debug "setting up ipv6 networking $8/$9 via ${10}"
+
+    # setup addresses
+    # $9 is the subnet mask parsed from /proc/cmdline
+    if [ -n "$8" ] && [ -n "${10}" ]; then
+      debug "setting up ipv6 networking $8/128 via ${10}"
       {
-        echo "Address=$8/$9"
-        echo "Gateway=${10}"
+        echo "[Address]"
+        echo "Address=${8}/128"
         echo ""
       } >> "$CONFIGFILE"
     fi
 
-    if [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ] && [ -n "$7" ]; then
-      debug "setting up ipv4 networking $3/$5 via $6"
+    # $5 is the subnet mask in long format. e.g.: 255.255.255.0
+    if [ -n "$3" ] && [ -n "$4" ] && [ -n "$6" ] && [ -n "$7" ]; then
+      debug "setting up ipv4 networking $3/32 via $6"
       {
-        echo "Address=$3/$CIDR"
-        echo "Gateway=$6"
+        echo "[Address]"
+        echo "Address=$3/32"
+        echo "Peer=$6/32"
         echo ""
       } >> "$CONFIGFILE"
 
-      if ! is_private_ip "$3"; then
-        {
-          echo "[Route]"
-          echo "Destination=$7/$CIDR"
-          echo "Gateway=$6"
-        } >> "$CONFIGFILE"
-      fi
+    fi
+
+    # setup network section with gateways
+    debug "setting up ipv4/ipv6 gateways"
+    echo "[Network]" >> "$CONFIGFILE"
+    if [ -n "$6" ]; then
+      echo "Gateway=${6}" >> "$CONFIGFILE"
+    fi
+
+    if [ -n "${10}" ]; then
+      echo "Gateway=${10}" >> "$CONFIGFILE"
     fi
 
     execute_chroot_command "systemctl enable systemd-networkd.service"
