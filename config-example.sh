@@ -75,6 +75,7 @@ export OSMENULIST=(
 
 export PROXMOX3_BASE_IMAGE="Debian-79-wheezy-64-minimal"
 export PROXMOX4_BASE_IMAGE="Debian-83-jessie-64-minimal"
+export PROXMOX5_BASE_IMAGE="Debian-92-stretch-64-minimal"
 
 export RED="\033[1;31m"
 export GREEN="\033[1;32m"
