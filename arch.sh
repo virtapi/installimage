@@ -142,7 +142,7 @@ generate_config_grub() {
       local targetdrive; targetdrive="$(eval echo "\$DRIVE$i")"
       execute_chroot_command "grub-install --no-floppy --recheck $targetdrive 2>&1"
       declare -i EXITCODE=$?
-      let i=i+1
+      ((i = i + 1))
     done
 fi
   uuid_bugfix

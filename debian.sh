@@ -105,7 +105,7 @@ generate_config_mdadm() {
 # generate_new_ramdisk "NIL"
 generate_new_ramdisk() {
   if [ -n "$1" ]; then
-    local outfile; outfile=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex ".*\(gz\|bak\)" -printf "%f\n" | sort -nr | head -n1)
+    local outfile; outfile=$(find "$FOLD"/hdd/boot -name "initrd.img-*" -not -regex '.*\(gz\|bak\)' -printf '%f\n' | sort -nr | head -n1)
     local kvers; kvers=$(echo "$outfile" |cut -d "-" -f2-)
     debug "# Kernel Version found: $kvers"
 
@@ -269,7 +269,7 @@ randomize_maint_mysql_pass() {
   local pma_pass; pma_pass=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c16)
   local pma_sec; pma_sec=$(tr -dc _A-Z-a-z-0-9 < /dev/urandom | head -c24)
   if [ -f "$pma_sec_cnf" ]; then
-    echo -e "<?php\n\$cfg['blowfish_secret'] = '$pma_sec';" > "$pma_sec_cnf"
+    echo -e "<?php\\n\$cfg['blowfish_secret'] = '$pma_sec';" > "$pma_sec_cnf"
   fi
   MYSQLCOMMAND="USE mysql; \
   UPDATE user SET password=PASSWORD('$debianpass') WHERE user='debian-sys-maint'; \

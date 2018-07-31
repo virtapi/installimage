@@ -8,9 +8,8 @@
 
 
 # check command line params / options
-while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
+while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gK:" OPTION ; do
   case "$OPTION" in
-
     # help
     h)
       echo
@@ -157,7 +156,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       OLD_IFS="$IFS"
       IFS=","
       for part in $OPT_PARTITIONS ; do
-        OPT_PARTS="$OPT_PARTS\nPART "
+        OPT_PARTS="$OPT_PARTS\\nPART "
         IFS=":"
         for val in $part ; do
           OPT_PARTS="$OPT_PARTS $val "
@@ -174,7 +173,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       OLD_IFS="$IFS"
       IFS=","
       for lv in $OPT_VOLUMES ; do
-        OPT_LVS="$OPT_LVS\nLV "
+        OPT_LVS="$OPT_LVS\\nLV "
         IFS=":"
         for val in $lv ; do
           OPT_LVS="$OPT_LVS $val "
@@ -191,7 +190,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
-        let i=i+1
+        (( i = i + 1 ))
       done
     ;;
 
@@ -232,6 +231,10 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       exit 1
      fi
      ;;
+    *)
+      echo "Invalid option: ${OPTION}"
+      exit 2
+      ;;
   esac
 done
 

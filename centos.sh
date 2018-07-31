@@ -342,7 +342,7 @@ write_grub() {
     for ((i=1; i<=COUNT_DRIVES; i++)); do
       if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
         local disk; disk="$(eval echo "\$DRIVE"$i)"
-        execute_chroot_command "echo -e \"device (hd0) $disk\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
+        execute_chroot_command "echo -e \"device (hd0) $disk\\nroot (hd0,$PARTNUM)\\nsetup (hd0)\\nquit\" | grub --batch >> /dev/null 2>&1"
         declare -i EXITCODE=$?
       fi
     done
@@ -370,7 +370,7 @@ run_os_specific_functions() {
   fi
 
   # selinux autorelabel if enabled
-  egrep -q "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux" &&
+  grep -qE "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux" &&
     touch "$FOLD/hdd/.autorelabel"
 
   return 0

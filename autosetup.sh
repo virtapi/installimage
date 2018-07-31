@@ -15,15 +15,15 @@
 debug "# checking if the script is disabled"
 if [ -f "$DISABLEDFILE" ]; then
  debug "=> script is DISABLED"
- echo_red "Due to maintenance the installimage-script is temporarily unavailable.\nWe are sorry for the inconvenience."
+ echo_red "Due to maintenance the installimage-script is temporarily unavailable.\\nWe are sorry for the inconvenience."
  exit 1
 fi
 
 
 # display information about autosetup
 echo ""
-echo -e "\033[01;32mFound AUTOSETUP file '$AUTOSETUPCONFIG'\033[00m"
-echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m"
+echo -e "\\033[01;32mFound AUTOSETUP file '$AUTOSETUPCONFIG'\\033[00m"
+echo -e "\\033[01;33mRunning unattended installimage installation ...\\033[00m"
 echo ""
 grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
 echo ""
@@ -58,19 +58,19 @@ if [ "$OPT_CONFIGFILE" ] && [ -z "$OPT_AUTOMODE" ] ; then
   echo -e -n "${YELLOW}DO YOU REALLY WANT TO CONTINUE?${NOCOL} [y|N] "
   read -r -n1 aw
   case "$aw" in
-    y|Y|j|J) echo -e "\n\n" ;;
-    *) echo -e "\n\n${GREEN}ABORT${NOCOL}\n" ; exit 0 ;;
+    y|Y|j|J) echo -e "\\n\\n" ;;
+    *) echo -e "\\n\\n${GREEN}ABORT${NOCOL}\\n" ; exit 0 ;;
   esac
 fi
 
 
 # execute installfile
 if [ "$SLEEP_BEFORE_START" -gt 0 ]; then
-  echo -e "\033[01;31mWARNING:"
-  echo -e "\033[01;33m  Starting installation in $SLEEP_BEFORE_START seconds ..."
-  echo -e "\033[01;33m  Press X to continue immediately ...\033[00m"
-  echo -e "\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
-  echo -e "\033[01;33m  Press CTRL-C to abort now!\033[00m"
+  echo -e "\\033[01;31mWARNING:"
+  echo -e "\\033[01;33m  Starting installation in $SLEEP_BEFORE_START seconds ..."
+  echo -e "\\033[01;33m  Press X to continue immediately ...\\033[00m"
+  echo -e "\\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
+  echo -e "\\033[01;33m  Press CTRL-C to abort now!\\033[00m"
   echo -n "  => "
   for ((i=0; i<=SLEEP_BEFORE_START; i++)); do
     echo -n "."
@@ -90,7 +90,7 @@ if [ -f "$INSTALLFILE" ] && [ "$VALIDATED" = "true" ] ; then
 else
   debug "=> FAILED"
   echo ""
-  echo -e "\033[01;31mERROR: Cant find files\033[00m"
+  echo -e "\\033[01;31mERROR: Cant find files\\033[00m"
 fi
 
 

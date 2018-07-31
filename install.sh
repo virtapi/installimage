@@ -6,7 +6,7 @@
 # (c) 2007-2016, Hetzner Online GmbH
 #
 
-STATUS_POSITION="\033[60G"
+STATUS_POSITION='\033[60G'
 
 TOTALSTEPS=15
 CURSTEP=0
@@ -106,9 +106,9 @@ status_donefailed() {
 }
 
 echo
-echo_bold "                $COMPANY - installimage\n"
+echo_bold "                $COMPANY - installimage\\n"
 echo_bold "  Your server will be installed now, this will take some minutes"
-echo_bold "             You can abort at any time with CTRL+C ...\n"
+echo_bold "             You can abort at any time with CTRL+C ...\\n"
 
 #
 # get active nic and gather network information
@@ -599,6 +599,6 @@ chmod 640 "$FOLD/hdd/installimage.debug"
 echo
 echo_bold "                  INSTALLATION COMPLETE"
 echo_bold "   You can now reboot and log in to your new system with"
-echo_bold "  the same password as you logged in to the rescue system.\n"
+echo_bold "  the same password as you logged in to the rescue system.\\n"
 
 # vim: ai:ts=2:sw=2:et

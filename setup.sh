@@ -16,7 +16,7 @@
 debug "# checking if the script is disabled"
 if [ -f "$DISABLEDFILE" ]; then
  debug "=> script is DISABLED"
- echo_red "Due to maintenance the installimage-script is temporarily unavailable.\nWe are sorry for the inconvenience."
+ echo_red 'Due to maintenance the installimage-script is temporarily unavailable.\nWe are sorry for the inconvenience.'
  exit 1
 fi
 
@@ -56,8 +56,8 @@ if [ "$OPT_AUTOMODE" ] ; then
   done
 
   # display information about automatic mode
-  echo -e "\n\033[01;32mStarting AUTOMATIC MODE\033[00m"
-  echo -e "\033[01;33mRunning unattended installimage installation ...\033[00m"
+  echo -e '\n\033[01;32mStarting AUTOMATIC MODE\033[00m'
+  echo -e '\033[01;33mRunning unattended installimage installation ...\033[00m'
   echo ""
   grep -v "^#" "$FOLD/install.conf" | grep -v "^$"
   echo ""
@@ -65,12 +65,12 @@ if [ "$OPT_AUTOMODE" ] ; then
 
   # print warning
   if [ "$SLEEP_BEFORE_START" -gt 0 ]; then
-    echo -e "\033[01;31mWARNING:"
-    echo -e "\033[01;33m  Starting installation in $SLEEP_BEFORE_START seconds ..."
-    echo -e "\033[01;33m  Press X to continue immediately ...\033[00m"
-    echo -e "\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!"
-    echo -e "\033[01;33m  Press CTRL-C to abort now!\033[00m"
-    echo -n "  => "
+    echo -e '\033[01;31mWARNING:'
+    echo -e "\\033[01;33m  Starting installation in $SLEEP_BEFORE_START seconds ..."
+    echo -e '\033[01;33m  Press X to continue immediately ...\033[00m'
+    echo -e '\033[01;31m  Installation will DELETE ALL DATA ON DISK(s)!'
+    echo -e '\033[01;33m  Press CTRL-C to abort now!\033[00m'
+    echo -n '  => '
     for ((i=0; i<=SLEEP_BEFORE_START; i++)); do
       echo -n "."
       read -r -t1 -n1 anykey
@@ -137,7 +137,7 @@ else
     fi
 
     if [ "$PROXMOX" = "true" ]; then
-        graph_notice "\nPlease note: This image isn't supported by us.";
+        graph_notice "\\nPlease note: This image isn't supported by us.";
     fi
 
     text='\n    An editor will now show you the config for the image.\n
@@ -180,8 +180,10 @@ else
         ask_format="$(eval echo "\$FORMAT_DRIVE$i")"
         ask_drive="$(eval echo "\$DRIVE$i")"
         if [ "$SWRAID" = "1" ] || [ "$ask_format" = "1" ] || [ "$i" -eq 1 ]; then
-          dialog --backtitle "$DIATITLE" --title "Confirmation" --colors --yesno "\n\Z1WARNING!: DATA ON THE FOLLOWING DRIVE WILL BE DELETED:\n\n $ask_drive\n\nDo you want to continue?\Zn\n" 0 0
-          if [ $? -ne 0 ]; then
+          if dialog --backtitle "$DIATITLE" --title "Confirmation" --colors --yesno "\\n\\Z1WARNING!: DATA ON THE FOLLOWING DRIVE WILL BE DELETED:\\n\\n $ask_drive\\n\\nDo you want to continue?\\Zn\\n" 0 0; then
+            debug "# Confirmation for drive $ask_drive accepted"
+            ACCEPTED="true"
+          else
             debug "# Confirmation for drive $ask_drive NOT accepted"
             ACCEPTED=""
             if [ "$NOIMAGEMENU" ]; then
@@ -189,9 +191,6 @@ else
             else
               break
             fi
-          else
-            debug "# Confirmation for drive $ask_drive accepted"
-            ACCEPTED="true"
           fi
         fi
       done
@@ -205,7 +204,7 @@ else
      . "$INSTALLFILE" ; EXITCODE=$?
   else
     debug "=> FAILED"
-    echo -e "\n\033[01;31mERROR: Cant find files\033[00m"
+    echo -e '\n\033[01;31mERROR: Cant find files\033[00m'
   fi
 
 fi

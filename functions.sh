@@ -70,13 +70,13 @@ MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
 # functions
 # show text in a different color
 echo_red() {
-  echo -e "\033[01;31m$*\033[00m"
+  echo -e '\033[01;31m$*\033[00m'
 }
 echo_green() {
-  echo -e "\033[01;32m$*\033[00m"
+  echo -e '\033[01;32m$*\033[00m'
 }
 echo_bold() {
-  echo -e "\033[0;1m$*\033[00m"
+  echo -e '\033[0;1m$*\033[00m'
 }
 
 
@@ -105,11 +105,11 @@ generate_menu() {
     FINALIMAGEPATH="$OLDIMAGESPATH"
   else
     # skip CPANEL images and signatures files from list
-    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\(old_\)\?$1.*" -a -not -regex '.*\.sig$' -printf '%f\n'|sort)
+    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\\(old_\\)\\?$1.*" -a -not -regex '.*\.sig$' -printf '%f\n'|sort)
   fi
   # check if 32-bit rescue is activated and disable 64-bit images then
   if [ "$(uname -m)" != "x86_64" ]; then
-    RAWLIST="$(echo "$RAWLIST" |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]")"
+    RAWLIST="$(echo "$RAWLIST" |tr ' ' '\n' |grep -v -- '-64-[a-zA-Z]')"
   fi
   # generate formatted list for usage with "dialog"
   for i in $RAWLIST; do
@@ -146,10 +146,10 @@ generate_menu() {
       PROXMOX=true
       IMAGENAME=$(eval echo \$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE)
       DEFAULTPARTS=""
-      DEFAULTPARTS="$DEFAULTPARTS\nPART  /boot  ext3  512M"
-      DEFAULTPARTS="$DEFAULTPARTS\nPART  lvm    vg0    all\n"
-      DEFAULTPARTS="$DEFAULTPARTS\nLV  vg0  root  /     ext3  15G"
-      DEFAULTPARTS="$DEFAULTPARTS\nLV  vg0  swap  swap  swap   6G"
+      DEFAULTPARTS="$DEFAULTPARTS\\nPART  /boot  ext3  512M"
+      DEFAULTPARTS="$DEFAULTPARTS\\nPART  lvm    vg0    all\\n"
+      DEFAULTPARTS="$DEFAULTPARTS\\nLV  vg0  root  /     ext3  15G"
+      DEFAULTPARTS="$DEFAULTPARTS\\nLV  vg0  swap  swap  swap   6G"
   ;;
     CoreOS*)
       PROXMOX=false
@@ -170,7 +170,7 @@ create_config() {
     getdrives; EXITCODE=$?
 
     if [ $COUNT_DRIVES -eq 0 ] ; then
-      graph_notice "There are no drives in your server!\nIf there is a raid controller in your server, please configure it!\n\nThe setup will quit now!"
+      graph_notice "There are no drives in your server!\\nIf there is a raid controller in your server, please configure it!\\n\\nThe setup will quit now!"
       return 1
     fi
 
@@ -287,7 +287,7 @@ create_config() {
       done
       [ -z "$set_level" ] && set_level="$default_level"
 
-      echo -e "## Choose the level for the software RAID < $avail_level >\n" >> "$CNF"
+      printf '## Choose the level for the software RAID < %s >\n' "${avail_level}" >> "$CNF"
       echo "SWRAIDLEVEL $set_level" >> "$CNF"
     fi
 
@@ -351,7 +351,7 @@ create_config() {
     DEFAULT_HOSTNAME="$1"
     # or to proxmox if chosen
     if [ "$PROXMOX" = "true" ]; then
-      echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> "$CNF"
+      echo -e '## This must be a FQDN otherwise installation will fail\n## \n' >> "$CNF"
       DEFAULT_HOSTNAME="Proxmox-VE.yourdomain.localdomain"
     fi
     # or to the hostname passed through options
@@ -570,18 +570,15 @@ create_config() {
 }
 
 getdrives() {
-  local drives;
-  drives="$(find /sys/block/ \( -name  'nvme[0-9]n[0-9]' -o  -name '[hvs]d[a-z]' \) -printf '%f\n')"
+  declare -a drives;
+  mapfile -d $'\0' drives < <(find /sys/block/ \( -name  'nvme[0-9]n[0-9]' -o  -name '[hvs]d[a-z]' \) -print0)
   local i=1
-
-  #cast drives into an array
-  drives=( $drives )
 
   for drive in ${drives[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
-    if [ ${#drives[@]} -eq 1 ] || [ ! "$(fdisk -s "/dev/$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
+    if [ ${#drives[@]} -eq 1 ] || [ ! "$(awk -v DRIVE="${drive}" '{if($4==DRIVE){print $3}}' /proc/partitions)" -lt "$HDDMINSIZE" ] ; then
       eval DRIVE$i="/dev/$drive"
-      let i=i+1
+      (( i = i+1 ))
     fi
   done
   [ -z "$DRIVE1" ] && DRIVE1="no valid drive found"
@@ -626,7 +623,7 @@ if [ -n "$1" ]; then
     if [ -n "$disk" ] ; then
       export DRIVE$i
       eval DRIVE$i="$disk"
-      let used_disks=used_disks+1
+      (( used_disks = used_disks + 1 ))
     else
       unset DRIVE$i
     fi
@@ -768,10 +765,10 @@ if [ -n "$1" ]; then
     declare -a nameserver_custom
 
     while read -r nameserver; do
-      nameserver_custom+=($nameserver)
+      nameserver_custom+=("$nameserver")
     done < <(grep -e ^NAMESERVER "${1}" | awk '{print $2}')
 
-    NAMESERVER=(${nameserver_custom[@]})
+    NAMESERVER=("${nameserver_custom[@]}")
   fi
 
   local nameserver_v6_count
@@ -780,10 +777,10 @@ if [ -n "$1" ]; then
     declare -a nameserver_v6_custom
 
     while read -r nameserver_v6; do
-      nameserver_v6_custom+=($nameserver_v6)
+      nameserver_v6_custom+=("$nameserver_v6")
     done < <(grep -e ^DNSRESOLVER_V6 "${1}" | awk '{print $2}')
 
-    DNSRESOLVER_V6=(${nameserver_v6_custom[@]})
+    DNSRESOLVER_V6=("${nameserver_v6_custom[@]}")
   fi
 
   local postinstall_url
@@ -831,7 +828,7 @@ validate_vars() {
   fi
 
   # test if PATHTYPE is a supported type
-  CHECK="$(echo $IMAGE_PATH_TYPE |grep -i -e "^http$\|^nfs$\|^local$")"
+  CHECK="$(echo $IMAGE_PATH_TYPE |grep -i -e '^http$\|^nfs$\|^local$')"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid PATHTYPE"
    return 1
@@ -844,7 +841,7 @@ validate_vars() {
   fi
 
   # test if FILETYPE is a supported type
-  CHECK="$(echo $IMAGE_FILE_TYPE |grep -i -e "^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$")"
+  CHECK="$(echo $IMAGE_FILE_TYPE |grep -i -e '^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$')"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: $IMAGE_FILE_TYPE is no valid FILETYPE for images"
    return 1
@@ -881,7 +878,7 @@ validate_vars() {
   fi
 
   # check for valid drives
-  local drive_array=( $DRIVE1 )
+  local drive_array=( "${DRIVE1}" )
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     local format; format="$(eval echo "\$FORMAT_DRIVE$i")"
     local drive; drive="$(eval echo "\$DRIVE$i")"
@@ -1048,14 +1045,14 @@ validate_vars() {
     for ((i=1; i<=PART_COUNT; i++)); do
 
       # test if the mountpoint is valid (start with / or swap or lvm)
-      CHECK="$(echo "${PART_MOUNT[$i]}" | grep -e "^none\|^/\|^swap$\|^lvm$")"
+      CHECK="$(echo "${PART_MOUNT[$i]}" | grep -e '^none\|^/\|^swap$\|^lvm$')"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Mountpoint for partition $i is not correct"
         return 1
       fi
 
       # test if the filesystem is one of our supportet types (btrfs/ext2/ext3/ext4/reiserfs/xfs/swap)
-      CHECK="$(echo "${PART_FS[$i]}" |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$")"
+      CHECK="$(echo "${PART_FS[$i]}" |grep -e '^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$')"
       if [ -z "$CHECK" ] && [ "${PART_MOUNT[$i]}" != "lvm" ]; then
         graph_error "ERROR: Filesystem for partition $i is not correct"
         return 1
@@ -1072,7 +1069,7 @@ validate_vars() {
       fi
 
       # we can't use bsdtar on non ext2/3/4 partitions
-      CHECK=$(echo "${PART_FS[$i]}" |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
+      CHECK=$(echo "${PART_FS[$i]}" |grep -e '^ext2$\|^ext3$\|^ext4$\|^swap$')
       if [ -z "$CHECK" ] && [ "${PART_MOUNT[$i]}" != "lvm" ]; then
         export TAR="tar"
         echo "setting TAR to GNUtar" | debugoutput
@@ -1152,7 +1149,7 @@ validate_vars() {
     names=
 
     for i in $(seq 1 "$LVM_VG_COUNT"); do
-      names="$names\n${LVM_VG_NAME[$i]}"
+      names="${names}\\n${LVM_VG_NAME[$i]}"
     done
 
     if [ "$(echo "$names" | grep -v -e "^$" | sort | uniq -d | wc -l)" -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
@@ -1162,7 +1159,7 @@ validate_vars() {
 
   fi
 
-  CHECK="$(echo "$BOOTLOADER" |grep -i -e "^grub$\|^lilo$")"
+  CHECK="$(echo "$BOOTLOADER" |grep -i -e '^grub$\|^lilo$')"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid BOOTLOADER"
    return 1
@@ -1180,7 +1177,7 @@ validate_vars() {
     fi
   fi
 
-  CHECK=$(echo "$GOVERNOR" |grep -i -e "^powersave$\|^performance$\|^ondemand$")
+  CHECK=$(echo "$GOVERNOR" |grep -i -e '^powersave$\|^performance$\|^ondemand$')
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid GOVERNOR"
    return 1
@@ -1205,21 +1202,21 @@ validate_vars() {
 
 
     # test if the mountpoint is valid (start with / or swap)
-    CHECK="$(echo "$lv_mountp" | grep -e "^/\|^swap$")"
+    CHECK="$(echo "$lv_mountp" | grep -e '^/\|^swap$')"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Mountpoint for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
     fi
 
     # test if the filesystem is one of our supportet types (ext2/ext3/reiserfs/xfs/swap)
-    CHECK="$(echo "$lv_fs" |grep -e "^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$")"
+    CHECK="$(echo "$lv_fs" |grep -e '^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$')"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Filesystem for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
     fi
 
     # test if one of the filesystem is not using ext
-    CHECK=$(echo "$lv_fs" |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
+    CHECK=$(echo "$lv_fs" |grep -e '^ext2$\|^ext3$\|^ext4$\|^swap$')
     if [ -z "$CHECK" ]; then
       export TAR="tar"
       echo "setting TAR to GNUtar" | debugoutput
@@ -1314,12 +1311,12 @@ validate_vars() {
   # list all mountpoints without the 'lvm' and 'swap' keyword
   for i in $(seq 1 "$PART_COUNT"); do
       if [ "${PART_MOUNT[$i]}" != "lvm" ] && [ "${PART_MOUNT[$i]}" != "swap" ]; then
-          mounts_as_string="$mounts_as_string${PART_MOUNT[$i]}\n"
+          mounts_as_string="${mounts_as_string}${PART_MOUNT[$i]}\\n"
       fi
   done
   # append all logical volume mountpoints to "$mounts_as_string"
   for i in $(seq 1 "$LVM_LV_COUNT"); do
-      mounts_as_string="$mounts_as_string${LVM_LV_MOUNT[$i]}\n"
+      mounts_as_string="${mounts_as_string}${LVM_LV_MOUNT[$i]}\\n"
   done
 
   # check if there are identical mountpoints
@@ -1331,15 +1328,15 @@ validate_vars() {
 
   # check size of partitions
   if [ -n "$(getUSBFlashDrives)" ]; then
-    graph_notice "\nYou are going to install on an USB flash drive ($(getUSBFlashDrives)). Do you really want this?"
+    graph_notice "\\nYou are going to install on an USB flash drive ($(getUSBFlashDrives)). Do you really want this?"
   fi
 
   if [ "$SWRAID" -eq 1 ]; then
     if [ "$(getHDDsNotInToleranceRange)" ]; then
       graph_notice "
-             \nNOTICE: You are going to use hard disks with different disk space.
-             \nWe set the maximum of your allocable disc space based on the smallest hard disk at $SMALLEST_HDD_SIZE MB
-             \nYou can change this by customizing the drive settings.
+             \\nNOTICE: You are going to use hard disks with different disk space.
+             \\nWe set the maximum of your allocable disc space based on the smallest hard disk at $SMALLEST_HDD_SIZE MB
+             \\nYou can change this by customizing the drive settings.
              "
     fi
   fi
@@ -1347,8 +1344,8 @@ validate_vars() {
   if [ "$DRIVE_SUM_SIZE" -lt "$PARTS_SUM_SIZE" ]; then
     local diff=$((DRIVE_SUM_SIZE - PARTS_SUM_SIZE))
     graph_error "ERROR: You are going to use more space than your drives have available.
-                 \nUsage: $PARTS_SUM_SIZE MiB of $DRIVE_SUM_SIZE MiB
-                 \nDiff: $diff MiB"
+                 \\nUsage: $PARTS_SUM_SIZE MiB of $DRIVE_SUM_SIZE MiB
+                 \\nDiff: $diff MiB"
     return 1
   fi
 
@@ -1445,7 +1442,7 @@ graph_error() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
         --no-label "Cancel" --yesno \
-        "$*\n\nYou will be dropped back to the editor to fix the problem." 0 0
+        "${*}\\n\\nYou will be dropped back to the editor to fix the problem." 0 0
     EXITCODE=$?
   else
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
@@ -1467,7 +1464,7 @@ graph_error() {
 graph_notice() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "NOTICE" --msgbox \
-        "$*\n\n" 0 0
+        "${*}\\n\\n" 0 0
   fi
 }
 
@@ -1484,7 +1481,7 @@ whoami() {
     CoreOS*|coreos*)
       IAM="coreos"
       CLOUDINIT="$FOLD/cloud-config"
-      echo -e "#cloud-config\n" > "$CLOUDINIT"
+      echo -e '#cloud-config\n' > "$CLOUDINIT"
     ;;
   esac
  fi
@@ -1518,7 +1515,7 @@ unmount_all() {
   while read -r line ; do
     device="$(echo "$line" | grep -v "^/dev/loop" | grep -v "^/dev/root" | grep "^/" | awk '{ print $1 }')"
     if [ "$device" ] ; then
-      unmount_output="$unmount_output\n$(umount "$device" 2>&1)"; EXITCODE=$?
+      unmount_output="${unmount_output}\\n$(umount "$device" 2>&1)"; EXITCODE=$?
       unmount_errors=$((unmount_errors + EXITCODE))
     fi
   done < /proc/mounts
@@ -1538,7 +1535,7 @@ stop_lvm_raid() {
 
   dmsetup remove_all > /dev/null 2>&1
 
-  if [ -x "$(which mdadm)" ] && [ -f /proc/mdstat ]; then
+  if [ -x "$(command -v mdadm)" ] && [ -f /proc/mdstat ]; then
     grep md /proc/mdstat | cut -d ' ' -f1 | while read -r i; do
       [ -e "/dev/$i" ] && mdadm -S "/dev/$i" >> /dev/null 2>&1
     done
@@ -1954,10 +1951,10 @@ make_swraid() {
       # shellcheck disable=SC2015
       if echo "$line" | grep -q "/boot" && [ "$metadata_boot" == "--metadata=0.90" ] || [ "$metadata" == "--metadata=0.90" ]; then
         # update fstab - replace /dev/sdaX with /dev/mdY
-        echo "$line" | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md$count/g" >> "$fstab"
+        echo "$line" | sed "s/$SEDHDD\\(p\\)\\?[0-9]\\+/\\/dev\\/md$count/g" >> "$fstab"
       else
         # update fstab - replace /dev/sdaX with /dev/md/Y
-        echo "$line" | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md\/$count/g" >> "$fstab"
+        echo "$line" | sed "s/$SEDHDD\\(p\\)\\?[0-9]\\+/\\/dev\\/md\\/$count/g" >> "$fstab"
       fi
 
       # create raid array
@@ -2018,7 +2015,7 @@ make_lvm() {
     if [ $SWRAID -eq 1 ]; then
       for md in /dev/md/[0-9]*; do
         dev[$inc_dev]="$md"
-        let inc_dev=inc_dev+1
+        (( inc_dev = inc_dev + 1 ))
       done
     else
       # shellcheck disable=SC2012
@@ -2059,7 +2056,7 @@ make_lvm() {
         vgextend "$vg" "$pv" 2>&1 | debugoutput
       else
         debug "# Creating VG $vg with PV $pv"
-        [ "$vg" ] && rm -rf "/dev/$vg" 2>&1 | debugoutput
+        [ "$vg" ] && rm -rf "/dev/${vg:?}" 2>&1 | debugoutput
         vgcreate "$vg" "$pv" 2>&1 | debugoutput
       fi
     done
@@ -2202,7 +2199,7 @@ mount_partitions() {
     mount -o bind /sys "$basedir"/sys 2>&1 | debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    grep -v " / \|swap" "$fstab" | grep "^/dev/" > "$fstab".tmp
+    grep -v ' / \|swap' "$fstab" | grep "^/dev/" > "$fstab".tmp
 
     while read -r line ; do
       DEVICE="$(echo "$line" | cut -d " " -f 1)"
@@ -2220,10 +2217,7 @@ mount_partitions() {
       fi
 
       # mount it
-      mount "$DEVICE" "$basedir$MOUNTPOINT" 2>&1 | debugoutput
-      if [ $? -ne 0 ]; then
-        return 1
-      fi
+      mount "$DEVICE" "$basedir$MOUNTPOINT" 2>&1 | debugoutput || return 1
       if [ "$MOUNTPOINT" = "/boot" ]; then
         SYSTEMBOOTDEVICE="$DEVICE"
       fi
@@ -2260,7 +2254,7 @@ get_image_info() {
         mkdir "$FOLD"/keys/ 2>&1
         cd "$FOLD"/keys/ || exit
         # no exitcode, because if not found hetzner-pubkey will be used
-        wget -q --no-check-certificate "${1}public-key.asc" 2>&1 | debugoutput ; >/dev/null
+        wget -q --no-check-certificate "${1}public-key.asc" 2>&1 | debugoutput || true
         if [ "$EXITCODE" -eq "0" ]; then
           IMAGE_PUBKEY="$FOLD/keys/public-key.asc"
         fi
@@ -2557,7 +2551,7 @@ function template_replace() {
     local file="$2"
     if echo "$search" | grep -q -e "GROUP|FILE"; then
       # if search contains GROUP or FILE, remove both group lines
-      search="${search}_\(START\|\END\)"
+      search="${search}_\\(START\\|\\END\\)"
     fi
     sed -i "/%%% $search %%%/d" "$file"
   elif [ $# -eq 3 ] ; then
@@ -2886,10 +2880,9 @@ set_ntp_time() {
 
   # wait 15 seconds and check if ntp still running
   while [ $count -lt 15 ] ; do
-    kill -0 "$ntp_pid" 2>/dev/null
     # if not running - stop waiting
-    [ $? -ne 0 ] && break
-    let count=count+1
+    kill -0 "$ntp_pid" 2>/dev/null || break
+    (( count = count + 1 ))
     sleep 1
   done
 
@@ -3029,7 +3022,7 @@ clear_logs() {
   if [ "$1" ]; then
     find "$FOLD/hdd/var/log" -type f > /tmp/filelist.tmp
     while read -r a; do
-      if echo "$a" | grep -q ".gz$\|.[[:digit:]]\{1,3\}$"; then
+      if echo "$a" | grep -q '.gz$\|.[[:digit:]]\{1,3\}$'; then
         rm -rf "$a" >> /dev/null 2>&1
       else
         echo -n > "$a"
@@ -3151,7 +3144,7 @@ set_ssh_rootlogin() {
      local permit="$1"
      case "$permit" in
        yes|no|without-password|forced-commands-only)
-         sed -i "$FOLD/hdd/etc/ssh/sshd_config" -e "s/^\(#\)\?PermitRootLogin.*/PermitRootLogin $1/"
+         sed -i "$FOLD/hdd/etc/ssh/sshd_config" -e "s/^\\(#\\)\\?PermitRootLogin.*/PermitRootLogin $1/"
        ;;
        *)
          debug "invalid option for PermitRootLogin"
@@ -3280,7 +3273,7 @@ generate_ntp_config() {
     else
       CFG="$FOLD/hdd/$cfgntp"
       debug "# using NTP"
-      sed -e "s/^server \(.*\)$/## server \1   ## see end of file/" -i "$cfg"
+      sed -e 's/^server \(.*\)$/## server \1   ## see end of file/' -i "$cfg"
       {
         echo ""
         echo "# $C_SHORT ntp servers"
@@ -3306,7 +3299,7 @@ generate_ntp_config() {
 check_fqdn() {
 
   CHECKFQDN=""
-  CHECKFQDN="$(echo "$1" | grep -e "^\([[:alnum:]][[:alnum:]-]*[[:alnum:]]\.\)\{2,\}")"
+  CHECKFQDN="$(echo "$1" | grep -e '^\([[:alnum:]][[:alnum:]-]*[[:alnum:]]\.\)\{2,\}')"
 
   if [ -z "$CHECKFQDN" ]; then
     return 1
@@ -3539,8 +3532,8 @@ install_omsa() {
     if [ "$IAM" = "debian" ] && [ $IMG_VERSION -ge 70 ]; then
       codename="wheezy"
     fi
-    echo -e "\n# Community OMSA packages provided by linux.dell.com" > "$REPOFILE"
-    echo -e "deb http://linux.dell.com/repo/community/$IAM $codename openmanage\n" >> "$REPOFILE"
+    echo -e '\n# Community OMSA packages provided by linux.dell.com' > "$REPOFILE"
+    printf 'deb http://linux.dell.com/repo/community/%s %s openmanage\n' "${IAM}" "${codename}" >> "$REPOFILE"
     execute_chroot_command "gpg --keyserver pool.sks-keyservers.net --recv-key 1285491434D8786F"
     execute_chroot_command "gpg -a --export 1285491434D8786F | apt-key add -"
     execute_chroot_command "mkdir -p /run/lock"
@@ -3606,7 +3599,7 @@ install_robot_script() {
     case "$IAM" in
       debian|ubuntu)
         sed -e 's/^exit 0$//' -i "$FOLD/hdd/etc/rc.local"
-        echo -e "[ -x /robot.sh ] && /robot.sh\nexit 0" >> "$FOLD/hdd/etc/rc.local"
+        echo -e '[ -x /robot.sh ] && /robot.sh\nexit 0' >> "$FOLD/hdd/etc/rc.local"
         ;;
       centos)
         echo "[ -x /robot.sh ] && /robot.sh" >> "$FOLD/hdd/etc/rc.local"
@@ -3816,7 +3809,7 @@ uuid_bugfix() {
       UUID="$(blkid -o value -s UUID "/dev/$LINE")"
       # not quite perfect. We need to match /dev/sda1 but not /dev/sda10.
       # device name may not always be followed by whitespace
-      [ -e "$FOLD/hdd/etc/fstab" ] && sed -i "s|^/dev/${LINE} |# /dev/${LINE} during Installation (RescueSystem)\nUUID=${UUID} |" "$FOLD/hdd/etc/fstab"
+      [ -e "$FOLD/hdd/etc/fstab" ] && sed -i "s|^/dev/${LINE} |# /dev/${LINE} during Installation (RescueSystem)\\nUUID=${UUID} |" "$FOLD/hdd/etc/fstab"
       [ -e "$FOLD/hdd/boot/grub/grub.cfg" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/grub.cfg"
       [ -e "$FOLD/hdd/boot/grub/grub.conf" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/grub.conf"
       [ -e "$FOLD/hdd/boot/grub/menu.lst" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/menu.lst"
