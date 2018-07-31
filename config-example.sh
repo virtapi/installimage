@@ -45,9 +45,9 @@ export AUTH_DNS1="ns1.first-ns.de"
 export AUTH_DNS2="robotns2.second-ns.de"
 export AUTH_DNS3="robotns3.second-ns.com"
 
-export DEFAULTPARTS="PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 all"
-export DEFAULTPARTS_BIG="PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 1024G\nPART /home ext4 all"
-export DEFAULTPARTS_LARGE="PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 2014G\nPART /home ext4 all"
+export DEFAULTPARTS='PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 all'
+export DEFAULTPARTS_BIG='PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 1024G\nPART /home ext4 all'
+export DEFAULTPARTS_LARGE='PART swap swap SWAPSIZE##G\nPART /boot ext3 512M\nPART / ext4 2014G\nPART /home ext4 all'
 export DEFAULTPARTS_VSERVER="PART / ext3 all"
 export DEFAULTPARTS_CLOUDSERVER="PART / ext4 all"
 export DEFAULTSWRAID="1"
@@ -77,15 +77,15 @@ export PROXMOX3_BASE_IMAGE="Debian-79-wheezy-64-minimal"
 export PROXMOX4_BASE_IMAGE="Debian-83-jessie-64-minimal"
 export PROXMOX5_BASE_IMAGE="Debian-92-stretch-64-minimal"
 
-export RED="\033[1;31m"
-export GREEN="\033[1;32m"
-export YELLOW="\033[1;33m"
-export BLUE="\033[0;34m"
-export MANGENTA="\033[0;35m"
-export CYAN="\033[1;36m"
-export GREY="\033[0;37m"
-export WHITE="\033[1;39m"
-export NOCOL="\033[00m"
+export RED='\033[1;31m'
+export GREEN='\033[1;32m'
+export YELLOW='\033[1;33m'
+export BLUE='\033[0;34m'
+export MANGENTA='\033[0;35m'
+export CYAN='\033[1;36m'
+export GREY='\033[0;37m'
+export WHITE='\033[1;39m'
+export NOCOL='\033[00m'
 
 # write log entries in debugfile - single line as second argument
 debug() {

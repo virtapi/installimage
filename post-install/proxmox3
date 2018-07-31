@@ -14,9 +14,9 @@ echo "----- Add Proxmox Repo to APT sources -----"
 echo ""
 
 {
-  echo -e "\n\n# PVE packages provided by proxmox.com"
+  echo -e '\n\n# PVE packages provided by proxmox.com'
 #  echo -e deb http://mirror.hetzner.de/debian/pve wheezy pve-no-subscription\n
-  echo -e "deb http://download.proxmox.com/debian wheezy pve-no-subscription\n"
+  echo -e 'deb http://download.proxmox.com/debian wheezy pve-no-subscription\n'
 } >> /etc/apt/sources.list.d/proxmox.list
 wget -q -O- "http://download.proxmox.com/debian/key.asc" | apt-key add -
 
