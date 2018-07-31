@@ -2137,7 +2137,7 @@ format_partitions() {
         mkswap "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
       elif [ "$FS" = "ext2" ] || [ "$FS" = "ext3" ] || [ "$FS" = "ext4" ]; then
         if [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -lt 70 ]; then
-          mkfs -t "$FS" -O ^64bit -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
+          mkfs -t "$FS" -O '^64bit' -O '^metadata_csum' -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
         else
           mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
         fi
