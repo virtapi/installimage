@@ -2,23 +2,8 @@
 
 #
 # Proxmox Virtualization Environment installer script
-#   based on Debian Wheezy
+#   based on Debian Jessie
 #
-
-
-PROXMOX_KERNEL_VERSION="2.6.32"
-
-
-echo -e "\n----- Add Proxmox Repo to APT sources -----\n"
-
-echo -e "\n\n# PVE packages provided by proxmox.com" >>/etc/apt/sources.list.d/proxmox.list
-echo -e "deb http://mirror.hetzner.de/debian/pve wheezy pve-no-subscription\n" >>/etc/apt/sources.list.d/proxmox.list
-echo -e "deb http://download.proxmox.com/debian wheezy pve-no-subscription\n" >>/etc/apt/sources.list.d/proxmox.list
-wget -q -O- "http://download.proxmox.com/debian/key.asc" | apt-key add -
-   
-
-#echo -e "\n----- Remove default kernel -----\n"
-#aptitude -y remove $(dpkg -l | grep "^ii  linux-image" | tr -s " " | cut -d " " -f2)
 
 
 echo -e "\n----- Update and upgrade system, please wait ... -----\n"
@@ -44,8 +29,16 @@ else
 fi
 
 echo -e "\n----------------- Deinstallieren des Standard-Linux-Kernel-Paketes ------------------\n"
-aptitude -q -y purge linux-image-amd64 linux-image-3.2.0-4-amd64
+aptitude -q -y purge linux-image-amd64 linux-image-3.16.0-4-amd64 
 
+echo -e "\n----- Add Proxmox Repo to APT sources -----\n"
+
+echo -e "\n\n# PVE packages provided by proxmox.com" >>/etc/apt/sources.list.d/proxmox.list
+echo -e "deb http://mirror.hetzner.de/debian/pve jessie pve-no-subscription\n" >>/etc/apt/sources.list.d/proxmox.list
+echo -e "deb http://download.proxmox.com/debian jessie pve-no-subscription\n" >>/etc/apt/sources.list.d/proxmox.list
+wget -q -O- "http://download.proxmox.com/debian/key.asc" | apt-key add -
+
+aptitude update >/dev/null
 
 echo -e "\n----- Install Proxmox packages -----\n"
 
@@ -63,19 +56,22 @@ EOF
 
 
 #/usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' install proxmox-ve-$PROXMOX_KERNEL_VERSION
-aptitude --without-recommends -y install postfix proxmox-ve-$PROXMOX_KERNEL_VERSION
+aptitude --without-recommends -y install postfix proxmox-ve
 if [ -f /etc/apt/sources.list.d/pve-enterprise.list ]; then
 	echo -e "\n----- Removing Proxmox Enterprise Repo -----\n"
 	rm /etc/apt/sources.list.d/pve-enterprise.list
 fi
+/usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::='--force-confdef' upgrade
 update-grub
+umount /sys/fs/fuse/connections
 service postfix stop
 service nfs-common stop
 service rpcbind stop
 service pvedaemon stop
-service pve-cluster stop
 service pvestatd stop
 service pveproxy stop
+service pvefw-logger stop
+service pve-cluster stop
 service rrdcached stop
 service spiceproxy stop
 

@@ -3,14 +3,13 @@
 # read config
 #. /tmp/install.vars
 #
-# originally written by David Mayr
-# (c) 2009-2015, Hetzner Online GmbH
+# (c) 2009-2018, Hetzner Online GmbH
 #
 
 
 
 # check command line params / options
-while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
+while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:t:" OPTION ; do
   case $OPTION in
 
     # help
@@ -61,25 +60,26 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       echo "  -s <de|en>            Language to use for different things (e.g.PLESK)"
       echo "  -z PLESK_<Version>    Install optional software like PLESK with version <Version>"
       echo "  -K <path/url>         Install SSH-Keys from file/URL"
+      echo '  -t <yes|no>           Take over rescue system SSH public keys'
       echo
       exit 0
     ;;
 
     # config file  (file.name)
     c)
-      if [ -e $CONFIGSPATH/$OPTARG ] ; then
+      if [ -e "$CONFIGSPATH/$OPTARG" ] ; then
         OPT_CONFIGFILE=$CONFIGSPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
+      elif [ -e "$OPTARG" ] ; then
         OPT_CONFIGFILE=$OPTARG
       else
         msg="=> FAILED: config file $OPT_CONFIGFILE for autosetup not found"
-        debug $msg
+        debug "$msg"
         echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use config file $OPT_CONFIGFILE for autosetup"
-      echo $OPT_CONFIGFILE | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
-      cp $OPT_CONFIGFILE /autosetup
+      echo "$OPT_CONFIGFILE" | grep "^/" >/dev/null || OPT_CONFIGFILE="$(pwd)/$OPT_CONFIGFILE"
+      cp "$OPT_CONFIGFILE" /autosetup
       if grep -q PASSWD /autosetup ; then
         echo -e "\n\n${RED}Please enter the PASSWORD for $OPT_CONFIGFILE:${NOCOL}"
         echo -e "${YELLOW}(or edit /autosetup manually and run installimage without params)${NOCOL}\n"
@@ -91,26 +91,26 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
 
     # post-install file  (file.name)
     x)
-      if [ -e $POSTINSTALLPATH/$OPTARG ] ; then
+      if [ -e "$POSTINSTALLPATH/$OPTARG" ] ; then
         OPT_POSTINSTALLFILE=$POSTINSTALLPATH/$OPTARG
-      elif [ -e $OPTARG ] ; then
+      elif [ -e "$OPTARG" ] ; then
         OPT_POSTINSTALLFILE=$OPTARG
       else
         msg="=> FAILED: post-install file $OPT_POSTINSTALLFILE not found or not executable"
-        debug $msg
+        debug "$msg"
         echo -e "${RED}$msg${NOCOL}"
         exit 1
       fi
       debug "# use post-install file $OPT_POSTINSTALLFILE"
-      echo $OPT_POSTINSTALLFILE | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
-      ln -fs $OPT_POSTINSTALLFILE /post-install
+      echo "$OPT_POSTINSTALLFILE" | grep "^/" >/dev/null || OPT_POSTINSTALLFILE="$(pwd)/$OPT_POSTINSTALLFILE"
+      ln -sf "$OPT_POSTINSTALLFILE" /post-install
     ;;
 
     # automatic mode
     a) OPT_AUTOMODE=1 ;;
 
     # hostname  (host.domain.tld)
-    n) 
+    n)
       OPT_HOSTNAME=$OPTARG
       if [ -e /autosetup ]; then
 	sed -i /autosetup -e "s/HOSTNAME.*/HOSTNAME $OPT_HOSTNAME/"
@@ -135,7 +135,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: file.tar.gz | http://domain.tld/file.tar.gz
     i)
       [ -f "$IMAGESPATH/$OPTARG" ] && OPT_IMAGE="$IMAGESPATH/$OPTARG" || OPT_IMAGE="$OPTARG"
-      IMAGENAME=$(basename $OPT_IMAGE)
+      IMAGENAME=$(basename "$OPT_IMAGE")
       IMAGENAME=${IMAGENAME/.tar.gz/}
       IMAGENAME=${IMAGENAME/.tar.bz/}
       IMAGENAME=${IMAGENAME/.tar.bz2/}
@@ -146,6 +146,14 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
       IMAGENAME=${IMAGENAME/.txz/}
       IMAGENAME=${IMAGENAME/.bin.bz2/}
       IMAGENAME=${IMAGENAME/.bin/}
+      if [[ "$IMAGENAME" == 'Archlinux-2017-64-minimal' ]] && ! [[ -s "$OPT_IMAGE" ]]; then
+        IMAGENAME='archlinux-latest-64-minimal'
+        OPT_IMAGE="$IMAGESPATH$IMAGENAME.tar.gz"
+      fi
+      if [[ "$IMAGENAME" == 'Archlinux-latest-64-minimal' ]] && ! [[ -s "$OPT_IMAGE" ]]; then
+        IMAGENAME='archlinux-latest-64-minimal'
+        OPT_IMAGE="$IMAGESPATH$IMAGENAME.tar.gz"
+      fi
     ;;
 
     # partitions
@@ -186,7 +194,7 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
     # e.g.: sda,sdb | sda
     d)
       OPT_DRIVES=$OPTARG
-      sel_drives="$(echo $OPT_DRIVES | sed s/,/\\n/g)"
+      sel_drives="${OPT_DRIVES//,/ }"
       i=1
       for optdrive in $sel_drives ; do
         eval OPT_DRIVE$i="$optdrive"
@@ -201,19 +209,16 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
         on|true|yes|1)  export OPT_FORMATDRIVE2=1 ;;
       esac
     ;;
-    
 	s)
 	  export OPT_LANGUAGE="$OPTARG"
 	  ;;
-	  
 	z)
 	  export OPT_INSTALL="$OPTARG"
 	  ;;
-	
     # URL to open after first boot of the new system. Used by the
     # Robot for automatic installations.
     R)
-      ROBOTURL=$OPTARG
+      export ROBOTURL="$OPTARG"
       ;;
 
     # force signature validating of the image file
@@ -225,12 +230,19 @@ while getopts "han:b:r:l:i:p:v:d:f:c:R:s:z:x:gkK:" OPTION ; do
        export OPT_SSHKEYS_URL="$OPTARG"
        export OPT_USE_SSHKEYS="1"
      else
-        msg="=> FAILED: cannot install ssh-keys without a source"
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
-        exit 1
+       msg="=> FAILED: cannot install ssh-keys without a source"
+       debug "$msg"
+       echo -e "${RED}$msg${NOCOL}"
+       exit 1
      fi
      ;;
+    t)
+      if [[ -z "$OPTARG" ]] || [[ "${OPTARG,,}" == 'yes' ]]; then
+        export OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS='yes'
+      else
+        export OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS='no'
+      fi
+    ;;
   esac
 done
 
@@ -243,10 +255,10 @@ if [ "$OPT_AUTOMODE" -a -z "$OPT_IMAGE" -a -z "$OPT_CONFIGFILE" ] ; then
 fi
 
 if [ "$OPT_USE_SSHKEYS" -a -z "$OPT_SSHKEYS_URL" ]; then
-        msg="=> FAILED: Should install SSH keys, but key URL not set."
-        debug $msg
-        echo -e "${RED}$msg${NOCOL}"
-        exit 1
+  msg="=> FAILED: Should install SSH keys, but key URL not set."
+  debug "$msg"
+  echo -e "${RED}$msg${NOCOL}"
+  exit 1
 fi
 
 # DEBUG:
@@ -264,5 +276,6 @@ fi
 [ "$OPT_FORCE_SIGN" ]   && debug "# OPT_FORCE_SIGN:   $OPT_FORCE_SIGN"
 [ "$OPT_USE_SSHKEYS" ]  && debug "# OPT_USE_SSHKEYS:  $OPT_USE_SSHKEYS"
 [ "$OPT_SSHKEYS_URL" ]  && debug "# OPT_SSHKEYS_URL:  $OPT_SSHKEYS_URL"
+[ "$OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS" ] && debug "# OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS: $OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS"
 
-
+# vim: ai:ts=2:sw=2:et

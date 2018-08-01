@@ -3,9 +3,9 @@
 #
 # install - installation commands
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2017, Hetzner Online GmbH
 #
+
 
 STATUS_POSITION="\033[60G"
 
@@ -68,7 +68,7 @@ status_donefailed() {
 }
 
 echo
-echo_bold "                Hetzner Online GmbH - installimage\n"
+echo_bold "                $COMPANY - installimage\n"
 echo_bold "  Your server will be installed now, this will take some minutes"
 echo_bold "             You can abort at any time with CTRL+C ...\n"
 
@@ -118,8 +118,29 @@ test "$IMAGE_PATH_TYPE" = "http" && TOTALSTEPS=$(($TOTALSTEPS + 1))
 inc_step
 status_busy "Deleting partitions"
 
-unmount_all
-stop_lvm_raid
+# Unmount all partitions and print an error message if it fails
+output=$(unmount_all) ; EXITCODE=$?
+if [ $EXITCODE -ne 0 ] ; then
+  echo ""
+  echo -e "${RED}ERROR unmounting device(s):$NOCOL"
+  echo "$output"
+  echo ""
+  echo -e "${RED}Cannot continue, device(s) seem to be in use.$NOCOL"
+  echo "Please unmount used devices manually or reboot the rescuesystem and retry."
+  echo ""
+  exit 1
+fi
+
+stop_lvm_raid ; EXITCODE=$?
+if [ $EXITCODE -ne 0 ] ; then
+  echo ""
+  echo -e "${RED}ERROR stopping LVM and/or RAID device(s):$NOCOL"
+  echo ""
+  echo -e "${RED}Cannot continue, device(s) seem to be in use.$NOCOL"
+  echo "Please stop used lvm/raid manually or reboot the rescuesystem and retry."
+  echo ""
+  exit 1
+fi
 
 for part_inc in $(seq 1 $COUNT_DRIVES) ; do
   if [ "$(eval echo \$FORMAT_DRIVE${part_inc})" = "1" -o "$SWRAID" = "1" -o $part_inc -eq 1 ] ; then
@@ -131,7 +152,9 @@ done
 
 status_done
 
-# 
+wait_for_udev
+
+#
 # Test partition size
 #
 inc_step
@@ -157,6 +180,7 @@ done
 
 status_done
 
+wait_for_udev
 
 #
 # Software RAID
@@ -165,9 +189,11 @@ if [ "$SWRAID" = "1" ]; then
   inc_step
   status_busy "Creating software RAID level $SWRAIDLEVEL"
   make_swraid "$FOLD/fstab"
+  suspend_swraid_resync
   status_donefailed $?
 fi
 
+wait_for_udev
 
 #
 # LVM
@@ -175,7 +201,7 @@ fi
 if [ "$LVM" = "1" ]; then
   inc_step
   status_busy "Creating LVM volumes"
-  make_lvm "$FOLD/fstab" "$DRIVE1" "$DRIVE2"
+  make_lvm "$FOLD/fstab" 
   LVM_EXIT=$?
   if [ $LVM_EXIT -eq 2 ] ; then
     status_failed "LVM thin-pool detected! Can't remove automatically!"
@@ -184,6 +210,7 @@ if [ "$LVM" = "1" ]; then
   fi
 fi
 
+wait_for_udev
 
 #
 # Format partitions
@@ -236,7 +263,7 @@ if [ "$IMAGE_PATH_TYPE" = "http" ] ; then
   status_busy "Downloading image ($IMAGE_PATH_TYPE)"
   get_image_url "$IMAGE_PATH" "$IMAGE_FILE"
   status_donefailed $?
-fi 
+fi
 
 #
 # Import public key for image validation
@@ -281,14 +308,42 @@ status_donefailed $?
 # Setup network
 #
 inc_step
-status_busy "Setting up network for $ETHDEV"
-setup_network_config "$ETHDEV" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
-status_donefailed $?
+if [[ "$IAM" == 'centos' ]] || [[ "$IAM" == 'debian' ]] || [[ "$IAM" == 'archlinux' ]]; then
+  status_busy "Setting up network config"
+  setup_network_config_new
+  status_donefailed $?
+elif [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION == 1404)); then
+  status_busy "Setting up network config"
+  setup_network_config_new
+  status_donefailed $?
+elif [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION >= 1604)); then
+  status_busy "Setting up network config"
+  setup_network_config_new
+  status_donefailed $?
+elif [[ "$IAM" == 'suse' ]] && ((IMG_VERSION >= 422)); then
+  status_busy "Setting up network config"
+  setup_network_config_new
+  status_donefailed $?
+else
+  status_busy "Setting up network for $ETHDEV"
+  setup_network_config "$ETHDEV" "$HWADDR" "$IPADDR" "$BROADCAST" "$SUBNETMASK" "$GATEWAY" "$NETWORK" "$IP6ADDR" "$IP6PREFLEN" "$IP6GATEWAY"
+  status_donefailed $?
+fi
 
-#
-# Set udev rules
-#
-set_udev_rules
+if [[ "$IAM" == 'centos' ]] && ((IMG_VERSION >= 70)); then
+  :
+elif [[ "$IAM" == 'debian' ]] && ((IMG_VERSION >= 80)) && ((IMG_VERSION != 710)) && ((IMG_VERSION != 711)); then
+  :
+elif [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION >= 1604)); then
+  :
+elif [[ "$IAM" == 'suse' ]] && ((IMG_VERSION >= 422)); then
+  :
+else
+  #
+  # Set udev rules
+  #
+  set_udev_rules
+fi
 
 #
 # chroot commands
@@ -368,10 +423,10 @@ fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" -a -z "$FORCE_PASSWORD" ]; then
   status_busy_nostep "  Disabling root password"
-  set_rootpassword "$FOLD/hdd/etc/shadow" "*" 
+  set_rootpassword "$FOLD/hdd/etc/shadow" "*"
   status_donefailed $?
   status_busy_nostep "  Disabling SSH root login without password"
-  set_ssh_rootlogin "without-password" 
+  set_ssh_rootlogin "without-password"
   status_donefailed $?
 else
   status_busy_nostep "  Setting root password"
@@ -379,14 +434,14 @@ else
   set_rootpassword "$FOLD/hdd/etc/shadow" "$ROOTHASH"
   status_donefailed $?
   status_busy_nostep "  Enabling SSH root login with password"
-  set_ssh_rootlogin "yes" 
+  set_ssh_rootlogin "yes"
   status_donefailed $?
 fi
 
 if [ "$OPT_USE_SSHKEYS" = "1" ] ; then
     status_busy_nostep "  Copying SSH keys"
     debug "# Adding public SSH keys"
-    copy_ssh_keys 
+    copy_ssh_keys
     status_donefailed $?
 fi
 
@@ -423,16 +478,22 @@ if [ "$OPT_INSTALL" ]; then
   for opt_item in $opt_install_items; do
     opt_item=$(echo $opt_item | tr [:upper:] [:lower:])
     case "$opt_item" in
+      cpanel)
+        status_busy_nostep "  Installing cPanel Control Panel"
+        debug "# installing cpanel"
+        install_cpanel
+        status_donefailed $?
+        ;;
       plesk*)
         status_busy_nostep "  Installing PLESK Control Panel"
         debug "# installing PLESK"
-        install_plesk "$opt_item" 
+        install_plesk "$opt_item"
 	status_donefailed $?
         ;;
       omsa)
         status_busy_nostep "  Installing Open Manage"
         debug "# installing OMSA"
-        install_omsa 
+        install_omsa
 	status_donefailed $?
         ;;
     esac
@@ -447,6 +508,11 @@ fi
 inc_step
 status_busy "Running some $IAM specific functions"
 run_os_specific_functions || status_failed
+if [[ -e "$FOLD/hdd/password.txt" ]]; then
+  chmod 600 "$FOLD/hdd/password.txt"
+  install_password_txt_hint || status_failed
+  install_remove_password_txt_hint
+fi
 status_done
 
 #
@@ -469,8 +535,7 @@ fi
 # Install robot script for automatic installations
 #
 if [ "$ROBOTURL" ]; then
-  debug "# Installing Robot script..."
-  install_robot_script 2>&1 | debugoutput
+  install_robot_report_script || status_failed
 fi
 
 #
@@ -487,14 +552,8 @@ if [ -n "$OPT_SSHKEYS_URL" ] ; then
 fi
 
 #
-#
-# Report statistic
-#
-report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
-
-#
-# Report install.conf to rz_admin
-# Report debug.txt to rz_admin
+# Report install.conf to rz-admin
+# Report debug.txt to rz-admin
 #
 report_id="$(report_config)"
 report_debuglog $report_id
@@ -504,7 +563,7 @@ report_debuglog $report_id
 #
 (
   echo "#"
-  echo "# Hetzner Online GmbH - installimage"
+  echo "# $COMPANY - installimage"
   echo "#"
   echo "# This file contains the configuration used to install this"
   echo "# system via installimage script. Comments have been removed."
@@ -512,7 +571,7 @@ report_debuglog $report_id
   echo "# More information about the installimage script and"
   echo "# automatic installations can be found in our wiki:"
   echo "#"
-  echo "# http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
+  echo "# http://wiki.hetzner.de/index.php/Installimage"
   echo "#"
   echo
   cat $FOLD/install.conf | grep -v "^#" | grep -v "^$"
@@ -525,3 +584,5 @@ echo
 echo_bold "                  INSTALLATION COMPLETE"
 echo_bold "   You can now reboot and log in to your new system with"
 echo_bold "  the same password as you logged in to the rescue system.\n"
+
+# vim: ai:ts=2:sw=2:et

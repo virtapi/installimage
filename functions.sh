@@ -3,8 +3,7 @@
 #
 # functions
 #
-# originally written by Florian Wicke and David Mayr
-# (c) 2007-2015, Hetzner Online GmbH
+# (c) 2007-2018, Hetzner Online GmbH
 #
 
 
@@ -31,27 +30,32 @@ IAM=""
 IMG_VERSION=0
 BOOTLOADER=""
 GOVERNOR=""
-SFDISKPARTS=""
-COUNT_DRIVES="0"
-LAST_PART_START=""
-LAST_PART_END=""
-DISK_SIZE_SECTORS=""
+# this var is probably not used anymore. keep it for safety
+#SFDISKPARTS=""
+COUNT_DRIVES=0
+# this var is probably not used anymore. keep it for safety
+#LAST_PART_START=""
+# this var is probably not used anymore. keep it for safety
+#LAST_PART_END=""
+# this var is probably not used anymore. keep it for safety
+#DISK_SIZE_SECTORS=""
 
 SYSTEMROOTDEVICE=""
 SYSTEMBOOTDEVICE=""
 SYSTEMREALBOOTDEVICE=""
 EXTRACTFROM=""
 
-ETHDEV=""
-HWADDR=""
-IPADDR=""
-BROADCAST=""
-SUBNETMASK=""
-GATEWAY=""
-NETWORK=""
-IP6ADDR=""
-IP6PREFLEN=""
-IP6GATEWAY=""
+export ETHDEV=""
+export HWADDR=""
+export IPADDR=""
+export CIDR=""
+export BROADCAST=""
+export SUBNETMASK=""
+export GATEWAY=""
+export NETWORK=""
+export IP6ADDR=""
+export IP6PREFLEN=""
+export IP6GATEWAY=""
 
 ROOTHASH=""
 LILOEXTRABOOT=""
@@ -59,11 +63,14 @@ LILOEXTRABOOT=""
 ERROREXIT="0"
 FINALIMAGEPATH=""
 
-PLESK_STD_VERSION="PLESK_12_0_18"
+SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | tail -n1)
+SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | tail -n1)
+MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | tail -n1)
+SYSARCH=$(uname -m)
 
-SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
-SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
-MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
+if [ -d "/sys/firmware/efi" ]; then
+  UEFI=1
+fi
 
 # functions
 # show text in a different color
@@ -82,63 +89,69 @@ echo_bold() {
 # generate_menu "SUBMENU"
 generate_menu() {
  # security check - just execute the function WITH parameters
- if [ "$1" ]; then
+ if [ -n "$1" ]; then
   # empty the menu
   MENULIST=""
   PROXMOX=false
   # find image-files and generate raw list
   FINALIMAGEPATH="$IMAGESPATH"
-  if [ "$1" = "openSUSE" ]; then
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse"`
-  elif [ "$1" = "Virtualization" ]; then
+# don't go looking for old_openSUSE or suse images. That was a long time ago
+#  if [ "$1" = "openSUSE" ]; then
+#    RAWLIST=$(ls -1 "$IMAGESPATH" | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse")
+  if [ "$1" = "Other" ]; then
     RAWLIST=""
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^CoreOS"`
-    RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Wheezy"
-  elif [ "$1" = "old_images" ]; then
-    RAWLIST=`ls -1 $OLDIMAGESPATH`
+    RAWLIST=$(find "$IMAGESPATH"/ -maxdepth 1 -type f -name "CoreOS*" -a -not -name "*.sig" -printf '%f\n'|sort)
+    RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Jessie"
+    RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Stretch"
+    RAWLIST="$RAWLIST $(find "$IMAGESPATH/" -maxdepth 1 -type f -iname '*-beta.*' -a -not -name '*.sig' -printf '%f\n' | sort)"
+  elif [ "$1" = "Old images" ]; then
+    # skip CPANEL images and signatures files from list
+    RAWLIST=$(find "$OLDIMAGESPATH"/ -maxdepth 1 -type f -not -name "*.sig" -a -not -name "*cpanel*" -printf '%f\n'|sort)
     FINALIMAGEPATH="$OLDIMAGESPATH"
+  elif [[ "$1" == 'Arch Linux' ]]; then
+    RAWLIST="$IMAGESPATH/archlinux-latest-64-minimal.tar.gz"
   else
-    RAWLIST=`ls -1 $IMAGESPATH | grep -i -e "^$1\|^old_$1"`
+    # skip CPANEL images and signatures files from list
+    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\(old_\)\?$1.*" -a -not -regex '.*\.sig$' -a -not -iname '*-beta.*' -printf '%f\n'|sort)
   fi
-  # Remove CPANEL image and signature files from list
-  RAWLIST="`echo $RAWLIST |tr ' ' '\n' |egrep -i -v "cpanel|.sig$"`"
   # check if 32-bit rescue is activated and disable 64-bit images then
-  ARCH="`uname -m`"
-  if [ "$ARCH" != "x86_64" ]; then
-    RAWLIST="`echo $RAWLIST |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]"`"
+  if [ "$(uname -m)" != "x86_64" ]; then
+    RAWLIST="$(echo "$RAWLIST" |tr ' ' '\n' |grep -v "\-64\-[a-zA-Z]")"
   fi
   # generate formatted list for usage with "dialog"
   for i in $RAWLIST; do
-   TEMPVAR="$i"
-   TEMPVAR=`basename $TEMPVAR .bin`
-   TEMPVAR=`basename $TEMPVAR .bin.bz2`
-   TEMPVAR=`basename $TEMPVAR .txz`
-   TEMPVAR=`basename $TEMPVAR .tar.xz`
-   TEMPVAR=`basename $TEMPVAR .tgz`
-   TEMPVAR=`basename $TEMPVAR .tar.gz`
-   TEMPVAR=`basename $TEMPVAR .tbz`
-   TEMPVAR=`basename $TEMPVAR .tar.bz`
-   TEMPVAR=`basename $TEMPVAR .tar.bz2`
-   TEMPVAR=`basename $TEMPVAR .tar`
-   MENULIST=$MENULIST"$TEMPVAR . "
+    TEMPVAR="$i"
+    TEMPVAR=$(basename "$TEMPVAR" .bin)
+    TEMPVAR=$(basename "$TEMPVAR" .bin.bz2)
+    TEMPVAR=$(basename "$TEMPVAR" .txz)
+    TEMPVAR=$(basename "$TEMPVAR" .tar.xz)
+    TEMPVAR=$(basename "$TEMPVAR" .tgz)
+    TEMPVAR=$(basename "$TEMPVAR" .tar.gz)
+    TEMPVAR=$(basename "$TEMPVAR" .tbz)
+    TEMPVAR=$(basename "$TEMPVAR" .tar.bz)
+    TEMPVAR=$(basename "$TEMPVAR" .tar.bz2)
+    TEMPVAR=$(basename "$TEMPVAR" .tar)
+    MENULIST="$MENULIST$TEMPVAR . "
   done
   # add "back to mainmenu" entry
-  MENULIST=$MENULIST'back . '
- 
+  MENULIST="$MENULIST"'back . '
+
   # show menu and get result
-  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2>$FOLD/submenu.chosen
-  IMAGENAME=`cat $FOLD/submenu.chosen`
+  # shellcheck disable=SC2086
+  dialog --backtitle "$DIATITLE" --title "$1 images" --no-cancel --menu "choose image" 0 0 0 $MENULIST 2> "$FOLD/submenu.chosen"
+  IMAGENAME=$(cat "$FOLD/submenu.chosen")
 
   # create proxmox post-install file if needed
-  case $IMAGENAME in 
+  case $IMAGENAME in
     Proxmox-Virtualization-Environment*)
       case "$IMAGENAME" in
-        Proxmox-Virtualization-Environment-on-Debian-Wheezy) export PROXMOX_VERSION="3" ;;
+        Proxmox-Virtualization-Environment-on-Debian-Jessie) export PROXMOX_VERSION="4" ;;
+        Proxmox-Virtualization-Environment-on-Debian-Stretch) export PROXMOX_VERSION="5" ;;
       esac
-      cp $SCRIPTPATH/post-install/proxmox$PROXMOX_VERSION /post-install
+      cp "$SCRIPTPATH/post-install/proxmox$PROXMOX_VERSION" /post-install
       chmod 0755 /post-install
       PROXMOX=true
-      IMAGENAME=`eval echo \\$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE`
+      IMAGENAME=$(eval echo \$PROXMOX${PROXMOX_VERSION}_BASE_IMAGE)
       DEFAULTPARTS=""
       DEFAULTPARTS="$DEFAULTPARTS\nPART  /boot  ext3  512M"
       DEFAULTPARTS="$DEFAULTPARTS\nPART  lvm    vg0    all\n"
@@ -161,380 +174,425 @@ generate_menu() {
 # create_config "IMAGENAME"
 create_config() {
   if [ "$1" ]; then
-   CNF="$FOLD/install.conf"
-   getdrives; EXITCODE=$?
+    CNF="$FOLD/install.conf"
+    getdrives; EXITCODE=$?
 
-   if [ $COUNT_DRIVES -eq 0 ] ; then
-     graph_notice "There are no drives in your server!\nIf there is a raid controller in your server, please configure it!\n\nThe setup will quit now!"
-     return 1
-   fi
+    if [ $COUNT_DRIVES -eq 0 ] ; then
+      graph_notice "There are no drives in your server!\nIf there is a raid controller in your server, please configure it!\n\nThe setup will quit now!"
+      return 1
+    fi
 
-   echo -e "## ===================================================" > $CNF
-   echo -e "##  Hetzner Online GmbH - installimage - standardconfig " >> $CNF
-   echo -e "## ===================================================" >> $CNF
-   echo -e "" >> $CNF
+    {
+      echo "## ======================================================"
+      echo "##  $COMPANY - installimage - standard config"
+      echo "## ======================================================"
+      echo ""
+    } > "$CNF"
 
-   # first drive
-   echo -e "\n" >> $CNF
-   echo -e "## ====================" >> $CNF
-   echo -e "##  HARD DISK DRIVE(S):" >> $CNF
-   echo -e "## ====================\n" >> $CNF
-   [ $COUNT_DRIVES -gt 2 ] && echo -e "## PLEASE READ THE NOTES BELOW!" >> $CNF
-   echo -e "" >> $CNF
+    # first drive
+    {
+      echo ""
+      echo "## ===================="
+      echo "##  HARD DISK DRIVE(S):"
+      echo "## ===================="
+      echo ""
+    } >> "$CNF"
+    [ $COUNT_DRIVES -gt 2 ] && echo "## PLEASE READ THE NOTES BELOW!" >> "$CNF"
+    echo "" >> "$CNF"
 
-   local found_optdrive=0
-   local optdrive_count=0
-   for i in $(seq 1 $COUNT_DRIVES) ; do
-     DISK="$(eval echo \$DRIVE${i})"
-     OPTDISK="$(eval echo \$OPT_DRIVE${i})"
-     if [ -n "$OPTDISK" ] ; then
-       optdrive_count=$[$optdrive_count+1]
-       found_optdrive=1
-       hdinfo /dev/$OPTDISK >>$CNF
-       echo "DRIVE$i /dev/$OPTDISK" >>$CNF
-     else
-       hdinfo $DISK >>$CNF
-       # comment drive out when not given via commandline
-       [ $found_optdrive -eq 1 ] && echo -n "# " >>$CNF
-       echo "DRIVE$i $DISK" >>$CNF
-     fi
-   done
+    local found_optdrive=0
+    local optdrive_count=0
+    for ((i=1; i<=COUNT_DRIVES; i++)); do
+      DISK="$(eval echo \$DRIVE${i})"
+      OPTDISK="$(eval echo \$OPT_DRIVE${i})"
+      if [ -n "$OPTDISK" ] ; then
+        optdrive_count=$((optdrive_count+1))
+        found_optdrive=1
+        hdinfo "/dev/$OPTDISK" >> "$CNF"
+        echo "DRIVE$i /dev/$OPTDISK" >> "$CNF"
+      else
+        hdinfo "$DISK" >> "$CNF"
+        # comment drive out when not given via commandline
+        [ $found_optdrive -eq 1 ] && echo -n "# " >> "$CNF"
+        echo "DRIVE$i $DISK" >> "$CNF"
+      fi
+    done
 
-   # reset drive count to number of drives explicitly passed via command line
-   [ $optdrive_count -gt 0 ] && COUNT_DRIVES=$optdrive_count
+    # reset drive count to number of drives explicitly passed via command line
+    [ $optdrive_count -gt 0 ] && COUNT_DRIVES=$optdrive_count
 
-   echo -e "" >> $CNF
-   if [ $COUNT_DRIVES -gt 2 ] ; then
-     if [ $COUNT_DRIVES -lt 4 ] ; then
-       echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5" >>$CNF
-       echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>$CNF
-     else
-       echo "## if you dont want raid over all of your drives then comment out the following line and set SWRAIDLEVEL not to 5 or 6 or 10" >>$CNF
-       echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks" >>$CNF
-     fi
-   fi
-   echo -e "" >> $CNF
+    echo "" >> "$CNF"
+    if [ $COUNT_DRIVES -gt 2 ] ; then
+      if [ $COUNT_DRIVES -lt 4 ] ; then
+        {
+          echo "## if you dont want raid over your three drives then comment out the following line and set SWRAIDLEVEL not to 5"
+          echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks"
+        } >> "$CNF"
+      else
+        {
+          echo "## if you dont want raid over all of your drives then comment out the following line and set SWRAIDLEVEL not to 5 or 6 or 10"
+          echo "## please make sure the DRIVE[nr] variable is strict ascending with the used harddisks, when you comment out one or more harddisks"
+        } >> "$CNF"
+      fi
+    fi
+    echo "" >> "$CNF"
 
-   # software-raid 
-   if [ $COUNT_DRIVES -gt 1 ]; then
-     echo -e "\n" >> $CNF
+    # software-raid
+    if [ $COUNT_DRIVES -gt 1 ]; then
+      {
+        echo ""
+        echo "## ==============="
+        echo "##  SOFTWARE RAID:"
+        echo "## ==============="
+        echo ""
+        echo "## activate software RAID?  < 0 | 1 >"
+        echo ""
+      } >> "$CNF"
 
-     echo -e "## ===============" >> $CNF
-     echo -e "##  SOFTWARE RAID:" >> $CNF
-     echo -e "## ===============\n" >> $CNF
-     echo -e "## activate software RAID?  < 0 | 1 >\n" >> $CNF
+      case "$OPT_SWRAID" in
+        0) echo "SWRAID 0" >> "$CNF" ;;
+        1) echo "SWRAID 1" >> "$CNF" ;;
+        *) echo "SWRAID $DEFAULTSWRAID" >> "$CNF" ;;
+      esac
 
-     case "$OPT_SWRAID" in
-       0) echo -e "SWRAID 0" >> $CNF ;;
-       1) echo -e "SWRAID 1" >> $CNF ;;
-       *) echo -e "SWRAID $DEFAULTSWRAID" >> $CNF ;;
-     esac
+      echo '' >> "$CNF"
 
-     echo >> $CNF
+      # available raidlevels
+      local raid_levels="0 1 5 6 10"
+      # set default raidlevel
+      local default_level="$DEFAULTTWODRIVESWRAIDLEVEL"
+      if [ "$COUNT_DRIVES" -eq 3 ] ; then
+        default_level="$DEFAULTTHREEDRIVESWRAIDLEVEL"
+      elif [ "$COUNT_DRIVES" -gt 3 ] ; then
+        default_level="$DEFAULTFOURDRIVESWRAIDLEVEL"
+      fi
 
-     # available raidlevels
-     local raid_levels="0 1 5 6 10"
-     # set default raidlevel
-     local default_level=$DEFAULTTWODRIVESWRAIDLEVEL
-     if [ $COUNT_DRIVES -eq 3 ] ; then
-       default_level=$DEFAULTTHREEDRIVESWRAIDLEVEL
-     elif [ $COUNT_DRIVES -gt 3 ] ; then
-       default_level=$DEFAULTFOURDRIVESWRAIDLEVEL
-     fi
+      local set_level=""
+      local avail_level=""
+      # check for possible raidlevels
+      for level in $raid_levels ; do
+        # set raidlevel to given opt raidlevel
+        if [ -n "$OPT_SWRAIDLEVEL" ] ; then
+          [ "$OPT_SWRAIDLEVEL" -eq "$level" ] && set_level="$level"
+        fi
 
-     local set_level=""
-     local avail_level=""
-     # check for possible raidlevels
-     for level in $raid_levels ; do
-       # set raidlevel to given opt raidlevel
-       if [ -n "$OPT_SWRAIDLEVEL" ] ; then
-         [ $OPT_SWRAIDLEVEL -eq $level ] && set_level="$level"
-       fi
+        # no raidlevel 5 if less then 3 hdds
+        [ "$level" -eq 5 ] && [ "$COUNT_DRIVES" -lt 3 ] && continue
 
-       # no raidlevel 5 if less then 3 hdds
-       [ $level -eq 5 -a $COUNT_DRIVES -lt 3 ] && continue
+        # no raidlevel 6 if less then 4 hdds
+        [ "$level" -eq 6 ] && [ "$COUNT_DRIVES" -lt 4 ] && continue
 
-       # no raidlevel 6 if less then 4 hdds
-       [ $level -eq 6 -a $COUNT_DRIVES -lt 4 ] && continue
+        # no raidlevel 10 if less then 2 hdds
+        [ "$level" -eq 10 ] && [ "$COUNT_DRIVES" -lt 2 ] && continue
 
-       # no raidlevel 10 if less then 2 hdds
-       [ $level -eq 10 -a $COUNT_DRIVES -lt 2 ] && continue
+        # create list of all possible raidlevels
+        if [ -z "$avail_level" ] ; then
+          avail_level="$level"
+        else
+          avail_level="$avail_level | $level"
+        fi
+      done
+      [ -z "$set_level" ] && set_level="$default_level"
 
-       # create list of all possible raidlevels
-       if [ -z "$avail_level" ] ; then
-         avail_level="$level"
-       else
-         avail_level="$avail_level | $level"
-       fi
-     done
-     [ -z "$set_level" ] && set_level="$default_level"
+      {
+        echo "## Choose the level for the software RAID < $avail_level >"
+        echo ""
+        echo "SWRAIDLEVEL $set_level"
+      } >> "$CNF"
+    fi
 
-     echo -e "## Choose the level for the software RAID < $avail_level >\n" >> $CNF
-     echo -e "SWRAIDLEVEL $set_level" >> $CNF
-   fi
+    # bootloader
+    # we no longer support lilo, so don't show this option if it isn't in the image
+#    if [ "$IAM" = "archlinux" ] ||
+#      [ "$IAM" = "coreos" ] ||
+#      [ "$IAM" = "centos" ] ||
+#      [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
+#      [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
+#      [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
+      NOLILO="true"
+#    else
+#      NOLILO=''
+#    fi
 
-   
-   # bootloader
-   # we no longer support lilo, so don't show this option if it isn't in the image
-   if [ "$IAM" = "arch" ] ||
-      [ "$IAM" = "coreos" ] ||
-      [ "$IAM" = "centos" ] ||
-      [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
-      [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
-      [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
-     NOLILO="true"
-   else
-     NOLILO=''
-   fi
+    {
+      echo ""
+      echo "## ============"
+      echo "##  BOOTLOADER:"
+      echo "## ============"
+      echo ""
+    } >> "$CNF"
 
-   echo -e "\n" >> $CNF
-   echo -e "## ============" >> $CNF
-   echo -e "##  BOOTLOADER:" >> $CNF
-   echo -e "## ============\n" >> $CNF
-   if [ "$NOLILO" ]; then
-     echo -e "\n## Do not change. This image does not include or support lilo (grub only)!:\n" >> $CNF
-     echo "BOOTLOADER grub" >> $CNF
-   else
-     echo -e "\n## which bootloader should be used?  < lilo | grub >\n" >> $CNF
-     case "$OPT_BOOTLOADER" in
-       lilo) echo "BOOTLOADER lilo" >> $CNF ;;
-       grub) echo "BOOTLOADER grub" >> $CNF ;;
-       *)    echo "BOOTLOADER $DEFAULTLOADER" >> $CNF ;;
-     esac
-     echo -e "" >> $CNF
-   fi
+    if [ "$NOLILO" ]; then
+      {
+        echo ""
+        echo "## Do not change. This image does not include or support lilo (grub only)!:"
+        echo ""
+        echo "BOOTLOADER grub"
+      } >> "$CNF"
+    else
+      {
+        echo ""
+        echo "## which bootloader should be used?  < lilo | grub >"
+        echo ""
+      } >> "$CNF"
+      case "$OPT_BOOTLOADER" in
+        lilo) echo "BOOTLOADER lilo" >> "$CNF" ;;
+        grub) echo "BOOTLOADER grub" >> "$CNF" ;;
+        *)    echo "BOOTLOADER $DEFAULTLOADER" >> "$CNF" ;;
+      esac
+      echo "" >> "$CNF"
+    fi
 
-   # hostname
-   get_active_eth_dev
-   gather_network_information
-   echo -e "\n" >> $CNF
-   echo -e "## ==========" >> $CNF
-   echo -e "##  HOSTNAME:" >> $CNF
-   echo -e "## ==========\n" >> $CNF
-   echo -e "## which hostname should be set?\n## \n" >> $CNF
-   # set default hostname to image name
-   DEFAULT_HOSTNAME="$1"
-   # or to proxmox if chosen
-   if [ "$PROXMOX" = "true" ]; then
-     echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> $CNF
-     DEFAULT_HOSTNAME="Proxmox-VE.localdomain"
-   fi
-   # or to the hostname passed through options
-   [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
-   echo -e "HOSTNAME $DEFAULT_HOSTNAME" >> $CNF
-   echo -e "" >> $CNF
-   
-   
-   ## Calculate how much hardisk space at raid level 0,1,5,6,10
-   RAID0=0
-   local small_hdd="$(smallest_hd)"
-   local small_hdd_size="$[$(blockdev --getsize64 $small_hdd)/1024/1024/1024]"
-   RAID0=$[$small_hdd_size*$COUNT_DRIVES]
-   RAID1=$small_hdd_size
-   if [ $COUNT_DRIVES -ge 3 ] ; then
-     RAID5=$[$RAID0-$small_hdd_size]
-   fi
-   if [ $COUNT_DRIVES -ge 4 ] ; then
-     RAID6=$[$RAID0-2*$small_hdd_size]
-     RAID10=$[$RAID0/2]
-   fi
+    # hostname
+    get_active_eth_dev
+    gather_network_information
+    {
+      echo ""
+      echo "## =========="
+      echo "##  HOSTNAME:"
+      echo "## =========="
+      echo ""
+      echo "## which hostname should be set?"
+      echo "##"
+      echo ""
+    } >> "$CNF"
 
-   # partitions
-   echo -e "\n" >> $CNF
-   echo -e "## ==========================" >> $CNF
-   echo -e "##  PARTITIONS / FILESYSTEMS:" >> $CNF
-   echo -e "## ==========================\n" >> $CNF
-   echo -e "## define your partitions and filesystems like this:" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'" >> $CNF
-   echo -e "##                    to use this PART as volume group (VG) for LVM" >> $CNF
-   echo -e "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name" >> $CNF
-   echo -e "##                    of the LVM volume group (VG), if this PART is a VG" >> $CNF
-   echo -e "## * <size>           you can use the keyword 'all' to assign all the" >> $CNF
-   echo -e "##                    remaining space of the drive to the *last* partition." >> $CNF
-   echo -e "##                    you can use M/G/T for unit specification in MIB/GIB/TIB" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## notes:" >> $CNF
-   echo -e "##   - extended partitions are created automatically" >> $CNF
-   echo -e "##   - '/boot' cannot be on a xfs filesystem!" >> $CNF
-   echo -e "##   - '/boot' cannot be on LVM!" >> $CNF
-   echo -e "##   - when using software RAID 0, you need a '/boot' partition" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## example without LVM (default):" >> $CNF
-   echo -e "## -> 4GB   swapspace" >> $CNF
-   echo -e "## -> 512MB /boot" >> $CNF
-   echo -e "## -> 10GB  /" >> $CNF
-   echo -e "## -> 5GB   /tmp" >> $CNF
-   echo -e "## -> all the rest to /home" >> $CNF
-   echo -e "#PART swap   swap      4096" >> $CNF
-   echo -e "#PART /boot  ext2       512" >> $CNF
-   echo -e "#PART /      reiserfs 10240" >> $CNF
-   echo -e "#PART /tmp   xfs       5120" >> $CNF
-   echo -e "#PART /home  ext3       all" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## to activate LVM, you have to define volume groups and logical volumes" >> $CNF
-   echo -e "##" >> $CNF
-   echo -e "## example with LVM:" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "## normal filesystems and volume group definitions:" >> $CNF
-   echo -e "## -> 512MB boot  (not on lvm)" >> $CNF
-   echo -e "## -> all the rest for LVM VG 'vg0'" >> $CNF
-   echo -e "#PART /boot  ext3     512M" >> $CNF
-   echo -e "#PART lvm    vg0       all" >> $CNF
-   
-   echo -e "#" >> $CNF
-   echo -e "## logical volume definitions:" >> $CNF
-   echo -e "#LV <VG> <name> <mount> <filesystem> <size>" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "#LV vg0   root   /        ext4         10G" >> $CNF
-   echo -e "#LV vg0   swap   swap     swap          4G" >> $CNF
-   echo -e "#LV vg0   tmp    /tmp     reiserfs      5G" >> $CNF
-   echo -e "#LV vg0   home   /home    xfs          20G" >> $CNF
-   echo -e "#" >> $CNF
+    # set default hostname to image name
+    DEFAULT_HOSTNAME="$1"
+    # or to proxmox if chosen
+    if [ "$PROXMOX" = "true" ]; then
+      echo -e "## This must be a FQDN otherwise installation will fail\n## \n" >> "$CNF"
+      DEFAULT_HOSTNAME="Proxmox-VE.yourdomain.localdomain"
+    fi
+    # or to the hostname passed through options
+    [ "$OPT_HOSTNAME" ] && DEFAULT_HOSTNAME="$OPT_HOSTNAME"
+    echo "HOSTNAME $DEFAULT_HOSTNAME" >> "$CNF"
+    echo "" >> "$CNF"
 
-   if [ -x "/usr/local/bin/hwdata" ]; then
-     echo -e "#" >> $CNF
-     echo -e "## your system has the following devices:" >> $CNF
-     echo -e "#" >> $CNF
-     echo -e "$(/usr/local/bin/hwdata | grep "Disk /" | sed "s/^  /#/")" >> $CNF
-   fi
+    ## Calculate how much hardisk space at raid level 0,1,5,6,10
+    RAID0=0
+    local small_hdd; small_hdd="$(smallest_hd)"
+    local small_hdd_size; small_hdd_size="$(($(blockdev --getsize64 "$small_hdd")/1024/1024/1024))"
+    RAID0=$((small_hdd_size*COUNT_DRIVES))
+    RAID1="$small_hdd_size"
+    if [ $COUNT_DRIVES -ge 3 ] ; then
+      RAID5=$((RAID0-small_hdd_size))
+    fi
+    if [ $COUNT_DRIVES -ge 4 ] ; then
+      RAID6=$((RAID0-2*small_hdd_size))
+      RAID10=$((RAID0/2))
+    fi
 
-   if [ "$RAID1" -a "$RAID0" ] ; then
-     echo -e "#" >> $CNF
-     echo -e "## Based on your disks and which RAID level you will choose you have" >> $CNF
-     echo -e "## the following free space to allocate (in GiB):" >> $CNF
-     echo -e "# RAID  0: ~$RAID0" >> $CNF
-     echo -e "# RAID  1: ~$RAID1" >> $CNF
-     [ "$RAID5" ] && echo -e "# RAID  5: ~$RAID5" >> $CNF
-     if [ "$RAID6" ]; then
-       echo -e "# RAID  6: ~$RAID6" >> $CNF
-       echo -e "# RAID 10: ~$RAID10" >> $CNF
-     fi
-   fi
+    # partitions
+    {
+      echo ""
+      echo "## =========================="
+      echo "##  PARTITIONS / FILESYSTEMS:"
+      echo "## =========================="
+      echo ""
+      echo "## define your partitions and filesystems like this:"
+      echo "##"
+      echo "## PART  <mountpoint/lvm>  <filesystem/VG>  <size in MB>"
+      echo "##"
+      echo "## * <mountpoint/lvm> mountpoint for this filesystem  *OR*  keyword 'lvm'"
+      echo "##                    to use this PART as volume group (VG) for LVM"
+      echo "## * <filesystem/VG>  can be ext2, ext3, reiserfs, xfs, swap  *OR*  name"
+      echo "##                    of the LVM volume group (VG), if this PART is a VG"
+      echo "## * <size>           you can use the keyword 'all' to assign all the"
+      echo "##                    remaining space of the drive to the *last* partition."
+      echo "##                    you can use M/G/T for unit specification in MIB/GIB/TIB"
+      echo "##"
+      echo "## notes:"
+      echo "##   - extended partitions are created automatically"
+      echo "##   - '/boot' cannot be on a xfs filesystem"
+      echo "##   - '/boot' cannot be on LVM!"
+      echo "##   - when using software RAID 0, you need a '/boot' partition"
+      echo "##"
+      echo "## example without LVM (default):"
+      echo "## -> 4GB   swapspace"
+      echo "## -> 512MB /boot"
+      echo "## -> 10GB  /"
+      echo "## -> 5GB   /tmp"
+      echo "## -> all the rest to /home"
+      echo "#PART swap   swap        4G"
+      echo "#PART /boot  ext2      512M"
+      echo "#PART /      ext4       10G"
+      echo "#PART /tmp   xfs         5G"
+      echo "#PART /home  ext3       all"
+      echo "#"
+      echo "##"
+      echo "## to activate LVM, you have to define volume groups and logical volumes"
+      echo "##"
+      echo "## example with LVM:"
+      echo "#"
+      echo "## normal filesystems and volume group definitions:"
+      echo "## -> 512MB boot  (not on lvm)"
+      echo "## -> all the rest for LVM VG 'vg0'"
+      echo "#PART /boot  ext3     512M"
+      echo "#PART lvm    vg0       all"
 
-   echo -e "#" >> $CNF
-   echo -e "" >> $CNF
+      echo "#"
+      echo "## logical volume definitions:"
+      echo "#LV <VG> <name> <mount> <filesystem> <size>"
+      echo "#"
+      echo "#LV vg0   root   /        ext4         10G"
+      echo "#LV vg0   swap   swap     swap          4G"
+      echo "#LV vg0   tmp    /tmp     reiserfs      5G"
+      echo "#LV vg0   home   /home    xfs          20G"
+      echo "#"
+    } >> "$CNF"
 
-   # check if there are 3TB disks inside and use other default scheme
-   local LIMIT=2096128
-   local THREE_TB=2861588
-   local DRIVE_SIZE="$(sfdisk -s `smallest_hd` 2>/dev/null)"
-   DRIVE_SIZE="$(echo $DRIVE_SIZE / 1024 | bc)"
+    if [ -x "/usr/local/bin/hwdata" ]; then
+      {
+        echo "#"
+        echo "## your system has the following devices:"
+        echo "#"
+        /usr/local/bin/hwdata | grep "Disk /"  | sed "s/^  /#/"
+      } >> "$CNF"
+    fi
 
-   # adjust swap dynamically according to RAM
-   # RAM < 2 GB : SWAP=2 * RAM
-   # RAM > 2GB -  8GB : SWAP=RAM
-   # RAM > 8GB - 64GB : SWAP = 0.5 RAM
-   # RAM > 64GB: SWAP = 4GB
-   # http://docs.fedoraproject.org/en-US/Fedora/18/html/Installation_Guide/s2-diskpartrecommend-x86.html
-   # https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Installation_Guide/s2-diskpartrecommend-x86.html
-   RAM=$(free -m | grep Mem: | tr -s ' ' | cut -d' ' -f2)
-   SWAPSIZE=4
-   if [ "$RAM" -lt 2048 ]; then
-   	SWAPSIZE=$(($RAM * 2 / 1024 + 1))
-   elif [ "$RAM" -lt 8192 ]; then
-	SWAPSIZE=$(($RAM / 1024 + 1))
-   elif [ "$RAM" -lt 65535 ]; then 
-	SWAPSIZE=$(($RAM / 2 / 1024 + 1))
-   fi
-	
-   DEFAULTPARTS=${DEFAULTPARTS/SWAPSIZE##/$SWAPSIZE}
-   DEFAULTPARTS_BIG=${DEFAULTPARTS_BIG/SWAPSIZE##/$SWAPSIZE}
-   DEFAULTPARTS_LARGE=${DEFAULTPARTS_LARGE/SWAPSIZE##/$SWAPSIZE}
+    if [ "$RAID1" ] && [ "$RAID0" ] ; then
+      {
+        echo "#"
+        echo "## Based on your disks and which RAID level you will choose you have"
+        echo "## the following free space to allocate (in GiB):"
+        echo "# RAID  0: ~$RAID0"
+        echo "# RAID  1: ~$RAID1"
+      } >> "$CNF"
+      [ "$RAID5" ] && echo "# RAID  5: ~$RAID5" >> "$CNF"
+      if [ "$RAID6" ]; then
+        {
+          echo "# RAID  6: ~$RAID6"
+          echo "# RAID 10: ~$RAID10"
+        } >> "$CNF"
+      fi
+    fi
 
-   # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
-   if isVServer; then
-#     DEFAULTPARTS=${DEFAULTPARTS//ext4/ext3}
-     DEFAULTPARTS=$DEFAULTPARTS_VSERVER
-   fi
+    {
+      echo "#"
+      echo ""
+    } >> "$CNF"
 
-   # use /var instead of /home for all partition when installing plesk
-   if [ "$OPT_INSTALL" ]; then
-     if [ $(echo $OPT_INSTALL | grep -i "PLESK") ]; then
-       DEFAULTPARTS_BIG="${DEFAULTPARTS_BIG//home/var}"
-     fi
-   fi
+    # check if there are 3TB disks inside and use other default scheme
+    local LIMIT=2096128
+    local THREE_TB=2861588
+    local DRIVE_SIZE; DRIVE_SIZE="$(sfdisk -s "$(smallest_hd)" 2>/dev/null)"
+    DRIVE_SIZE="$(echo "$DRIVE_SIZE" / 1024 | bc)"
 
-   if [ "$IAM" = "coreos" ]; then
-     echo -e "## NOTICE: This image does not support custom partition sizes." >>$CNF
-     echo -e "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >>$CNF
-   fi
+    # adjust swap dynamically according to RAM
+    # RAM < 2 GB : SWAP=2 * RAM
+    # RAM > 2GB -  8GB : SWAP=RAM
+    # RAM > 8GB - 64GB : SWAP = 0.5 RAM
+    # RAM > 64GB: SWAP = 4GB
+    # http://docs.fedoraproject.org/en-US/Fedora/18/html/Installation_Guide/s2-diskpartrecommend-x86.html
+    # https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Installation_Guide/s2-diskpartrecommend-x86.html
+    RAM=$(free -m | grep Mem: | tr -s ' ' | cut -d' ' -f2)
+    SWAPSIZE=4
+    if [ "$RAM" -lt 2048 ]; then
+      SWAPSIZE=$((RAM * 2 / 1024 + 1))
+    elif [ "$RAM" -lt 8192 ]; then
+      SWAPSIZE=$((RAM / 1024 + 1))
+    elif [ "$RAM" -lt 65535 ]; then
+      SWAPSIZE=$((RAM / 2 / 1024 + 1))
+    fi
 
-   if [ $DRIVE_SIZE -gt $LIMIT ]; then
-     if [ $DRIVE_SIZE -gt $THREE_TB ]; then
-       [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_LARGE" >>$CNF
-     else
-       [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS_BIG" >>$CNF
-     fi
-   else
-     [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >>$CNF || echo -e "$DEFAULTPARTS" >>$CNF
-   fi
+    DEFAULTPARTS=${DEFAULTPARTS/SWAPSIZE##/$SWAPSIZE}
+    DEFAULTPARTS_BIG=${DEFAULTPARTS_BIG/SWAPSIZE##/$SWAPSIZE}
+    DEFAULTPARTS_LARGE=${DEFAULTPARTS_LARGE/SWAPSIZE##/$SWAPSIZE}
 
-   [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >>$CNF
-   echo -e "" >> $CNF
+    # use ext3 for vservers, because ext4 is too trigger happy of device timeouts
+    if isVServer; then
+      if [ "$SYSTYPE" = "vServer" ]; then
+        DEFAULTPARTS=$DEFAULTPARTS_CLOUDSERVER
+      else
+        DEFAULTPARTS=$DEFAULTPARTS_VSERVER
+      fi
+    fi
 
-   # image
-   echo -e "\n" >> $CNF
-   echo -e "## ========================" >> $CNF
-   echo -e "##  OPERATING SYSTEM IMAGE:" >> $CNF
-   echo -e "## ========================\n" >> $CNF
-   echo -e "## full path to the operating system image" >> $CNF
-   echo -e "##   supported image sources:  local dir,  ftp,  http,  nfs" >> $CNF
-   echo -e "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz" >> $CNF
-   echo -e "## examples:" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "# local: /path/to/image/filename.tar.gz" >> $CNF
-   echo -e "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2" >> $CNF
-   echo -e "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-   echo -e "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz" >> $CNF
-   echo -e "# nfs:   hostname:/path/to/image/filename.tgz" >> $CNF
-   echo -e "#" >> $CNF
-   echo -e "# for validation of the image, place the detached gpg-signature" >> $CNF
-   echo -e "# and your public key in the same directory as your image file." >> $CNF
-   echo -e "# naming examples:" >> $CNF
-   echo -e "#  signature:   filename.tar.bz2.sig" >> $CNF
-   echo -e "#  public key:  public-key.asc" >> $CNF
-   echo -e "" >> $CNF
-   if [ "$1" = "custom" ]; then
-     echo -e "IMAGE " >> $CNF
-   else
-     if [ "$OPT_IMAGE" ] ; then
-       if [ -f "$FINALIMAGEPATH/$OPT_IMAGE" ] ; then
-         echo -e "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> $CNF
-       else
-         echo -e "IMAGE $OPT_IMAGE" >> $CNF
-       fi
-     else
-       [ -n "$IMG_EXT" ] && IMAGESEXT="$IMG_EXT"
-       echo -e "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> $CNF
-     fi
-   fi
-   echo -e "" >> $CNF
-   
+    # use /var instead of /home for all partition when installing plesk
+    is_plesk_install && DEFAULTPARTS_BIG="${DEFAULTPARTS_BIG//home/var}"
+
+    if [ "$IAM" = "coreos" ]; then
+      echo "## NOTICE: This image does not support custom partition sizes." >> "$CNF"
+      echo "## NOTICE: Please keep the following lines unchanged. They are just placeholders." >> "$CNF"
+    fi
+
+    if [ "$DRIVE_SIZE" -gt "$LIMIT" ]; then
+      if [ "$DRIVE_SIZE" -gt "$THREE_TB" ]; then
+        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >> "$CNF" || echo -e "$DEFAULTPARTS_LARGE" >> "$CNF"
+      else
+        [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >> "$CNF" || echo -e "$DEFAULTPARTS_BIG" >> "$CNF"
+      fi
+    else
+      [ "$OPT_PARTS" ] && echo -e "$OPT_PARTS" >> "$CNF" || echo -e "$DEFAULTPARTS" >> "$CNF"
+    fi
+
+    [ "$OPT_LVS" ] && echo -e "$OPT_LVS" >> "$CNF"
+    echo "" >> "$CNF"
+
+    # image
+    {
+      echo ""
+      echo "## ========================"
+      echo "##  OPERATING SYSTEM IMAGE:"
+      echo "## ========================"
+      echo ""
+      echo "## full path to the operating system image"
+      echo "##   supported image sources:  local dir,  ftp,  http,  nfs"
+      echo "##   supported image types: tar, tar.gz, tar.bz, tar.bz2, tar.xz, tgz, tbz, txz"
+      echo "## examples:"
+      echo "#"
+      echo "# local: /path/to/image/filename.tar.gz"
+      echo "# ftp:   ftp://<user>:<password>@hostname/path/to/image/filename.tar.bz2"
+      echo "# http:  http://<user>:<password>@hostname/path/to/image/filename.tbz"
+      echo "# https: https://<user>:<password>@hostname/path/to/image/filename.tbz"
+      echo "# nfs:   hostname:/path/to/image/filename.tgz"
+      echo "#"
+      echo "# for validation of the image, place the detached gpg-signature"
+      echo "# and your public key in the same directory as your image file."
+      echo "# naming examples:"
+      echo "#  signature:   filename.tar.bz2.sig"
+      echo "#  public key:  public-key.asc"
+      echo ""
+    } >> "$CNF"
+    if [ "$1" = "custom" ]; then
+      echo "IMAGE " >> "$CNF"
+    else
+      if [ "$OPT_IMAGE" ] ; then
+        if [ -f "$FINALIMAGEPATH/$OPT_IMAGE" ] ; then
+          echo "IMAGE $FINALIMAGEPATH/$OPT_IMAGE" >> "$CNF"
+        else
+          echo "IMAGE $OPT_IMAGE" >> "$CNF"
+        fi
+      else
+        [ -n "$IMG_EXT" ] && IMAGESEXT="$IMG_EXT"
+        echo "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> "$CNF"
+      fi
+    fi
+    echo "" >> "$CNF"
+
   fi
-return 0
+  return 0
 }
 
 getdrives() {
-  local DRIVES="$(sfdisk -s 2>/dev/null | sort -u | grep -e "/dev/[hsv]d" | cut -d: -f1)"
+  local drives;
+  drives="$(find /sys/block/ \( -name  'nvme[0-9]*n[0-9]' -o  -name '[hvs]d[a-z]' \) -printf '%f\n' | sort)"
   local i=1
 
   #cast drives into an array
-  DRIVES=( $DRIVES )
+  drives=( $drives )
 
-  for drive in ${DRIVES[*]} ; do
+  for drive in ${drives[*]} ; do
     # if we have just one drive, add it. Otherwise check that multiple drives are at least HDDMINSIZE
-    if [ ${#DRIVES[@]} -eq 1 ] || [ ! $(fdisk -s $drive 2>/dev/null || echo 0) -lt $HDDMINSIZE ] ; then
-      eval DRIVE$i="$drive"
+    if [ ${#drives[@]} -eq 1 ] || [ ! "$(fdisk -s "/dev/$drive" 2>/dev/null || echo 0)" -lt "$HDDMINSIZE" ] ; then
+      eval DRIVE$i="/dev/$drive"
       let i=i+1
     fi
   done
   [ -z "$DRIVE1" ] && DRIVE1="no valid drive found"
 
-  COUNT_DRIVES=$[$i - 1]
+  COUNT_DRIVES=$((i - 1))
 
   return 0
 }
@@ -542,32 +600,39 @@ getdrives() {
 # read all variables from config file
 # read_vars "CONFIGFILE"
 read_vars(){
-if [ "$1" ]; then
+if [ -n "$1" ]; then
   # count disks again, for setting COUNT_DRIVES correct after restarting installimage
   getdrives
 
   # special hidden configure option: create RAID1 and 10 with assume clean to
-  # avoid initial resync 
-  RAID_ASSUME_CLEAN="`grep -m1 -e ^RAID_ASSUME_CLEAN $1 |awk '{print \$2}'`"
+  # avoid initial resync
+  RAID_ASSUME_CLEAN="$(grep -m1 -e ^RAID_ASSUME_CLEAN "$1" |awk '{print $2}')"
+  export RAID_ASSUME_CLEAN
+
+  # special hidden configure option: configure layout for RAID5, 6 and 10
+  RAID_LAYOUT="$(grep -m1 -e ^RAID_LAYOUT "$1" |awk '{print $2}')"
+  export RAID_LAYOUT
 
   # special hidden configure option: GPT usage
   # if set to 1, use GPT even on disks smaller than 2TiB
   # if set to 2, always use GPT, even if the OS does not support it
-  FORCE_GPT="`grep -m1 -e ^FORCE_GPT $1 |awk '{print \$2}'`"
+  FORCE_GPT="$(grep -m1 -e ^FORCE_GPT "$1" |awk '{print $2}')"
 
   # another special hidden configure option: force image validation
   # if set to 1: force validation
-  FORCE_SIGN="`grep -m1 -e ^FORCE_SIGN $1 |awk '{print \$2}'`"
+  FORCE_SIGN="$(grep -m1 -e ^FORCE_SIGN "$1" |awk '{print $2}')"
+  export FORCE_SIGN
 
-  # hidden configure option:   
+  # hidden configure option:
   # if set to 1: force setting root password even if ssh keys are
   # provided
-  FORCE_PASSWORD="`grep -m1 -e ^FORCE_PASSWORD $1 |awk '{print \$2}'`"
+  FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD "$1" |awk '{print $2}')"
+  export FORCE_PASSWORD
 
   # get all disks from configfile
   local used_disks=1
-  for i in $(seq 1 $COUNT_DRIVES) ; do
-    disk="$(grep -m1 -e ^DRIVE$i $1 | awk '{print $2}')"
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    disk="$(grep -m1 -e ^DRIVE$i "$1" | awk '{print $2}')"
     if [ -n "$disk" ] ; then
       export DRIVE$i
       eval DRIVE$i="$disk"
@@ -575,7 +640,7 @@ if [ "$1" ]; then
     else
       unset DRIVE$i
     fi
-    format_disk="$(grep -m1 -e ^FORMATDRIVE$i $1 | awk '{print $2}')"
+    format_disk="$(grep -m1 -e ^FORMATDRIVE$i "$1" | awk '{print $2}')"
     export FORMAT_DRIVE$i
     eval FORMAT_DRIVE$i="0"
     if [ -n "$format_disk" ] ; then
@@ -584,105 +649,104 @@ if [ "$1" ]; then
   done
 
   # get count of drives
-  COUNT_DRIVES="$((used_disks-1))"
+  COUNT_DRIVES=$((used_disks-1))
 
   # is RAID activated?
-  SWRAID="`grep -m1 -e ^SWRAID $1 |awk '{print \$2}'`"
+  SWRAID="$(grep -m1 -e ^SWRAID "$1" |awk '{print $2}')"
   [ "$SWRAID" = "" ] && SWRAID="0"
 
   # Software RAID Level
-  SWRAIDLEVEL="$(grep -m1 -e ^SWRAIDLEVEL $1 | awk '{ print $2 }')"
+  SWRAIDLEVEL="$(grep -m1 -e ^SWRAIDLEVEL "$1" | awk '{ print $2 }')"
   [ "$SWRAIDLEVEL" = "" ] && SWRAIDLEVEL="1"
 
   PARTS_SUM_SIZE="0"
-  PART_COUNT="$(grep -c -e '^PART' $1)"
-  PART_LINES="$(grep -e '^PART ' $1)"
+  PART_COUNT="$(grep -c -e '^PART' "$1")"
+  PART_LINES="$(grep -e '^PART ' "$1")"
   echo "$PART_LINES" > /tmp/part_lines.tmp
   i=0
-  while read PART_LINE ; do
-    i=$[$i+1]
-    PART_MOUNT[$i]="`echo $PART_LINE | awk '{print \$2}'`"
-    PART_FS[$i]="`echo $PART_LINE | awk '{print \$3}'`"
+  while read -r PART_LINE ; do
+    i=$((i+1))
+    PART_MOUNT[$i]="$(echo "$PART_LINE" | awk '{print $2}')"
+    PART_FS[$i]="$(echo "$PART_LINE" | awk '{print $3}')"
     PART_SIZE[$i]="$(translate_unit "$(echo "$PART_LINE" | awk '{ print $4 }')")"
     MOUNT_POINT_SIZE[$i]=${PART_SIZE[$i]}
     #calculate new partition size if software raid is enabled and it is not /boot or swap
     if [ "$SWRAID" = "1" ]; then
-      if [ "${PART_MOUNT[$i]}" != "/boot" -a "${PART_SIZE[$i]}" != "all" -a "${PART_MOUNT[$i]}" != "swap" ]; then
+      if [ "${PART_MOUNT[$i]}" != "/boot" ] && [ "${PART_SIZE[$i]}" != "all" ] && [ "${PART_MOUNT[$i]}" != "swap" ]; then
         if [ "$SWRAIDLEVEL" = "0" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/$COUNT_DRIVES))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/COUNT_DRIVES))
         elif [ "$SWRAIDLEVEL" = "5" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES-1)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES-1)))
         elif [ "$SWRAIDLEVEL" = "6" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES-2)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES-2)))
         elif [ "$SWRAIDLEVEL" = "10" ]; then
-          PART_SIZE[$i]=$((${PART_SIZE[$i]}/($COUNT_DRIVES/2)))
+          PART_SIZE[$i]=$((${PART_SIZE[$i]}/(COUNT_DRIVES/2)))
         fi
       fi
     fi
     echo "${PART_MOUNT[$i]} : ${PART_SIZE[$i]}" | debugoutput
     if [ "${PART_SIZE[$i]}" != "all" ]; then
-      PARTS_SUM_SIZE="$(echo ${PART_SIZE[$i]} + $PARTS_SUM_SIZE | bc)"
+      PARTS_SUM_SIZE=$(( ${PART_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${PART_MOUNT[$i]}" = "/" ]; then
       HASROOT="true"
     fi
   done < /tmp/part_lines.tmp
-  
+
   # get LVM volume group config
-  LVM_VG_COUNT="$(egrep -c '^PART *lvm ' $1)"
-  LVM_VG_ALL="$(egrep '^PART *lvm ' $1)"
-  
+  LVM_VG_COUNT="$(egrep -c '^PART *lvm ' "$1")"
+  LVM_VG_ALL="$(egrep '^PART *lvm ' "$1")"
+
   # void the check var
   LVM_VG_CHECK=""
-  for i in `seq 1 $LVM_VG_COUNT`; do
-    LVM_VG_LINE="`echo "$LVM_VG_ALL" | head -n$i | tail -n1`"
-    #LVM_VG_PART[$i]=$i #"`echo $LVM_VG_LINE | awk '{print \$2}'`"
+  for ((i=1; i<=LVM_VG_COUNT; i++)); do
+    LVM_VG_LINE="$(echo "$LVM_VG_ALL" | head -n$i | tail -n1)"
+    #LVM_VG_PART[$i]=$i #"$(echo $LVM_VG_LINE | awk '{print $2}')"
     LVM_VG_PART[$i]=$(echo "$PART_LINES" | egrep -n '^PART *lvm ' | head -n$i | tail -n1 | cut -d: -f1)
-    LVM_VG_NAME[$i]="`echo $LVM_VG_LINE | awk '{print \$3}'`"
-    LVM_VG_SIZE[$i]="$(translate_unit "$(echo $LVM_VG_LINE | awk '{print $4}')")"
-    
+    LVM_VG_NAME[$i]="$(echo "$LVM_VG_LINE" | awk '{print $3}')"
+    LVM_VG_SIZE[$i]="$(translate_unit "$(echo "$LVM_VG_LINE" | awk '{print $4}')")"
+
     if [ "${LVM_VG_SIZE[$i]}" != "all" ] ; then
       LVM_VG_CHECK="$i $LVM_VG_CHECK"
     fi
   done
-  
+
   # get LVM logical volume config
-  LVM_LV_COUNT="`grep -c -e "^LV " $1`"
-  LVM_LV_ALL="`grep -e "^LV " $1`"
-  for i in `seq 1 $LVM_LV_COUNT`; do
-    LVM_LV_LINE="`echo "$LVM_LV_ALL" | head -n$i | tail -n1`"
-    LVM_LV_VG[$i]="`echo $LVM_LV_LINE | awk '{print \$2}'`"
+  LVM_LV_COUNT="$(grep -c -e "^LV " "$1")"
+  LVM_LV_ALL="$(grep -e "^LV " "$1")"
+  for ((i=1; i<=LVM_LV_COUNT; i++)); do
+    LVM_LV_LINE="$(echo "$LVM_LV_ALL" | head -n$i | tail -n1)"
+    LVM_LV_VG[$i]="$(echo "$LVM_LV_LINE" | awk '{print $2}')"
     LVM_LV_VG_SIZE[$i]="$(echo "$LVM_VG_ALL" | grep "${LVM_LV_VG[$i]}" | awk '{print $4}')"
-    LVM_LV_NAME[$i]="`echo $LVM_LV_LINE | awk '{print \$3}'`"
-    LVM_LV_MOUNT[$i]="`echo $LVM_LV_LINE | awk '{print \$4}'`"
-    LVM_LV_FS[$i]="`echo $LVM_LV_LINE | awk '{print \$5}'`"
+    LVM_LV_NAME[$i]="$(echo "$LVM_LV_LINE" | awk '{print $3}')"
+    LVM_LV_MOUNT[$i]="$(echo "$LVM_LV_LINE" | awk '{print $4}')"
+    LVM_LV_FS[$i]="$(echo "$LVM_LV_LINE" | awk '{print $5}')"
     LVM_LV_SIZE[$i]="$(translate_unit "$(echo "$LVM_LV_LINE" | awk '{ print $6 }')")"
     # we only add LV sizes to PART_SUM_SIZE if the appropiate volume group has
     # "all" as size (otherwise we would count twice: SIZE of VG + SIZE of LVs of VG)
     if [ "${LVM_LV_SIZE[$i]}" != "all" ] && [ "${LVM_LV_VG_SIZE[$i]}" == "all" ]; then
-      PARTS_SUM_SIZE="$(echo ${LVM_LV_SIZE[$i]} + $PARTS_SUM_SIZE | bc)"
+      PARTS_SUM_SIZE=$(( ${LVM_LV_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${LVM_LV_MOUNT[$i]}" = "/" ]; then
       HASROOT="true"
     fi
   done
-  
-  
 
   # is LVM activated?
-  [ "$LVM_VG_COUNT" != "0" -a "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
-  
+  [ "$LVM_VG_COUNT" != "0" ] && [ "$LVM_LV_COUNT" != "0" ] && LVM="1" || LVM="0"
 
-  IMAGE="`grep -m1 -e ^IMAGE $1 | awk '{print \$2}'`"
+
+  IMAGE="$(grep -m1 -e ^IMAGE "$1" | awk '{print $2}')"
+  # shellcheck disable=SC2154
   [ -e "$wd/$IMAGE" ] && IMAGE="$wd/$IMAGE"
-  IMAGE_PATH="$(dirname $IMAGE)/"
-  IMAGE_FILE="$(basename $IMAGE)"
-  case $IMAGE_PATH in
+  IMAGE_PATH="$(dirname "$IMAGE")/"
+  IMAGE_FILE="$(basename "$IMAGE")"
+  case "$IMAGE_PATH" in
     https:*|http:*|ftp:*) IMAGE_PATH_TYPE="http" ;;
     /*) IMAGE_PATH_TYPE="local" ;;
     *)  IMAGE_PATH_TYPE="nfs"   ;;
   esac
-  case $IMAGE_FILE in
+  case "$IMAGE_FILE" in
     *.tar) IMAGE_FILE_TYPE="tar" ;;
     *.tar.gz|*.tgz) IMAGE_FILE_TYPE="tgz" ;;
     *.tar.bz|*.tbz|*.tbz2|*.tar.bz2) IMAGE_FILE_TYPE="tbz" ;;
@@ -690,21 +754,38 @@ if [ "$1" ]; then
     *.bin) IMAGE_FILE_TYPE="bin" ;;
     *.bin.bz2|*.bin.bz) IMAGE_FILE_TYPE="bbz" ;;
   esac
-  
-  BOOTLOADER="`grep -m1 -e ^BOOTLOADER $1 |awk '{print \$2}'`"
+
+  BOOTLOADER="$(grep -m1 -e ^BOOTLOADER "$1" |awk '{print $2}')"
   if [ "$BOOTLOADER" = "" ]; then
     BOOTLOADER=$(echo "$DEFAULTLOADER" | awk '{ print $2 }')
   fi
-  BOOTLOADER=$(echo $BOOTLOADER | tr [:upper:] [:lower:])
+  BOOTLOADER="${BOOTLOADER,,}"
 
-  NEWHOSTNAME=$(grep -m1 -e ^HOSTNAME $1 | awk '{print $2}')
+  NEWHOSTNAME=$(grep -m1 -e ^HOSTNAME "$1" | awk '{print $2}')
 
-  GOVERNOR="`grep -m1 -e ^GOVERNOR $1 |awk '{print \$2}'`"
-  if [ "$GOVERNOR" = "" ]; then GOVERNOR="ondemand"; fi
+  GOVERNOR="$(grep -m1 -e ^GOVERNOR "$1" |awk '{print $2}')"
+  if [ "$GOVERNOR" = "" ]; then GOVERNOR="$DEFAULTGOVERNOR"; fi
 
   SYSTEMDEVICE="$DRIVE1"
-  SYSTEMREALDEVICE="$DRIVE1"
-  
+  # this var appear to be unused. keep it for safety
+  #SYSTEMREALDEVICE="$DRIVE1"
+
+  # SSH key URL setting
+  # can also set this via -K from commandline
+  local sshkeys_url
+  sshkeys_url=$(grep -m1 -e ^SSHKEYS_URL "${1}" | awk '{print $2}')
+  if [ -n "$sshkeys_url" ]; then
+    export OPT_SSHKEYS_URL="$sshkeys_url"
+    export OPT_USE_SSHKEYS=1
+  fi
+
+  local take_over_rescue_system_ssh_public_keys="$(grep -m 1 '^TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS' "$1" | awk '{ print tolower($2) }')"
+  [[ "$take_over_rescue_system_ssh_public_keys" =~ ^yes$|^no$ ]] && export OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS="$take_over_rescue_system_ssh_public_keys"
+
+  if [[ "$OPT_USE_SSHKEYS" != '1' ]] && [[ "${OPT_TAKE_OVER_RESCUE_SYSTEM_SSH_PUBLIC_KEYS:-yes}" == 'yes' ]] && [[ -s /root/.ssh/robot_user_keys ]]; then
+    export OPT_SSHKEYS_URL='/root/.ssh/robot_user_keys'
+    export OPT_USE_SSHKEYS=1
+  fi
 fi
 }
 
@@ -713,97 +794,103 @@ fi
 # validate_vars "CONFIGFILE"
 validate_vars() {
  if [ "$1" ]; then
-  
+
   read_vars "$1"
 
   # test if IMAGEPATH is given
   if [ -z "$IMAGE_PATH" ]; then
    graph_error "ERROR: No valid IMAGEPATH"
-   return 1  
+   return 1
   fi
-  
+
   # test if PATHTYPE is a supported type
-  CHECK="`echo $IMAGE_PATH_TYPE |grep -i -e "^http$\|^nfs$\|^local$"`"
+  CHECK="$(echo $IMAGE_PATH_TYPE |grep -i -e "^http$\|^nfs$\|^local$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid PATHTYPE"
-   return 1  
+   return 1
   fi
-  
+
   # test if IMAGEFILE is given
   if [ -z "$IMAGE_FILE" ]; then
    graph_error "ERROR: No valid IMAGEFILE"
-   return 1  
+   return 1
   fi
-  
+
   # test if FILETYPE is a supported type
-  CHECK="`echo $IMAGE_FILE_TYPE |grep -i -e "^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$"`"
+  CHECK="$(echo $IMAGE_FILE_TYPE |grep -i -e "^tar$\|^tgz$\|^tbz$\|^txz$\|^bin$\|^bbz$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: $IMAGE_FILE_TYPE is no valid FILETYPE for images"
-   return 1  
+   return 1
   fi
 
   whoami "$IMAGE_FILE"
 
   # test if $DRIVE1 is a valid block device and is able to create partitions
-  CHECK="`test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null`"
+  CHECK="$(test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null)"
   if [ -z "$CHECK" ]; then
     graph_error "ERROR: Value for DRIVE1 is not correct: $DRIVE1 "
     return 1
   fi
-  
+
   # test if $DRIVE1 is not busy
 #  CHECK="$(hdparm -z $DRIVE1 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
 #  if [ "$CHECK" ]; then
 #    graph_error "ERROR: DRIVE1 is busy - cannot access device $DRIVE1 "
 #    return 1
 #  fi
-  
+
   # test if $SWRAID has not 0 or 1 as parameter
-  if [ "$SWRAID" != "0" -a "$SWRAID" != "1" ]; then
+  if [ "$SWRAID" != "0" ] && [ "$SWRAID" != "1" ]; then
     graph_error "ERROR: Value for SWRAID is not correct"
     return 1
   fi
 
   # test if $SWRAIDLEVEL is either 0 or 1
-  if [ "$SWRAID" = "1" -a "$SWRAIDLEVEL" != "0" -a "$SWRAIDLEVEL" != "1" -a "$SWRAIDLEVEL" != "5" -a "$SWRAIDLEVEL" != "6" -a "$SWRAIDLEVEL" != "10" ]; then
-    graph_error "ERROR: Value for SWRAIDLEVEL is not correct"
-    return 1
+  if [ "$SWRAID" = "1" ] && [ "$SWRAIDLEVEL" != "0" ] &&
+    [ "$SWRAIDLEVEL" != "1" ] && [ "$SWRAIDLEVEL" != "5" ] &&
+    [ "$SWRAIDLEVEL" != "6" ] && [ "$SWRAIDLEVEL" != "10" ]; then
+      graph_error "ERROR: Value for SWRAIDLEVEL is not correct"
+      return 1
   fi
 
   # check for valid drives
   local drive_array=( $DRIVE1 )
-  for i in $(seq 1 $COUNT_DRIVES) ; do
-    local format="$(eval echo \$FORMAT_DRIVE$i)"
-    local drive="$(eval echo \$DRIVE$i)"
-    if [ $i -gt 1 ] ; then
+  for ((i=1; i<=COUNT_DRIVES; i++)); do
+    local format; format="$(eval echo "\$FORMAT_DRIVE$i")"
+    local drive; drive="$(eval echo "\$DRIVE$i")"
+    if [ "$i" -gt 1 ] ; then
       for j in $(seq 0 $((${#drive_array[@]} - 1))); do
-        if [ ${drive_array[$j]} = $drive ]; then
-          graph_error "Duplicate DRIVE definition. $drive used for DRIVE$[$j+1] and DRIVE$i"
+        if [ "${drive_array[$j]}" = "$drive" ]; then
+          graph_error "Duplicate DRIVE definition. $drive used for DRIVE$((j+1)) and DRIVE$i"
         fi
       done
       drive_array=( "${drive_array[@]}" "$drive" )
-      if [ "$format" != "0" -a "$format" != "1" ]; then
+      if [ "$format" != "0" ] && [ "$format" != "1" ]; then
         graph_error "ERROR: Value for FORMATDRIVE$i is not correct"
         return 1
       fi
-      if [ "$format" = 1 -a "$SWRAID" = 1 ] ; then
+      if [ "$format" = 1 ] && [ "$SWRAID" = 1 ] ; then
         graph_error "ERROR: FORMATDRIVE$i _AND_ SWRAID are active - use one or none of these options, not both"
         return 1
       fi
     fi
-    if [ "$SWRAID" = "1" -o "$format" = "1" -o $i -eq 1 ] ; then
+    if [ "$SWRAID" = "1" ] || [ "$format" = "1" ] || [ "$i" -eq 1 ] ; then
       # test if drive is a valid block device and is able to create partitions
-      CHECK="`test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null`"
+      CHECK="$(test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null)"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Value for DRIVE$i is not correct: $drive"
         return 1
       fi
 
       # test if drive is not busy
-      CHECK="$(hdparm -z $drive 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
+      CHECK="$(hdparm -z "$drive" 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
       if [ "$CHECK" ]; then
-        graph_error "ERROR: DRIVE$i is busy - cannot access device $drive"
-        return 1
+        sleep 120
+        CHECK="$(hdparm -z "$drive" 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
+        if [ "$CHECK" ]; then
+          graph_error "ERROR: DRIVE$i is busy - cannot access device $drive"
+          return 1
+        fi
       fi
     fi
   done
@@ -816,13 +903,13 @@ validate_vars() {
 
   # test if enough disks for the choosen raid level
   if [ "$SWRAID" = "1" ]; then
-    if [ "$SWRAIDLEVEL" = "5" -a "$COUNT_DRIVES" -lt "3" ]; then
+    if [ "$SWRAIDLEVEL" = "5" ] && [ "$COUNT_DRIVES" -lt "3" ]; then
       graph_error "ERROR: Not enough disks for RAID level 5"
       return 1
-    elif [ "$SWRAIDLEVEL" = "6" -a "$COUNT_DRIVES" -lt "4" ]; then
+    elif [ "$SWRAIDLEVEL" = "6" ] && [ "$COUNT_DRIVES" -lt "4" ]; then
       graph_error "ERROR: Not enough disks for RAID level 6"
       return 1
-    elif [ "$SWRAIDLEVEL" = "10" -a "$COUNT_DRIVES" -lt "2" ]; then
+    elif [ "$SWRAIDLEVEL" = "10" ] && [ "$COUNT_DRIVES" -lt "2" ]; then
       graph_error "ERROR: Not enough disks for RAID level 10"
       return 1
     fi
@@ -833,7 +920,7 @@ validate_vars() {
     if [ "$SWRAIDLEVEL" = "0" -o "$SWRAIDLEVEL" = "5" -o "$SWRAIDLEVEL" = "6" -o "$SWRAIDLEVEL" = "10" ]; then
       TMPCHECK=0
 
-      for i in $(seq 1 $PART_COUNT); do
+      for ((i=1; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
           TMPCHECK=1
         fi
@@ -849,48 +936,48 @@ validate_vars() {
   # calculate drive_sum_size
   if [ "$SWRAID" = "0" ] ; then
     # just the first hdd is used so we need the size of DRIVE1
-    DRIVE_SUM_SIZE=$(blockdev --getsize64 $DRIVE1)
-    echo "Size of the first hdd is: $DRIVE_SUM_SIZE" | debugoutput 
+    DRIVE_SUM_SIZE=$(blockdev --getsize64 "$DRIVE1")
+    echo "Size of the first hdd is: $DRIVE_SUM_SIZE" | debugoutput
   else
-    local smallest_hdd=$(smallest_hd)
-    DRIVE_SUM_SIZE="$(blockdev --getsize64 $smallest_hdd)"
+    local smallest_hdd; smallest_hdd=$(smallest_hd)
+    DRIVE_SUM_SIZE="$(blockdev --getsize64 "$smallest_hdd")"
     # this variable is used later when determining what disk to use as reference
     # when drives of different sizes are in a system
-    SMALLEST_HDD_SIZE=$DRIVE_SUM_SIZE 
-    SMALLEST_HDD_SIZE=$[$SMALLEST_HDD_SIZE / 1024 / 1024]
-    echo "Size of smallest drive is $DRIVE_SUM_SIZE" | debugoutput 
+    SMALLEST_HDD_SIZE=$DRIVE_SUM_SIZE
+    SMALLEST_HDD_SIZE=$((SMALLEST_HDD_SIZE / 1024 / 1024))
+    echo "Size of smallest drive is $DRIVE_SUM_SIZE" | debugoutput
     if [ "$SWRAIDLEVEL" = "0" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * $COUNT_DRIVES]
+      DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE * COUNT_DRIVES))
     elif [ "$SWRAIDLEVEL" = "5" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES - 1)]
+      DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE * (COUNT_DRIVES - 1) ))
     elif [ "$SWRAIDLEVEL" = "6" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES - 2)]
+      DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE * (COUNT_DRIVES - 2) ))
     elif [ "$SWRAIDLEVEL" = "10" ]; then
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE * ($COUNT_DRIVES / 2)]
+      DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE * (COUNT_DRIVES / 2) ))
     fi
-    echo "Calculated size of array is: $DRIVE_SUM_SIZE" | debugoutput 
+    debug "Calculated size of array is: $DRIVE_SUM_SIZE"
   fi
 
-  DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE / 1024 / 1024]
-  for i in `seq 1 $PART_COUNT`; do
+  DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE / 1024 / 1024))
+  for ((i=1; i<=PART_COUNT; i++)); do
     if [ "${PART_SIZE[$i]}" = "all" ]; then
       # make sure that the all partition has at least 1G available
-      DRIVE_SUM_SIZE=$[$DRIVE_SUM_SIZE - 1024]   
+      DRIVE_SUM_SIZE=$((DRIVE_SUM_SIZE - 1024))
     fi
   done
 
-  
+
   # test if /boot or / is mounted outside the LVM
   if [ "$LVM" = "1" ]; then
     TMPCHECK=0
-    for i in $(seq 1 $PART_COUNT); do
+    for ((i=1; i<=PART_COUNT; i++)); do
       if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
         TMPCHECK=1
       fi
     done
 
     if [ "$TMPCHECK" = "0" ]; then
-      for i in $(seq 1 $PART_COUNT); do
+      for ((i=1; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/" ]; then
           TMPCHECK=1
         fi
@@ -904,23 +991,23 @@ validate_vars() {
   fi
 
   # Check if /boot or / is mounted on one of the first three partitions.
-  if [ $PART_COUNT -gt 3 ]; then
+  if [ "$PART_COUNT" -gt 3 ]; then
     tmp=0
 
-    for i in $(seq 1 $PART_COUNT); do
+    for ((i=1; i<=PART_COUNT; i++)); do
       if [ "${PART_MOUNT[$i]}" = "/boot" ]; then
         tmp=$i
         break
       fi
     done
 
-    if [ $tmp -gt 3 ]; then
+    if [ "$tmp" -gt 3 ]; then
       graph_error "ERROR: /boot must be mounted on a primary partition"
       return 1
     fi
 
     if [ $tmp -eq 0 ]; then
-      for i in $(seq 4 $PART_COUNT); do
+      for ((i=4; i<=PART_COUNT; i++)); do
         if [ "${PART_MOUNT[$i]}" = "/" ]; then
           graph_error "ERROR: / must be mounted on a primary partition"
           return 1
@@ -932,24 +1019,24 @@ validate_vars() {
 
   # test if there are partitions in the configfile
   if [ "$PART_COUNT" -gt "0" ]; then
-  WARNBTRFS=0 
+  WARNBTRFS=0
     # test each partition line
-    for i in `seq 1 $PART_COUNT`; do
-    
+    for ((i=1; i<=PART_COUNT; i++)); do
+
       # test if the mountpoint is valid (start with / or swap or lvm)
-      CHECK="`echo ${PART_MOUNT[$i]} | grep -e "^none\|^/\|^swap$\|^lvm$"`"
+      CHECK="$(echo "${PART_MOUNT[$i]}" | grep -e "^none\|^/\|^swap$\|^lvm$")"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Mountpoint for partition $i is not correct"
         return 1
       fi
-      
+
       # test if the filesystem is one of our supportet types (btrfs/ext2/ext3/ext4/reiserfs/xfs/swap)
-      CHECK="`echo ${PART_FS[$i]} |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$"`"
+      CHECK="$(echo "${PART_FS[$i]}" |grep -e "^bios_grub\|^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$\|^lvm$")"
       if [ -z "$CHECK" -a "${PART_MOUNT[$i]}" != "lvm" ]; then
         graph_error "ERROR: Filesystem for partition $i is not correct"
         return 1
       fi
-      
+
       if [ "${PART_FS[$i]}" = "reiserfs" -a "$IAM" = "centos" ]; then
         graph_error "ERROR: centos doesn't support reiserfs"
         return 1
@@ -961,7 +1048,7 @@ validate_vars() {
       fi
 
       # we can't use bsdtar on non ext2/3/4 partitions
-      CHECK=$(echo ${PART_FS[$i]} |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
+      CHECK=$(echo "${PART_FS[$i]}" |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
       if [ -z "$CHECK" -a "${PART_MOUNT[$i]}" != "lvm" ]; then
         export TAR="tar"
         echo "setting TAR to GNUtar" | debugoutput
@@ -971,20 +1058,20 @@ validate_vars() {
         graph_error "ERROR: CentOS older than 6.2 doesn't support btrfs"
         return 1
       fi
-      
+
       # test if "all" is at the last partition entry
       ### TODO: correct this for LVM
       if [ "${PART_SIZE[$i]}" = "all" -a "$i" -lt "$PART_COUNT" ]; then
         graph_error "ERROR: Partition size \"all\" has to be on the last partition"
         return 1
       fi
-   
+
       # Check if the partition size is a valid number
       if [ "${PART_SIZE[$i]}" != "all" -a "$(echo "${PART_SIZE[$i]}" | sed "s/[0-9]//g")" != "" -o "${PART_SIZE[$i]}" = "0" ]; then
         graph_error "ERROR: The size of the partiton PART ${PART_MOUNT[$i]} is not a valid number"
         return 1
       fi
-	
+
 
       # check if /boot partition has at least 200M
       if [ "${PART_MOUNT[$i]}" = "/boot" -a "${PART_SIZE[$i]}" != "all" ]; then
@@ -1007,14 +1094,14 @@ validate_vars() {
           graph_error "ERROR: /boot partiton will not work properly with xfs"
           return 1
         fi
-      
+
         if [ "${PART_MOUNT[$i]}" = "/" -a "${PART_FS[$i]}" = "xfs" ]; then
           TMPCHECK="0"
           if [ "$IAM" = "centos"  -a "$IMG_ARCH" = "32" ]; then
             graph_error "ERROR: CentOS 32bit doesn't support xfs on partition /"
             return 1
           fi
-          for j in `seq 1 $PART_COUNT`; do
+          for ((j=1; j<=PART_COUNT; j++)); do
             if [ "${PART_MOUNT[$j]}" = "/boot" ]; then
               TMPCHECK="1"
             fi
@@ -1025,92 +1112,96 @@ validate_vars() {
           fi
         fi
       fi
-    
+
     done
     if [ "$WARNBTRFS" = "1" ]; then
-	graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        echo "WARNING: the btrfs filesystem is still under development. Data loss may occur!" | debugoutput
+      else
+        graph_notice "WARNING: the btrfs filesystem is still under development. Data loss may occur!"
+      fi
     fi
   else
    graph_error "ERROR: The config has no partitions"
    return 1
   fi
-  
+
 
   # test if there are lvs in the configfile
   if [ "$LVM_VG_COUNT" -gt "0" ]; then
     names=
 
-    for i in `seq 1 $LVM_VG_COUNT`; do
+    for ((i=1; i<=LVM_VG_COUNT; i++)); do
       names="$names\n${LVM_VG_NAME[$i]}"
     done
 
-    if [ $(echo -e "$names" | egrep -v "^$" | sort | uniq -d | wc -l) -gt 1 -a $BOOTLOADER = "lilo" ] ; then
+    if [ "$(echo -e "$names" | egrep -v "^$" | sort | uniq -d | wc -l)" -gt 1 ] && [ "$BOOTLOADER" = "lilo" ] ; then
       graph_error "ERROR: you cannot use more than one VG with lilo - use grub as bootloader"
       return 1
     fi
 
   fi
 
-  CHECK="`echo $BOOTLOADER |grep -i -e "^grub$\|^lilo$"`"
+  CHECK="$(echo "$BOOTLOADER" |grep -i -e "^grub$\|^lilo$")"
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid BOOTLOADER"
-   return 1  
+   return 1
   fi
-  
+
   if [ "$BOOTLOADER" = "lilo" ]; then
-    if [ "$IAM" = "arch" ] ||
+    if [ "$IAM" = "archlinux" ] ||
        [ "$IAM" = "coreos" ] ||
-       [ "$IAM" = "centos" ] || 
-       [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] || 
-       [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] || 
+       [ "$IAM" = "centos" ] ||
+       [ "$IAM" = "ubuntu" -a "$IMG_VERSION" -ge 1204 ] ||
+       [ "$IAM" = "debian" -a "$IMG_VERSION" -ge 70 ] ||
        [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 122 ]; then
          graph_error "ERROR: Image doesn't support lilo"
          return 1
     fi
   fi
-  
 
-  CHECK=$(echo $GOVERNOR |grep -i -e "^powersave$\|^performance$\|^ondemand$")
+
+  CHECK=$(echo "$GOVERNOR" |grep -i -e "^powersave$\|^performance$\|^ondemand$")
   if [ -z "$CHECK" ]; then
    graph_error "ERROR: No valid GOVERNOR"
-   return 1  
+   return 1
   fi
-  
-  
+
+
   # LVM checks
-  if [ "$LVM" = "0" -a "$LVM_VG_COUNT" != "0" ] ; then
+  if [ "$LVM" = "0" ] && [ "$LVM_VG_COUNT" != "0" ] ; then
     graph_error "ERROR: There are volume groups defined, but no logical volumes are defined"
-    return 1  
+    return 1
   fi
 
-  if [ "$LVM" = "0" -a "$LVM_LV_COUNT" != "0" ] ; then
+  if [ "$LVM" = "0" ] && [ "$LVM_LV_COUNT" != "0" ] ; then
     graph_error "ERROR: There are logical volumes defined, but no volume groups are defined"
-    return 1  
+    return 1
   fi
 
-  for lv_id in $(seq 1 $LVM_LV_COUNT) ; do
+  for ((lv_id=1; lv_id<=LVM_LV_COUNT; lv_id++));do
     lv_size="${LVM_LV_SIZE[$lv_id]}"
     lv_mountp="${LVM_LV_MOUNT[$lv_id]}"
     lv_fs="${LVM_LV_FS[$lv_id]}"
     lv_vg="${LVM_LV_VG[$lv_id]}"
-    
+
 
     # test if the mountpoint is valid (start with / or swap)
-    CHECK="`echo $lv_mountp | grep -e "^/\|^swap$"`"
+    CHECK="$(echo "$lv_mountp" | grep -e "^/\|^swap$")"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Mountpoint for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
     fi
-    
+
     # test if the filesystem is one of our supportet types (ext2/ext3/reiserfs/xfs/swap)
-    CHECK="`echo $lv_fs |grep -e "^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$"`"
+    CHECK="$(echo "$lv_fs" |grep -e "^btrfs$\|^ext2$\|^ext3$\|^ext4$\|^reiserfs$\|^xfs$\|^swap$")"
     if [ -z "$CHECK" ]; then
       graph_error "ERROR: Filesystem for LV '${LVM_LV_NAME[$lv_id]}' is not correct"
       return 1
     fi
 
     # test if one of the filesystem is not using ext
-    CHECK=$(echo $lv_fs |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
+    CHECK=$(echo "$lv_fs" |grep -e "^ext2$\|^ext3$\|^ext4$\|^swap$")
     if [ -z "$CHECK" ]; then
       export TAR="tar"
       echo "setting TAR to GNUtar" | debugoutput
@@ -1121,17 +1212,11 @@ validate_vars() {
       return 1
     fi
 
-#   this seems to be a very old problem. Not a problem for 6.x and later
-#    if [ "$lv_fs" = "xfs" -a "$lv_mountp" = "/" -a "$IAM" = "centos" ]; then
-#      graph_error "ERROR: centos doesn't support xfs on partition /"
-#      return 1
-#    fi
-    
-    if [ "$lv_size" != "all" -a "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" -o "$lv_size" = "0" ]; then
+    if [ "$lv_size" != "all" ] && [ "$(echo "$lv_size" | sed "s/[0-9]//g")" != "" -o "$lv_size" = "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
       return 1
     fi
-    
+
     if [ "$lv_mountp" = "/" -a "$lv_size" != "all" ]; then
       if [ "$lv_size" -lt "1500" ]; then
         graph_error "ERROR: Your / partition has to be at least 1500M"
@@ -1141,26 +1226,26 @@ validate_vars() {
 
     # problem with multiple vgs and all as lv size
     # get last lv in vg
-    for i_lv in $(seq 1 $LVM_LV_COUNT) ; do
+    for ((i_lv=1; i_lv<=LVM_LV_COUNT; i_lv++)) ; do
       if [ "${LVM_LV_VG[$i_lv]}" = "$lv_vg" ] ; then
         vg_last_lv=$i_lv
       fi
     done
-    if [ "$lv_size" = "all" -a $vg_last_lv -ne $lv_id ] ; then
-      graph_error "ERROR: LV size \"all\" has to be on the last LV in VG $lv_vg."
+    if [ "$lv_size" = "all" ] && [ $vg_last_lv -ne $lv_id ] ; then
+      graph_error "ERROR: LV size 'all' has to be on the last LV in VG $lv_vg."
       return 1
     fi
   done
 
-  for lv_id in $(seq 1 $LVM_LV_COUNT) ; do
+  for ((lv_id=1; lv_id<=LVM_LV_COUNT; lv_id++)); do
     found_vg="false"
     lv_vg=${LVM_LV_VG[$lv_id]}
-    for vg_id in $(seq 1 $LVM_VG_COUNT) ; do
+    for ((vg_id=1; vg_id<=LVM_VG_COUNT; vg_id++)) ; do
       [ "$lv_vg" = "${LVM_VG_NAME[$vg_id]}" ] && found_vg="true"
     done
     if [ "$found_vg" = "false" ] ; then
       graph_error "ERROR: LVM volume group '$lv_vg' not defined"
-      return 1  
+      return 1
     fi
   done
 
@@ -1170,53 +1255,53 @@ validate_vars() {
     vg_size="${LVM_VG_SIZE[$vg_id]}"
     sum_size="0"
 
-    # calculate size correct if more vg with same name 
+    # calculate size correct if more vg with same name
     # (e.g. for 2TB limit in CentOS workaround)
-    for i in $(seq 1 $LVM_VG_COUNT) ; do
+    for ((i=1; i<=LVM_VG_COUNT; i++)) ; do
       # check if vg has same name and is not the same vg
-      if [ "${LVM_VG_NAME[$i]}" = "$vg_name" -a $i -ne $vg_id ] ; then
+      if [ "${LVM_VG_NAME[$i]}" = "$vg_name" ] && [ "$i" -ne "$vg_id" ] ; then
         vg_add_size=0
         if [ "${LVM_VG_SIZE[$i]}" = "all" ] ; then
-          vg_add_size=$[$DRIVE_SUM_SIZE - $PARTS_SUM_SIZE]
+          vg_add_size=$((DRIVE_SUM_SIZE - PARTS_SUM_SIZE))
         else
           vg_add_size=${LVM_VG_SIZE[$i]}
         fi
-        vg_size=$[$vg_size + $vg_add_size]
+        vg_size=$((vg_size + vg_add_size))
       fi
     done
 
-    for lv_id in $(seq 1 $LVM_LV_COUNT) ; do
-      if [ "${LVM_LV_VG[$lv_id]}" = "$vg_name" -a "${LVM_LV_SIZE[$lv_id]}" = "all" ] ; then
-        sum_size=$[$sum_size + ${LVM_LV_SIZE[$lv_id]}]
+    for ((lv_id=1; lv_id<=LVM_LV_COUNT; lv_id++)) ; do
+      if [ "${LVM_LV_VG[$lv_id]}" = "$vg_name" ] && [ "${LVM_LV_SIZE[$lv_id]}" = "all" ] ; then
+        sum_size=$((sum_size + ${LVM_LV_SIZE[$lv_id]}))
       fi
     done
-    
-    if [ $vg_size -lt $sum_size ] ; then
+
+    if [ "$vg_size" -lt "$sum_size" ] ; then
       graph_error "ERROR: You are going to use more space than your VG $vg_name has available."
       return 1
     fi
-    
+
   done
-  
+
   #check for identical mountpoints listed in "PART" and "LV"
 
   local mounts_as_string=""
-  
+
   # list all mountpoints without the 'lvm' and 'swap' keyword
-  for i in `seq 1 $PART_COUNT`; do
-      if [ ${PART_MOUNT[$i]} != "lvm" -a ${PART_MOUNT[$i]} != "swap" ]; then
+  for ((i=1; i<=PART_COUNT; i++)); do
+      if [ "${PART_MOUNT[$i]}" != "lvm" ] && [ "${PART_MOUNT[$i]}" != "swap" ]; then
           mounts_as_string="$mounts_as_string${PART_MOUNT[$i]}\n"
       fi
   done
   # append all logical volume mountpoints to $mounts_as_string
-  for i in `seq 1 $LVM_LV_COUNT`; do
+  for ((i=1; i<=LVM_LV_COUNT; i++)); do
       mounts_as_string="$mounts_as_string${LVM_LV_MOUNT[$i]}\n"
   done
 
   # check if there are identical mountpoints
-  local identical_mount_points="$(echo -e "$mounts_as_string" | sort | uniq -d)"
+  local identical_mount_points; identical_mount_points="$(echo -e "$mounts_as_string" | sort | uniq -d)"
   if [ "$identical_mount_points" ]; then
-     graph_error "ERROR: There are identical mountpoints in the config ($(echo $identical_mount_points | tr " " ", "))"
+     graph_error "ERROR: There are identical mountpoints in the config ($(echo "$identical_mount_points" | tr " " ", "))"
      return 1
   fi
 
@@ -1227,39 +1312,52 @@ validate_vars() {
 
   if [ "$SWRAID" -eq 1 ]; then
     if [ "$(getHDDsNotInToleranceRange)" ]; then
-      graph_notice "
-             \nNOTICE: You are going to use hard disks with different disk space.
-             \nWe set the maximum of your allocable disc space based on the smallest hard disk at $SMALLEST_HDD_SIZE MB
-             \nYou can change this by customizing the drive settings.
-             " 
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        {
+          echo 'WARNING: You are going to use hard disks with different disk space.'
+          echo "We set the maximum of your allocable disc space based on the smallest hard disk at $SMALLEST_HDD_SIZE MB."
+          echo 'You can change this by customizing the drive settings.'
+        } | debugoutput
+      else
+        graph_notice "
+               \nNOTICE: You are going to use hard disks with different disk space.
+               \nWe set the maximum of your allocable disc space based on the smallest hard disk at $SMALLEST_HDD_SIZE MB
+               \nYou can change this by customizing the drive settings.
+               "
+      fi
     fi
   fi
 
   if [ "$DRIVE_SUM_SIZE" -lt "$PARTS_SUM_SIZE" ]; then
-    local diff=$[DRIVE_SUM_SIZE - $PARTS_SUM_SIZE]
+    local diff=$((DRIVE_SUM_SIZE - PARTS_SUM_SIZE))
     graph_error "ERROR: You are going to use more space than your drives have available.
                  \nUsage: $PARTS_SUM_SIZE MiB of $DRIVE_SUM_SIZE MiB
                  \nDiff: $diff MiB"
     return 1
   fi
-  
+
   if [ "$HASROOT" != "true" ]; then
     graph_error "ERROR: You dont have a partition for /"
     return 1
   fi
-  
-  if [ "$OPT_INSTALL" ]; then
-    if [ $(echo $OPT_INSTALL | grep -i "PLESK") ]; then
-        if [ "$IAM" != "centos" -a "$IAM" != "debian" ]; then
-          graph_error "ERROR: PLESK is not available for this image"
-          return 1
-        fi
+
+  if is_cpanel_install; then
+    if [ "$IAM" != "centos" ]; then
+      graph_error "ERROR: CPANEL is not available for this image"
+      return 1
+    fi
+  fi
+
+  if is_plesk_install; then
+    if [ "$IAM" != "centos" -a "$IAM" != "debian" -a "$IAM" != "ubuntu" ]; then
+      graph_error "ERROR: PLESK is not available for this image"
+      return 1
     fi
   fi
 
   if [ "$BOOTLOADER" == "grub" ]; then
     # check dos partition sizes for centos
-    local result="$(check_dos_partitions)"
+    local result; result="$(check_dos_partitions '')"
 
     if [ -n "$result" ]; then
       if [ "$result" == "PART_OVERSIZED" ]; then
@@ -1280,7 +1378,7 @@ validate_vars() {
       fi
     fi
   fi
-  
+
   if [ "$BOOTLOADER" == "lilo" ]; then
     graph_notice "WARNING: Lilo is deprecated and no longer supported. Please consider using grub"
   fi
@@ -1289,9 +1387,27 @@ validate_vars() {
     graph_error "ERROR: HOSTNAME may not be empty"
     return 1
   fi
+  # TODO: add check for valid hostname (e.g. no underscores)
 
- fi
- return 0
+  if [ "$MBTYPE" = "D3401-H1" ] || [ "$MBTYPE" = "D3417-B1" ]; then
+    if [ "$IAM" = "debian" ] && [ "$IMG_VERSION" -lt 82 -o "$IMG_VERSION" = '710' -o "$IMG_VERSION" = '711' ]; then
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        echo "WARNING: Debian versions older than Debian 8.2 have no support for the Intel i219 NIC of this board." | debugoutput
+      else
+        graph_notice "WARNING: Debian versions older than Debian 8.2 have no support for the Intel i219 NIC of this board."
+      fi
+    fi
+    if [ "$IAM" = "centos" ] && [ "$IMG_VERSION" -ge 70 ] && [ "$IMG_VERSION" -lt 72 ]; then
+      if [ "$OPT_AUTOMODE" = 1 ] || [ -e /autosetup ]; then
+        echo "WARNING: CentOS 7.0 and 7.1 have no support for the Intel i219 NIC of this board." | debugoutput
+      else
+        graph_notice "WARNING: CentOS 7.0 and 7.1 have no support for the Intel i219 NIC of this board."
+      fi
+    fi
+  fi
+
+  fi
+  return 0
 }
 
 #
@@ -1303,7 +1419,7 @@ graph_error() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
         --no-label "Cancel" --yesno \
-        "$@\n\nYou will be dropped back to the editor to fix the problem." 0 0
+        "$*\n\nYou will be dropped back to the editor to fix the problem." 0 0
     EXITCODE=$?
   else
     dialog --backtitle "$DIATITLE" --title "ERROR" --yes-label "OK" \
@@ -1313,7 +1429,7 @@ graph_error() {
 
   # set var if user hit "Cancel"
   if [ "$EXITCODE" -eq "1" ]; then
-    CANCELLED="true"
+    export CANCELLED="true"
   fi
 }
 
@@ -1325,35 +1441,39 @@ graph_error() {
 graph_notice() {
   if [ $# -gt 0 ]; then
     dialog --backtitle "$DIATITLE" --title "NOTICE" --msgbox \
-        "$@\n\n" 0 0
+        "$*\n\n" 0 0
   fi
 }
 
 # which operating system will be installed
 # whoami "IMAGENAME"
 whoami() {
+ IMAGENAME="${1%%.*}"
+
  IAM="debian"
+
  if [ "$1" ]; then
   case "$1" in
     *SuSE*|*suse*|*Suse*|*SUSE*)IAM="suse";;
     *CentOS*|*centos*|*Centos*)IAM="centos";;
     *Ubuntu*|*ubuntu*)IAM="ubuntu";;
-    Arch*)IAM="arch";;
+    Arch*|arch*)IAM="archlinux";;
     CoreOS*|coreos*)
       IAM="coreos"
       CLOUDINIT="$FOLD/cloud-config"
-      echo -e "#cloud-config\n" > $CLOUDINIT
+      echo -e "#cloud-config\n" > "$CLOUDINIT"
     ;;
   esac
  fi
 
  IMG_VERSION="$(echo "$1" | cut -d "-" -f 2)"
- [ -z "$IMG_VERSION" -o "$IMG_VERSION" = "" -o "$IMG_VERSION" = "h.net.tar.gz" ]  && IMG_VERSION="0"
+ [ -z "$IMG_VERSION" -o "$IMG_VERSION" = "" -o "$IMG_VERSION" = "h.net.tar.gz" -o "$IMG_VERSION" = 'latest' ]  && IMG_VERSION="0"
  IMG_ARCH="$(echo "$1" | sed 's/.*-\(32\|64\)-.*/\1/')"
 
- IMG_FULLNAME="$(ls -1 $IMAGESPATH | grep "$1" | grep -v ".sig")"
+ IMG_FULLNAME="$(find "$IMAGESPATH" -maxdepth 1 -type f -name "$1*" -a -not -regex '.*\.sig$' -printf '%f\n')"
  IMG_EXT="${IMG_FULLNAME#*.}"
 
+ export IMAGENAME
  export IAM
  export IMG_VERSION
  export IMG_ARCH
@@ -1378,7 +1498,7 @@ unmount_all() {
       unmount_errors=$[$unmount_errors + $EXITCODE]
     fi
   done < /proc/mounts
-
+  echo "$unmount_output"
   return $unmount_errors
 }
 
@@ -1386,13 +1506,13 @@ unmount_all() {
 # stop_lvm_raid
 #
 # Stop the Logical Volume Manager and all software RAID arrays.
-# 
+#
 stop_lvm_raid() {
   test -x /etc/init.d/lvm && /etc/init.d/lvm stop &>/dev/null
   test -x /etc/init.d/lvm2 && /etc/init.d/lvm2 stop &>/dev/null
 
-  dmsetup remove_all
-  
+  dmsetup remove_all > /dev/null 2>&1
+
   test -x "$(which mdadm)" && for i in $(cat /proc/mdstat | grep md | cut -d ' ' -f1); do
     [ -e /dev/$i ] && mdadm -S /dev/$i >> /dev/null 2>&1
   done
@@ -1408,13 +1528,13 @@ delete_partitions() {
     mdadm --zero-superblock $raidmember 2> /dev/null
   done
   # clean RAID information in superblock of blockdevice
-  mdadm --zero-superblock $1 2> /dev/null
+  mdadm --zero-superblock "$1" 2> /dev/null
 
   #delete GPT and MBR
-  sgdisk -Z $1 1>/dev/null 2>/dev/null
+  sgdisk -Z "$1" 1>/dev/null 2>/dev/null
 
   # clean mbr boot code
-  dd if=/dev/zero of=$1 bs=512 count=1 >/dev/null 2>&1 ; EXITCODE=$?
+  dd if=/dev/zero of="$1" bs=512 count=1 >/dev/null 2>&1 ; EXITCODE=$?
 
   # re-read partition table
   partprobe 2>/dev/null
@@ -1427,34 +1547,34 @@ delete_partitions() {
 # function which gets the end of the extended partition
 # get_end_of_extended "DRIVE"
 function get_end_of_extended() {
-  local DEV="$1" 
-  local DRIVE_SIZE=$(blockdev --getsize64 $DEV)
-  local SECTORSIZE=$(blockdev --getss $DEV )
+  local dev="$1"
+  local drive_size; drive_size=$(blockdev --getsize64 "$dev")
+  local sectorsize; sectorsize=$(blockdev --getss "$dev")
 
   local end=0
   local sum=0
-  local LIMIT=2199023255040
+  local limit=2199023255040
   # get sector limit
-  local SECTORLIMIT=$[($LIMIT / $SECTORSIZE) - 1]
-  local STARTSEC=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
+  local sectorlimit=$(( (limit / sectorsize) - 1))
+  local startsec; startsec=$(sgdisk --first-aligned-in-largest "$1" | tail -n1)
 
-  for i in $(seq 1 3); do
-    sum=$(echo "$sum + ${PART_SIZE[$i]}" | bc)
+  for ((i=1; i<=3; i++)); do
+    sum=$((sum + ${PART_SIZE[$i]}))
   done
-  rest=$(echo "$DRIVE_SIZE - ($sum * 1024 * 1024)" | bc)
+  rest=$((drive_size - (sum * 1024 * 1024) ))
 
-  end=$[$DRIVE_SIZE / $SECTORSIZE]
+  end=$((drive_size / sectorsize))
 
-  if [ $DRIVE_SIZE -lt $LIMIT ]; then
-    echo "$[$end-1]"
+  if [ "$drive_size" -lt $limit ]; then
+    echo "$((end-1))"
   else
-    if [ $rest -gt $LIMIT ]; then
+    if [ $rest -gt $limit ]; then
       # if the remaining space is more than 2 TiB, the end of the extended
       # partition is the current sector plus 2^32-1 sectors (2TiB-512 Byte)
-      echo "$(echo "$STARTSEC+$SECTORLIMIT" | bc)"
+      echo "$((startsec+sectorlimit))"
     else
       # otherwise the end is the number of sectors - 1
-      echo "$[$end-1]"
+      echo "$((end-1))"
     fi
   fi
 }
@@ -1462,47 +1582,48 @@ function get_end_of_extended() {
 # function which calculates the end of the partition
 # get_end_of_partition "PARTITION"
 function get_end_of_partition {
-  local DEV=$1
-  local START=$2
-  local NR=$3
-  local LIMIT=2199023255040
-  local SECTORSIZE=$(blockdev --getss $DEV)
-  local SECTORLIMIT=$[($LIMIT / $SECTORSIZE) - 1]
-  local END_EXTENDED="$(parted -s $DEV unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')"
-  local DEVSIZE=$(blockdev --getsize64 $DEV)
-  START=$[START * $SECTORSIZE]
+  local dev=$1
+  local start=$2
+  local nr=$3
+  local limit=2199023255040
+  local sectorsize; sectorsize=$(blockdev --getss "$dev")
+  local sectorlimit; sectorlimit=$(( (limit / sectorsize) - 1))
+  local end_extended; end_extended=$(parted -s "$dev" unit b print | grep extended | awk '{print $3}' | sed -e 's/B//')
+  local devsize; devsize=$(blockdev --getsize64 "$dev")
+  start=$((start * sectorsize))
   # use the smallest hdd as reference when using swraid
   # to determine the end of a partition
-  local smallest_hdd=$(smallest_hd)
-  local smallest_hdd_space="$(blockdev --getsize64 $smallest_hdd)"
-  if [ "$SWRAID" -eq "1" ] && [ $DEVSIZE -gt $smallest_hdd_space ]; then
-    DEV=$smallest_hdd
+  local smallest_hdd; smallest_hdd=$(smallest_hd)
+  local smallest_hdd_space; smallest_hdd_space=$(blockdev --getsize64 "$smallest_hdd")
+  if [ "$SWRAID" -eq "1" ] && [ "$devsize" -gt "$smallest_hdd_space" ]; then
+    dev=$smallest_hdd
   fi
-  
-  local LAST=$(blockdev --getsize64 $DEV)
-  # make the partition at least 1 MiB if all else fails
-  local END=[$START+1048576]
 
-  if [ "`echo ${PART_SIZE[$NR]} |tr [:upper:] [:lower:]`" = "all" ]; then
+  local last; last=$(blockdev --getsize64 "$dev")
+  # make the partition at least 1 MiB if all else fails
+  local end=$((start + 1048576))
+
+  if [ "$(echo ${PART_SIZE[$nr]} |tr [:upper:] [:lower:])" = "all" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$[$LAST-1048576]
+    end=$((last - 1048576))
   else
-    END="$(echo "$START+(${PART_SIZE[$NR]}* 1024 * 1024)" | bc)"
+    end="$((start + ( ${PART_SIZE[$nr]} * 1024 * 1024) ))"
     # trough alignment the calculated end could be a little bit over drive size
-    # or too close to the end. Always leave 1MiB space 
+    # or too close to the end. Always leave 1MiB space
     # (may be needed for mdadm or for later conversion to GPT)
-    if [ $END -ge $LAST ] || [ $[$LAST - $END] -lt 1048576 ]; then
-      END=$[$LAST-1048576]
+    if [ $end -ge $last ] || [ $((last - end)) -lt 1048576 ]; then
+      end=$((last - 1048576))
     fi
   fi
   # check if end of logical partition is over the end extended partition
-  if [ $PCOUNT -gt 4 ] && [ $END -gt $END_EXTENDED ]; then
+  if [ $PCOUNT -gt 4 ] && [ $end -gt $end_extended ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
-    END=$[$END_EXTENDED-1048576]
+    end=$((end_extended - 1048576))
   fi
 
-  END=$[$END / $SECTORSIZE]
-  echo $END
+  # subtract one sector as the start sector is included in partition
+  end=$(( (end - sectorsize) / sectorsize))
+  echo $end
 }
 
 
@@ -1510,16 +1631,18 @@ function get_end_of_partition {
 # create_partitions "DRIVE"
 create_partitions() {
  if [ "$1" ]; then
-  local SECTORSIZE=$(blockdev --getss $1)
+  local sectorsize; sectorsize=$(blockdev --getss $1)
 
   # write standard entries to fstab
-  echo "proc /proc proc defaults 0 0" > $FOLD/fstab
+  echo "proc /proc proc defaults 0 0" > "$FOLD/fstab"
   # add fstab entries for devpts, sys and shm in CentOS as they are not
   # automatically mounted by init skripts like in Debian/Ubuntu and OpenSUSE
   if [ "$IAM" = "centos" ]; then
-    echo "devpts /dev/pts devpts gid=5,mode=620 0 0" >> $FOLD/fstab
-    echo "tmpfs /dev/shm tmpfs defaults 0 0" >> $FOLD/fstab
-    echo "sysfs /sys sysfs defaults 0 0" >> $FOLD/fstab
+    {
+      echo "devpts /dev/pts devpts gid=5,mode=620 0 0"
+      echo "tmpfs /dev/shm tmpfs defaults 0 0"
+      echo "sysfs /sys sysfs defaults 0 0"
+    } >> "$FOLD/fstab"
   fi
   #copy defaults to tempfstab for softwareraid
   ### cp $FOLD/fstab $FOLD/fstab.md >>/dev/null 2>&1
@@ -1531,7 +1654,7 @@ create_partitions() {
   dd if=/dev/zero of=$1 bs=1M count=10  1>/dev/null 2>&1
   hdparm -z $1 >/dev/null 2>&1
 
-  #create GPT 
+  #create GPT
   if [ $GPT  -eq '1' ]; then
     #create GPT and randomize disk id (GUID)
     sgdisk -o $1 1>/dev/null 2>/dev/null
@@ -1546,7 +1669,7 @@ create_partitions() {
   fi
 
   # start loop to create all partitions
-  for i in `seq 1 $PART_COUNT`; do
+  for i in $(seq 1 $PART_COUNT); do
 
    SFDISKTYPE="83"
    if [ "${PART_FS[$i]}" = "swap" ]; then
@@ -1559,7 +1682,7 @@ create_partitions() {
      SFDISKTYPE="fd"
    fi
 
-   if [ "`echo ${PART_SIZE[$i]} |tr [:upper:] [:lower:]`" = "all" ]; then
+   if [ "$(echo ${PART_SIZE[$i]} |tr [:upper:] [:lower:])" = "all" ]; then
      SFDISKSIZE=""
    else
      SFDISKSIZE="${PART_SIZE[$i]}"
@@ -1570,7 +1693,7 @@ create_partitions() {
    if [ $GPT -eq 1 ]; then
 
      # start at 2MiB so we have 1 MiB left for BIOS Boot Partition
-     START=$[2097152/$SECTORSIZE]
+     START=$((2097152 / sectorsize))
      if [ $i -gt 1 ]; then
        START=$(sgdisk --first-aligned-in-largest $1 | tail -n1)
      fi
@@ -1584,7 +1707,7 @@ create_partitions() {
      local gpt_part_type="${SFDISKTYPE}00"
 
      if [ $i -eq $PART_COUNT ]; then
-       local bios_grub_start=$[1048576/$SECTORSIZE]
+       local bios_grub_start=$((1048576 / sectorsize))
        echo "Creating BIOS_GRUB partition" | debugoutput
        sgdisk --new $i:$bios_grub_start:+1M -t $i:EF02 $1 2>&1 | debugoutput
      else
@@ -1599,7 +1722,7 @@ create_partitions() {
 
    else
      # part without GPT
-     START=$[1048576/$SECTORSIZE]
+     START=$((1048576 / sectorsize))
 
      TYPE="primary"
      PCOUNT="$i"
@@ -1625,19 +1748,24 @@ create_partitions() {
        PCOUNT=$[$PCOUNT+1]
 
        TYPE="logical"
-       START=$[$START + (1048576 / $SECTORSIZE) ]
+       START=$((START + (1048576 / sectorsize) ))
 
        END=$(get_end_of_partition $1 $START $i)
      fi
 
-     if [  "$i" -gt "4" ]; then
+     if [ "$i" -gt "4" ]; then
        TYPE="logical"
+       # every logical partition needs one sector for the EBR
+       # since we align partitions to MiB boundaries, the previous one
+       # may just have ended there. Which would leave no space for the EBR.
+       # so we leave 1 MiB between each logical partition
+       START=$((START + (1048576 / sectorsize) ))
      fi
 
      # create partitions as ext3 which results in type 83
      local FSTYPE="ext3"
      if [ "${PART_FS[$i]}" = "swap" ]; then
-       FSTYPE="linux-swap" 
+       FSTYPE="linux-swap"
      fi
 
      echo "create partition: parted -s $1 mkpart $TYPE $FSTYPE ${START}s ${END}s" | debugoutput
@@ -1657,7 +1785,7 @@ create_partitions() {
      fi
 
 
-     if [ "$PART_COUNT" -ge "4" -a "$i" -ge "4" ]; then    
+     if [ "$PART_COUNT" -ge "4" -a "$i" -ge "4" ]; then
        make_fstab_entry "$1" "$[$i+1]" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
      else
        make_fstab_entry "$1" "$i" "${PART_MOUNT[$i]}" "${PART_FS[$i]}"
@@ -1675,7 +1803,7 @@ create_partitions() {
 #    LAST_PART_START="$(parted -s $1 unit s print | tail -n 2 | head -n 1 | awk '{print$2}' | rev | cut -c 2- | rev)"
 #    LAST_PART_END="$(parted -s $1 unit s print | tail -n 2 | head -n 1 | awk '{print$3}' |rev | cut -c 2- | rev)"
 #    DISK_SIZE_SECTORS="$(parted -s $1 unit s print | grep Disk | awk '{print$3}' | rev | cut -c 2- | rev)"
-  
+
 #    SECTOR_DIFF=$((DISK_SIZE_SECTORS-LAST_PART_END))
 
 #    if [ "$SWRAID" = "1" ]; then
@@ -1684,7 +1812,7 @@ create_partitions() {
 #	NEW_LAST_PART_END=$((LAST_PART_END-part_end_diff))
 
 #        parted -s $1 mkfs $PART_COUNT linux-swap >/dev/null 2>/tmp/$$.tmp
-#        parted -s $1 unit s resize ${PART_COUNT} ${LAST_PART_START} ${NEW_LAST_PART_END} >/dev/null 2>/tmp/$$.tmp 
+#        parted -s $1 unit s resize ${PART_COUNT} ${LAST_PART_START} ${NEW_LAST_PART_END} >/dev/null 2>/tmp/$$.tmp
 #      fi
 #      cat /tmp/$$.tmp | debugoutput
 #    fi
@@ -1698,7 +1826,7 @@ create_partitions() {
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
   dmraid -a no 2>&1 | debugoutput
   dmsetup remove_all 2>&1 | debugoutput
-  
+
  return $EXITCODE
  fi
 }
@@ -1708,25 +1836,31 @@ create_partitions() {
 make_fstab_entry() {
  if [ "$1" -a "$2" -a "$3" -a "$4" ]; then
   ENTRY=""
+  local p="$(echo $1 | grep nvme)"
+  [ -n "$p" ] && p='p'
 
   if [ "$4" = "swap" ] ; then
-   ENTRY="$1$2 none swap sw 0 0"
- elif [ "$3" = "lvm" ] ; then 
-   ENTRY="# $1$2  belongs to LVM volume group '$4'"
+    ENTRY="$1$p$2 none swap sw 0 0"
+ elif [ "$3" = "lvm" ] ; then
+    ENTRY="# $1$2  belongs to LVM volume group '$4'"
   else
-   ENTRY="$1$2 $3 $4 defaults 0 0"  
+    if [ "$SYSTYPE" = "vServer" -a "$4" = 'ext4' ]; then
+      ENTRY="$1$p$2 $3 $4 defaults,discard 0 0"
+    else
+      ENTRY="$1$p$2 $3 $4 defaults 0 0"
+    fi
   fi
-   
-  echo $ENTRY >>$FOLD/fstab
+
+  echo $ENTRY >> "$FOLD/fstab"
 
   if [ "$3" = "/" ]; then
-    SYSTEMREALROOTDEVICE="$1$2"
+    SYSTEMREALROOTDEVICE="$1$p$2"
     if [ -z "$SYSTEMREALBOOTDEVICE" ]; then
-      SYSTEMREALBOOTDEVICE="$1$2"
+      SYSTEMREALBOOTDEVICE="$1$p$2"
     fi
   fi
   if [ "$3" = "/boot" ]; then
-    SYSTEMREALBOOTDEVICE="$1$2"
+    SYSTEMREALBOOTDEVICE="$1$p$2"
   fi
 
  fi
@@ -1752,7 +1886,7 @@ make_swraid() {
     fstab=$1
 
     dmsetup remove_all
-	
+
     count=0
     PARTNUM=0
     LASTDRIVE="$(eval echo \$DRIVE${COUNT_DRIVES})"
@@ -1767,48 +1901,60 @@ make_swraid() {
     mv $fstab $fstab.tmp
 
     debug "# create software raid array(s)"
-    METADATA="--metadata=1.2"
+    local metadata="--metadata=1.2"
+    local metadata_boot=$metadata
 
     #centos 6.x metadata
     if [ "$IAM" = "centos" -a "$IMG_VERSION" -lt 70 ]; then
       if [ "$IMG_VERSION" -ge 60 ]; then
-        METADATA="--metadata=1.0"
+        metadata="--metadata=1.0"
+        metadata_boot="--metadata=0.90"
       else
-        METADATA="--metadata=0.90"
+        metadata="--metadata=0.90"
+        metadata_boot="${metadata}"
       fi
     fi
 
-    local metadata_boot=$METADATA
-    [ "$IAM" == "ubuntu" -a "$IMG_VERSION" -lt 1204 ] && metadata_boot="--metadata=0.90"
-    
+    # we always use /dev/mdX in Ubuntu 10.04. In all other distributions we
+    # use it when we have Metadata format 0.90 in Ubuntu 11.04 we have to use
+    # /boot with metadata format 0.90
+    if [ "$IAM" == "ubuntu" -a "$IMG_VERSION" -lt 1204 ]; then
+    	if [ "$IMG_VERSION" -le 1004 ]; then
+          metadata="--metadata=0.90"
+        else
+          metadata_boot="--metadata=0.90"
+        fi
+    fi
+    [ "$IAM" == "suse" -a "$IMG_VERSION" -lt 123 ] && metadata="--metadata=0.90"
+
     while read line ; do
       PARTNUM="$(next_partnum $count)"
-
       echo "Line is: \"$line\"" | debugoutput
-      # we always use /dev/mdX in Ubuntu 10.04. In all other distributions we use it when we have Metadata format 0.90
-      # in Ubuntu 11.04 we have to use /boot with metadata format 0.90
-      if [ -n "$(echo "$line" | grep "/boot")" -a  "$metadata_boot" == "--metadata=0.90" ] || [ "$METADATA" == "--metadata=0.90" ] ||  [ "$IAM" == "ubuntu"  -a  "$IMG_VERSION" == "1004" ] || [ "$IAM" == "suse" ] || [ "$IAM" == "centos" ]; then
+      if [ -n "$(echo "$line" | grep "/boot")" -a  "$metadata_boot" == "--metadata=0.90" ] || [ "$metadata" == "--metadata=0.90" ]; then
         # update fstab - replace /dev/sdaX with /dev/mdY
-        echo $line | sed "s/$SEDHDD[[:digit:]]\{1,2\}/\/dev\/md$count/g" >> $fstab
+        echo $line | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md$count/g" >> $fstab
       else
         # update fstab - replace /dev/sdaX with /dev/md/Y
-        echo $line | sed "s/$SEDHDD[[:digit:]]\{1,2\}/\/dev\/md\/$count/g" >> $fstab
+        echo $line | sed "s/$SEDHDD\(p\)\?[0-9]\+/\/dev\/md\/$count/g" >> $fstab
       fi
 
       # create raid array
       if echo $line | grep $LASTDRIVE >/dev/null ; then
-        
+
         local raid_device="/dev/md/$count"
         local components=""
         local n=0
         for n in $(seq 1 $COUNT_DRIVES) ; do
           TARGETDISK="$(eval echo \$DRIVE${n})"
-          components="$components $TARGETDISK$PARTNUM"
+          local p="$(echo $TARGETDISK | grep nvme)"
+          [ -n "$p" ] && p='p'
+          components="$components $TARGETDISK$p$PARTNUM"
         done
 
-        local array_metadata=$METADATA
-        local array_raidlevel=$SWRAIDLEVEL
+        local array_metadata="$metadata"
+        local array_raidlevel="$SWRAIDLEVEL"
         local can_assume_clean=''
+        local array_layout=''
 
         # lilo and GRUB can't boot from a RAID0/5/6 or 10 partition, so make /boot always RAID1
         if [ "$(echo "$line" | grep "/boot")" ]; then
@@ -1820,14 +1966,19 @@ make_swraid() {
         fi
 
         if [ "$RAID_ASSUME_CLEAN" = "1" ]; then
-          if [ "$SWRAIDLEVEL" = "1" ] || [ "$SWRAIDLEVEL" = "10" ] || [ "$SWRAIDLEVEL" = "6" ]; then
+          if [ "$array_raidlevel" = "1" ] || [ "$array_raidlevel" = "6" ] || [ "$array_raidlevel" = "10" ]; then
             can_assume_clean='--assume-clean'
           fi
         fi
-        echo "Array RAID Level is: \"$array_raidlevel\" - $can_assume_clean" | debugoutput
-        echo "Array metadata is: \"$array_metadata\"" | debugoutput
+        if [ -n "$RAID_LAYOUT" ]; then
+          if [ "$array_raidlevel" = "5" ] || [ "$array_raidlevel" = "6" ] || [ "$array_raidlevel" = "10" ]; then
+             array_layout="--layout $RAID_LAYOUT"
+          fi
+        fi
+        debug "Array RAID Level is: '$array_raidlevel' - $can_assume_clean - $array_layout"
+        debug "Array metadata is: '$array_metadata'"
 
-        yes | mdadm -q -C $raid_device -l$array_raidlevel -n$n $array_metadata $can_assume_clean $components 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
+        yes | mdadm -q -C $raid_device -l$array_raidlevel -n$n $array_metadata $array_layout $can_assume_clean $components 2>&1 | debugoutput ; EXITCODE=$?
 
         count="$[$count+1]"
        fi
@@ -1835,25 +1986,27 @@ make_swraid() {
     done < $fstab.tmp
 
   fi
-  return 0
+  return 0 
 }
 
 
 make_lvm() {
-  if [ "$1" -a "$2" ] ; then
-    fstab=$1
-    disk1=$2
+  if [ -n "$1" ] ; then
+    local fstab=$1
+    local disk=$DRIVE1
+    local p; p="$(echo "$disk" | grep nvme)"
+    [ -n "$p" ] && p='p'
 
     # get device names for PVs depending if we use swraid or not
     inc_dev=1
     if [ $SWRAID -eq 1 ]; then
-      for md in $(ls -1 /dev/md/[0-9]*) ; do 
+      for md in $(ls -1 /dev/md/[0-9]*) ; do
         dev[$inc_dev]="$md"
         let inc_dev=inc_dev+1
       done
     else
-      for inc_dev in $(seq 1 $(ls -1 ${DRIVE1}[0-9]* | wc -l)) ; do 
-        dev[$inc_dev]="$disk1$(next_partnum $[$inc_dev-1])"
+      for inc_dev in $(seq 1 $(ls -1 ${DRIVE1}$p[0-9]* | wc -l)) ; do
+        dev[$inc_dev]="$disk$p$(next_partnum $[$inc_dev-1])"
       done
     fi
 
@@ -1874,6 +2027,7 @@ make_lvm() {
     for i in $(seq 1 $LVM_VG_COUNT) ; do
       pv=${dev[${LVM_VG_PART[${i}]}]}
       debug "# Creating PV $pv"
+      wipefs -af $pv |& debugoutput
       pvcreate -ff $pv 2>&1 | debugoutput
     done
 
@@ -1924,7 +2078,7 @@ make_lvm() {
       fi
 
       debug "# Creating LV $vg/$lv ($size MiB)"
-      lvcreate --name $lv --size $size $vg 2>&1 | debugoutput
+      lvcreate --yes --name $lv --size $size $vg 2>&1 | debugoutput
       test $? -eq 0 || return 1
     done
 
@@ -1948,24 +2102,24 @@ format_partitions() {
     DEV="$1"
     FS="$2"
     EXITCODE=0
-      
+
     # reread partition table after some break
     sleep 4
     hdparm -z $1 >/dev/null 2>/dev/null
 
     if [ -b $DEV ] ; then
       debug "# formatting  $DEV  with  $FS"
+      wipefs -af $DEV |& debugoutput
       if [ "$FS" = "swap" ]; then
         # format swap partition with dd first because mkswap
         # doesnt overwrite sw-raid information!
-        mkfs -t xfs -f $DEV 2>&1 | debugoutput
-        dd if=/dev/zero of=$DEV bs=256 count=8 2>&1 | debugoutput
+        mkfs -t xfs -f $DEV &> /dev/null
+        dd if=/dev/zero of=$DEV bs=256 count=8 &> /dev/null
         # then write swap information
         mkswap $DEV 2>&1 | debugoutput ; EXITCODE=$?
       elif [ "$FS" = "ext2" -o "$FS" = "ext3" -o "$FS" = "ext4" ]; then
         mkfs -t $FS -q $DEV 2>&1 | debugoutput ; EXITCODE=$?
       elif [ "$FS" = "btrfs" ]; then
-        wipefs $DEV | debugoutput
         mkfs -t $FS $DEV 2>&1 | debugoutput ; EXITCODE=$?
       else
         mkfs -t $FS -q -f $DEV 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
@@ -1982,52 +2136,19 @@ mount_partitions() {
   if [ "$1" -a "$2" ]; then
     fstab="$1"
     basedir="$2"
-    
-    ROOTDEVICE="`cat $fstab | grep " / " | cut -d " " -f 1`"
+
+    ROOTDEVICE="$(cat $fstab | grep " / " | cut -d " " -f 1)"
     SYSTEMROOTDEVICE="$ROOTDEVICE"
     SYSTEMBOOTDEVICE="$SYSTEMROOTDEVICE"
 
     mount "$ROOTDEVICE" "$basedir" 2>&1 | debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    mkdir -p $basedir/proc 2>&1 | debugoutput
-    mount -o bind /proc $basedir/proc 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
-
-    mkdir -p $basedir/dev 2>&1 | debugoutput
-    mount -o bind /dev $basedir/dev 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
-
-    mkdir -p $basedir/dev/pts 2>&1 | debugoutput
-    mount -o bind /dev/pts $basedir/dev/pts 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
-
-    # bind /dev/shm too
-    # wheezy rescue: /dev/shm links to /run/shm
-    if [ -L $basedir/dev/shm ] ; then
-      shmlink="$(readlink $basedir/dev/shm)"
-      mkdir -p ${basedir}${shmlink} 2>&1 | debugoutput
-      if [ -e $shmlink ] ; then
-        mount -o bind $shmlink ${basedir}${shmlink} 2>&1 | debugoutput ; EXITCODE=$?
-      else
-        mount -o bind /dev/shm ${basedir}${shmlink} 2>&1 | debugoutput ; EXITCODE=$?
-      fi
-      [ "$EXITCODE" -ne "0" ] && return 1
-    else
-      mkdir -p $basedir/dev/shm 2>&1 | debugoutput
-      mount -o bind /dev/shm $basedir/dev/shm 2>&1 | debugoutput ; EXITCODE=$?
-      [ "$EXITCODE" -ne "0" ] && return 1
-    fi
-
-    mkdir -p $basedir/sys 2>&1 | debugoutput
-    mount -o bind /sys $basedir/sys 2>&1 | debugoutput ; EXITCODE=$?
-    [ "$EXITCODE" -ne "0" ] && return 1
-
     cat $fstab | grep -v " / \|swap" | grep "^/dev/" > $fstab.tmp
 
     while read line ; do
-      DEVICE="`echo $line | cut -d " " -f 1`"
-      MOUNTPOINT="`echo $line | cut -d " " -f 2`"
+      DEVICE="$(echo $line | cut -d " " -f 1)"
+      MOUNTPOINT="$(echo $line | cut -d " " -f 2)"
       mkdir -p "$basedir$MOUNTPOINT" 2>&1 | debugoutput
 
       # create lock and run dir for ubuntu if /var has its own filesystem
@@ -2075,8 +2196,8 @@ get_image_info() {
         fi
        ;;
       http)
-        mkdir $FOLD/keys/ 2>&1
-        cd $FOLD/keys/ 
+        mkdir "$FOLD/keys/" 2>&1
+        cd "$FOLD/keys/"
         # no exitcode, because if not found hetzner-pubkey will be used
         wget -q --no-check-certificate "${1}public-key.asc" 2>&1 | debugoutput ; >/dev/null
         if [ "$EXITCODE" -eq "0" ]; then
@@ -2115,11 +2236,11 @@ get_image_info() {
 # download image via http/ftp
 get_image_url() {
   # load image to mounted hdd
-  cd $FOLD/hdd/ ; wget -q --no-check-certificate "$1$2" 2>&1 | debugoutput ; EXITCODE=$?; cd - >/dev/null
+  cd "$FOLD/hdd/" ; wget -q --no-check-certificate "$1$2" 2>&1 | debugoutput ; EXITCODE=$?; cd - >/dev/null
   if [ "$EXITCODE" -eq "0" ]; then
     EXTRACTFROM="$FOLD/hdd/$2"
     # search for sign file and download
-    cd $FOLD/keys/ ; wget -q --no-check-certificate "$1$2.sig" 2>&1 | debugoutput ; EXITCODE=$?; cd - >/dev/null
+    cd "$FOLD/keys/" ; wget -q --no-check-certificate "$1$2.sig" 2>&1 | debugoutput ; EXITCODE=$?; cd - >/dev/null
     if [ "$EXITCODE" -eq "0" ]; then
       IMAGE_SIGN="$FOLD/keys/$2.sig"
     fi
@@ -2135,10 +2256,10 @@ import_imagekey() {
   # check if pubkey is given by the customer
   if [ -n "$IMAGE_PUBKEY" -a -e "$IMAGE_PUBKEY" ] ; then
     PUBKEY=$IMAGE_PUBKEY
-  elif [ -e "$HETZNER_PUBKEY" ] ; then
-    # if no special pubkey given, use the hetzner key
-    echo "Using hetzner standard pubkey: $HETZNER_PUBKEY" | debugoutput
-    PUBKEY=$HETZNER_PUBKEY
+  elif [ -e "$COMPANY_PUBKEY" ] ; then
+    # if no special pubkey given, use the standard company key
+    echo "Using standard $COMPANY pubkey: $COMPANY_PUBKEY" | debugoutput
+    PUBKEY=$COMPANY_PUBKEY
   fi
   if [ -n "$PUBKEY" ] ; then
     # import public key
@@ -2165,10 +2286,10 @@ validate_image() {
         # image file valid
         return 0
       else
-	    # image file not valid
+       # image file not valid
         return 1
       fi
-    else  
+    else
       # no detached sign found
       return 2
     fi
@@ -2209,7 +2330,7 @@ extract_image() {
 
     if [ "$EXITCODE" -eq "0" ]; then
       cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" 2>&1 | debugoutput
-      return 0 
+      return 0
     else
       return 1
     fi
@@ -2226,19 +2347,19 @@ function get_active_eth_dev() {
     iptest=$(ip addr show dev "$nic" | grep "$nic"$ | awk '{print $2}')
     if [ -n "$iptest" ]; then
       ETHDEV="$nic"
-      break	
+      break
     fi
   done
 }
 
 # gather_network_information
 gather_network_information_old() {
-  HWADDR="`ifconfig $ETHDEV |grep HWaddr |tr -s ' ' |cut -d " " -f5 |tr [:upper:] [:lower:]`"
-  IPADDR="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f3 |cut -d ":" -f2`"
-  BROADCAST="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f4 |cut -d ":" -f2`"
-  SUBNETMASK="`ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f5 |cut -d ":" -f2`"
-  GATEWAY="`route -n |tr -s ' ' |grep " UG .*. $ETHDEV" |cut -d " " -f2 | head -n1`"
-  NETWORK="`route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1`"
+  HWADDR="$(ifconfig $ETHDEV |grep HWaddr |tr -s ' ' |cut -d " " -f5 |tr [:upper:] [:lower:])"
+  IPADDR="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f3 |cut -d ":" -f2)"
+  BROADCAST="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f4 |cut -d ":" -f2)"
+  SUBNETMASK="$(ifconfig $ETHDEV |grep "inet addr" |tr -s ' ' |cut -d " " -f5 |cut -d ":" -f2)"
+  GATEWAY="$(route -n |tr -s ' ' |grep " UG .*. $ETHDEV" |cut -d " " -f2 | head -n1)"
+  NETWORK="$(route -n |tr -s ' ' |grep "$SUBNETMASK U .*. $ETHDEV" |cut -d " " -f1)"
 }
 
 # gather_network_information "$ETH"
@@ -2264,14 +2385,14 @@ gather_network_information() {
   fi
 
   # ipv6
-  # check for our global ipv6
-  DOIPV6=$(ip -6 addr show dev $ETHDEV | grep 'inet6 2a01:4f8:')
+  # check for non-link-local ipv6
+  DOIPV6=$(ip -6 addr show dev $ETHDEV | grep -v fe80 | grep -m1 'inet6')
   if [ -n "$DOIPV6" ]; then
-    local INET6ADDR=$(ip -6 addr show dev $ETHDEV | grep 'inet6 2a01:4f8:' | awk '{print $2}')
+    local INET6ADDR=$(ip -6 addr show dev $ETHDEV | grep -v fe80 | grep -m1 'inet6' | awk '{print $2}')
     IP6ADDR=$(echo $INET6ADDR | cut -d"/" -f1)
     IP6PREFLEN=$(echo $INET6ADDR | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
-    IP6GATEWAY=$(ip -6 route | grep "default\ via" |  awk '{print $3}')
+    IP6GATEWAY=$(ip -6 route show default |  awk '{print $3}')
   else
     if [ "$V6ONLY" -eq 1 ]; then
       debug "no valid IPv6 adress, but v6 only because of RFC6598 IPv4 address"
@@ -2279,11 +2400,11 @@ gather_network_information() {
       exit 1
     fi
   fi
-} 
+}
 
 # setup_network_config "ETH" "HWADDR" "IPADDR" "BROADCAST" "SUBNETMASK" "GATEWAY" "NETWORK"
 setup_network_config() {
-  if [ "$1" -a "$2" -a "$3" -a "$4" -a "$5" -a "$6" -a "$7" ]; then
+  if [ "$1" ] && [ "$2" ] && [ "$3" ] && [ "$4" ] && [ "$5" ] && [ "$6" ] && [ "$7" ]; then
     return 1
   fi
 }
@@ -2416,7 +2537,7 @@ generate_resolvconf() {
     # disable netconfig of DNS servers in YaST config file
     sed -i -e \
       "s/^NETCONFIG_DNS_POLICY=\".*\"/NETCONFIG_DNS_POLICY=\"\"/" \
-      $FOLD/hdd/etc/sysconfig/network/config
+      "$FOLD/hdd/etc/sysconfig/network/config"
 
 #    if [ "$V6ONLY" -eq 1 ]; then
 #      debug "# skipping IPv4 DNS resolvers"
@@ -2434,9 +2555,13 @@ generate_resolvconf() {
 #      $FOLD/hdd/etc/sysconfig/network/config
 #    execute_chroot_command "netconfig update -f"
   fi
-#  else 
-    NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
-    echo -e "### Hetzner Online GmbH installimage" > $NAMESERVERFILE
+#  else
+    if [[ -L "$FOLD/hdd/etc/resolv.conf" ]]; then
+      NAMESERVERFILE="$FOLD/hdd/etc/resolvconf/resolv.conf.d/base"
+    else
+      NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
+    fi
+    echo -e "### $COMPANY installimage" > $NAMESERVERFILE
     echo -e "# nameserver config" >> $NAMESERVERFILE
 
     # IPV4
@@ -2468,20 +2593,39 @@ set_hostname() {
     local hostnamefile="$FOLD/hdd/etc/hostname"
     local mailnamefile="$FOLD/hdd/etc/mailname"
     local machinefile="$FOLD/hdd/etc/machine-id"
+    local dbusfile="$FOLD/hdd/var/lib/dbus/machine-id"
     local networkfile="$FOLD/hdd/etc/sysconfig/network"
     local hostsfile="$FOLD/hdd/etc/hosts"
+    local systemd=0
 
-    [ -f $FOLD/hdd/etc/HOSTNAME ] && hostnamefile="$FOLD/hdd/etc/HOSTNAME"
+    if [ -x /bin/systemd-notify ]; then
+      systemd-notify --booted && systemd=1
+    fi
+
+    [ -f "$FOLD/hdd/etc/HOSTNAME" ] && hostnamefile="$FOLD/hdd/etc/HOSTNAME"
 
     hostname $sethostname
     execute_chroot_command "hostname $sethostname"
 
-    check_fqdn "$sethostname"
-    [ $? -eq 1 ] && shortname="$sethostname" || shortname="$(hostname -s )"
+    if check_fqdn ${sethostname}; then
+      shortname=$(execute_chroot_command_wo_debug "hostname ${sethostname}; hostname --short")
+    else
+      shortname=${sethostname}
+    fi
 
-    if [ -f $hostnamefile -o "$IAM" = "arch" ]; then
-      echo "$shortname" > $hostnamefile
-      debug "# set new hostname '$shortname' in $hostnamefile"
+    if [ -f $hostnamefile -o "$IAM" = "archlinux" ]; then
+      {
+        if is_cpanel_install || is_plesk_install; then
+          if check_fqdn ${sethostname}; then
+            echo ${sethostname}
+          else
+            echo ${sethostname}.yourdomain.localdomain
+          fi
+        else
+          echo ${shortname}
+        fi
+      } > ${hostnamefile}
+      debug "# set new hostname '$(cat ${hostnamefile})' in ${hostnamefile}"
     fi
 
     check_fqdn "$mailname"
@@ -2491,20 +2635,37 @@ set_hostname() {
       debug "# set new mailname '$mailname' in $mailnamefile"
     fi
 
-    if [ -f $machinefile ]; then
-      # clear machine-id from install (will be regen upon first boot)
-      echo >  $machinefile
-    fi
 
-    if [ -f $networkfile ]; then
-      debug "# set new hostname '$shortname' in $networkfile"
-      echo -e "HOSTNAME=$shortname" >> $networkfile 2>>$DEBUGFILE
+    if [ -f $machinefile ]; then
+      # clear machine-id from image 
+      echo -n > $machinefile
+      [[ -e $dbusfile ]] && rm $dbusfile
+      if [ $systemd -eq 1 ]; then
+        # if we have systemd, just generate one (works around odd behaviour
+        # when machine-id is only temporarily generated upon first boot
+        systemd-machine-id-setup --root "$FOLD/hdd" 2>/dev/null
+        cp $machinefile $dbusfile
+      else
+        execute_chroot_command "dbus-uuidgen --ensure"
+        cp $dbusfile $machinefile
+      fi
     fi
 
     local fqdn_name="$sethostname"
-    [ "$sethostname" = "$shortname" ] && fqdn_name=''
+    if [[ "${sethostname}" == "${shortname}" ]]; then
+      if is_cpanel_install || is_plesk_install; then
+        fqdn_name+='.yourdomain.localdomain'
+      else
+        fqdn_name=''
+      fi
+    fi
 
-    echo "### Hetzner Online GmbH installimage" > $hostsfile
+    if [[ -f "$networkfile" ]]; then
+      debug "# set new hostname '$fqdn_name' in $networkfile"
+      echo "HOSTNAME=${fqdn_name:-$shortname}" >> "$networkfile"
+    fi
+
+    echo "### $COMPANY installimage" > $hostsfile
     echo "# nameserver config" >> $hostsfile
     echo "# IPv4" >> $hostsfile
     echo "127.0.0.1 localhost.localdomain localhost" >> $hostsfile
@@ -2518,11 +2679,7 @@ set_hostname() {
     echo "ff02::2 ip6-allrouters" >> $hostsfile
     echo "ff02::3 ip6-allhosts" >> $hostsfile
     if [ "$3" ]; then
-      if [ "$PROXMOX" = 'true' ] && [ "$PROXMOX_VERSION" = '3' ]; then
-	debug "not adding ipv6 fqdn to hosts for Proxmox3"
-      else
-        echo "$3 $fqdn_name $shortname" >> $hostsfile
-      fi
+      echo "$3 $fqdn_name $shortname" >> $hostsfile
     fi
 
     return 0
@@ -2535,20 +2692,20 @@ set_hostname() {
 generate_hosts() {
   if [ "$1" ]; then
     HOSTSFILE="$FOLD/hdd/etc/hosts"
-    [ -f $FOLD/hdd/etc/hostname ] && HOSTNAMEFILE="$FOLD/hdd/etc/hostname"
-    [ -f $FOLD/hdd/etc/HOSTNAME ] && HOSTNAMEFILE="$FOLD/hdd/etc/HOSTNAME"
-    if [ "$HOSTNAMEFILE" = "" ]; then 
+    [ -f "$FOLD/hdd/etc/hostname" ] && HOSTNAMEFILE="$FOLD/hdd/etc/hostname"
+    [ -f "$FOLD/hdd/etc/HOSTNAME" ] && HOSTNAMEFILE="$FOLD/hdd/etc/HOSTNAME"
+    if [ "$HOSTNAMEFILE" = "" ]; then
       if [ "$NEWHOSTNAME" ]; then
         HOSTNAME="$NEWHOSTNAME";
       else
         HOSTNAME="$IMAGENAME";
       fi
     else
-      FULLHOSTNAME="`cat $HOSTNAMEFILE`"
-      HOSTNAME="`cat $HOSTNAMEFILE | cut -d. -f1`";
+      FULLHOSTNAME="$(cat $HOSTNAMEFILE)"
+      HOSTNAME="$(cat $HOSTNAMEFILE | cut -d. -f1)";
       [ "$FULLHOSTNAME" = "$HOSTNAME" ] && FULLHOSTNAME=""
     fi
-    echo "### Hetzner Online GmbH installimage" > $HOSTSFILE
+    echo "### $COMPANY installimage" > $HOSTSFILE
     echo "# nameserver config" >> $HOSTSFILE
     echo "# IPv4" >> $HOSTSFILE
     echo "127.0.0.1 localhost.localdomain localhost" >> $HOSTSFILE
@@ -2562,31 +2719,10 @@ generate_hosts() {
     echo "ff02::2 ip6-allrouters" >> $HOSTSFILE
     echo "ff02::3 ip6-allhosts" >> $HOSTSFILE
     if [ "$2" ]; then
-      if [ "$PROXMOX" = 'true' ] && [ "$PROXMOX_VERSION" = '3' ]; then
-	debug "not adding ipv6 fqdn to hosts for Proxmox3"
-      else
-        echo "$2 $FULLHOSTNAME $HOSTNAME" >> $HOSTSFILE
-      fi
+      echo "$2 $FULLHOSTNAME $HOSTNAME" >> $HOSTSFILE
     fi
   fi
   return 0
-}
-
-#  execute_chroot_command "COMMMAND"
-execute_chroot_command() {
-  if [ "$1" ]; then
-    debug "# chroot_command: $1"
-    chroot $FOLD/hdd/ /bin/bash -c "$1" 2>&1 | debugoutput ; EXITCODE=$?
-    return $EXITCODE
-  fi
-}
-
-# execute chroot command but without debugoutput
-execute_chroot_command_wo_debug() {
-  if [ "$1" ]; then
-    chroot $FOLD/hdd/ /bin/bash -c "$1" 2>&1; EXITCODE=$?
-    return $EXITCODE
-  fi
 }
 
 # copy_mtab "NIL"
@@ -2605,10 +2741,8 @@ copy_mtab() {
 
 generate_new_sshkeys() {
   if [ "$1" ]; then
-#    rm -rf $FOLD/hdd/etc/ssh/ssh_host_* 2>&1 | debugoutput
-
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_key" ]; then
-      rm -f $FOLD/hdd/etc/ssh/ssh_host_k* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_k* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t rsa1 -b 1024 -f /etc/ssh/ssh_host_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
        return $EXITCODE
@@ -2618,7 +2752,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_dsa_key" ]; then
-      rm -f $FOLD/hdd/etc/ssh/ssh_host_dsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_dsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return $EXITCODE
@@ -2628,7 +2762,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_rsa_key" ]; then
-      rm -f $FOLD/hdd/etc/ssh/ssh_host_rsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_rsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return $EXITCODE
@@ -2637,14 +2771,8 @@ generate_new_sshkeys() {
       debug "skipping rsa key gen"
     fi
 
-    # create ecdsa keys for Ubuntu 11.04, Opensuse 12.1, Debian 7.0, CentOS 7.0 and any version above
-#    if [ "$IAM" = "arch" ] || 
-#       [ "$IAM" = "ubuntu"  -a  "$IMG_VERSION" -ge 1104 ] || 
-#       [ "$IAM" = "suse"  -a  "$IMG_VERSION" -ge 121 ] || 
-#       [ "$IAM" = "debian" -a  "$IMG_VERSION" -ge 70 ] || 
-#       [ "$IAM" = "centos" -a "$IMG_VERSION" -ge 70 ]; then
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ecdsa_key" ]; then
-      rm -f $FOLD/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return $EXITCODE
@@ -2653,12 +2781,8 @@ generate_new_sshkeys() {
       debug "skipping ecdsa key gen"
     fi
 
-#    if [ "$IAM" = "arch" ] || 
-#       [ "$IAM" = "debian"  -a  "$IMG_VERSION" -ge 80 ] || 
-#       [ "$IAM" = "ubuntu"  -a  "$IMG_VERSION" -ge 1404 ] || 
-#       [ "$IAM" = "suse" -a "$IMG_VERSION" -ge 132 ]; then
-    if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25515_key" ]; then
-      rm -f $FOLD/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
+    if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25519_key" ]; then
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return $EXITCODE
@@ -2674,17 +2798,21 @@ generate_new_sshkeys() {
         file="/etc/ssh/ssh_host_${key_type}_key.pub"
         key_json="\"key_type\": \"${key_type}\""
         if [ -f "$FOLD/hdd/$file" ]; then
-          execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
+          # The default key hashing algorithm used when displaying key fingerprints changes from MD5 to SHA256 in OpenSSH 6.8
+          if ! execute_chroot_command "ssh-keygen -l -f ${file} -E md5 > /tmp/${key_type} 2> /dev/null"; then
+            execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
+          fi
           while read bits fingerprint name type ; do
+            fingerprint="$(echo "${fingerprint}" | sed "s/^MD5://")"
             key_json="${key_json}, \"key_bits\": \"${bits}\", \"key_fingerprint\": \"${fingerprint}\", \"key_name\": \"${name}\""
-          done <<< $(cat $FOLD/hdd/tmp/${key_type})
+          done <<< $(cat "$FOLD/hdd/tmp/${key_type}")
           [ -z "${keys_json}" ] && keys_json="{${key_json}}" || keys_json="${keys_json}, {${key_json}}"
           rm "$FOLD/hdd/tmp/${key_type}"
         fi
     done
     keys_json="{\"keys\": [ ${keys_json} ] }"
 
-    echo "${keys_json}" > $FOLD/ssh_fingerprints
+    echo "${keys_json}" > "$FOLD/ssh_fingerprints"
 
     return 0
   fi
@@ -2694,6 +2822,17 @@ set_ntp_time() {
   local ntp_pid
   local count=0
   local running=1
+  local systemd=0
+
+  if [ -x /bin/systemd-notify ]; then
+    systemd-notify --booted && systemd=1
+  fi
+
+  # if systemd is running and timesyncd too, then return
+  if [ $systemd -eq 1 ]; then
+    systemctl status systemd-timesyncd 1>/dev/null 2>&1 && return 0
+  fi
+
   service ntp status 1>/dev/null 2>&1 && running=0
 
   # stop ntp daemon first
@@ -2714,7 +2853,7 @@ set_ntp_time() {
     let count=count+1
     sleep 1
   done
-  
+
   # if process is still running
   if [ $count -eq 15 ] ; then
     debug "ntp still running - kill it"
@@ -2800,9 +2939,7 @@ execute_postinstall_script() {
     fi
 
     debug "# Found post-installation script $script; executing it..."
-    # don't use the execute_chroot_command function and logging here - we need output on stdout!
-  
-    chroot $FOLD/hdd/ /bin/bash -c "$script" ; EXITCODE=$? 
+    execute_chroot_command_wo_debug "$script" ; EXITCODE=$?
 
     if [ $EXITCODE -ne 0 ]; then
       debug "# Post-installation script didn't exit successfully (exit code = $EXITCODE)"
@@ -2835,9 +2972,9 @@ setup_cpufreq() {
 # clear_logs "NIL"
 clear_logs() {
   if [ "$1" ]; then
-    find $FOLD/hdd/var/log -type f > /tmp/filelist.tmp
+    find "$FOLD/hdd/var/log" -type f > /tmp/filelist.tmp
     while read a; do
-      if [ "`echo $a |grep ".gz$\|.[[:digit:]]\{1,3\}$"`" ]; then
+      if [ "$(echo $a |grep ".gz$\|.[[:digit:]]\{1,3\}$")" ]; then
         rm -rf "$a" >> /dev/null 2>&1
       else
         echo -n > $a
@@ -2850,11 +2987,11 @@ clear_logs() {
 # activate ip_forward for new netsetup
 generate_sysctlconf() {
   local sysctl_conf="$FOLD/hdd/etc/sysctl.conf"
-  if [ -d $FOLD/hdd/etc/sysctl.d ]; then
-   sysctl_conf="$FOLD/hdd/etc/sysctl.d/99-hetzner.conf"
+  if [ -d "$FOLD/hdd/etc/sysctl.d" ]; then
+   sysctl_conf="$FOLD/hdd/etc/sysctl.d/99-$C_SHORT.conf"
   fi
     cat << EOF > $sysctl_conf
-### Hetzner Online GmbH installimage
+### $COMPANY installimage
 # sysctl config
 #net.ipv4.ip_forward=1
 net.ipv4.conf.all.rp_filter=1
@@ -2868,7 +3005,6 @@ net.ipv6.conf.default.accept_ra_rtr_pref=0
 net.ipv6.conf.default.accept_ra_pinfo=0
 net.ipv6.conf.default.accept_source_route=0
 net.ipv6.conf.default.accept_redirects=0
-net.ipv6.conf.default.forwarding=0
 net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_dad=0
 net.ipv6.conf.all.accept_ra=0
@@ -2877,7 +3013,6 @@ net.ipv6.conf.all.accept_ra_rtr_pref=0
 net.ipv6.conf.all.accept_ra_pinfo=0
 net.ipv6.conf.all.accept_source_route=0
 net.ipv6.conf.all.accept_redirects=0
-net.ipv6.conf.all.forwarding=0
 EOF
 
   # only swap to avoid a OOM condition on vps
@@ -2891,7 +3026,7 @@ EOF
 # get_rootpassword "/etc/shadow"
 get_rootpassword() {
   if [ "$1" ]; then
-    ROOTHASH="`cat "$1" |grep "^root" | cut -d ":" -f2`"
+    ROOTHASH="$(cat "$1" |grep "^root" | cut -d ":" -f2)"
     if [ "$ROOTHASH" ]; then
       return 0
     else
@@ -2903,9 +3038,9 @@ get_rootpassword() {
 # set_rootpassword "$FOLD/hdd/etc/shadow" "ROOTHASH"
 set_rootpassword() {
   if [ "$1" -a "$2" ]; then
-    LINE="`cat "$1" |grep "^root"`"
+    LINE="$(cat "$1" |grep "^root")"
     cat "$1" | grep -v "^root" > /tmp/shadow.tmp
-    GECOS="`echo $LINE |cut -d ":" -f3-`"
+    GECOS="$(echo $LINE |cut -d ":" -f3-)"
     echo "root:$2:$GECOS" > $1
     cat /tmp/shadow.tmp >> $1
     return 0
@@ -2946,7 +3081,7 @@ copy_ssh_keys() {
 
    mkdir -p "$FOLD/hdd/$targetuser/.ssh"
    if [ $targetuser != 'root' ]; then
-     execute_chroot_command "chown $targetuser: /$targetuser/.ssh" 
+     execute_chroot_command "chown $targetuser: /$targetuser/.ssh"
    fi
 
    cat "$FOLD/authorized_keys" >> "$FOLD/hdd/$targetuser/.ssh/authorized_keys"
@@ -2988,54 +3123,42 @@ write_grub() {
     return 0
   fi
 
-#TODO: this needs to be fixed in general, as all distros now install the
+#TODO: this needs to be fixed in general, as all distros install the
 #      bootloader in generate_grub_config instead
 
-#  # Delete existing lilo.conf
-#  execute_chroot_command "rm -rf /etc/lilo.conf"
-#
-#  execute_chroot_command "echo -e \"device (hd0) $DRIVE1\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
-#  [ $? -ne 0 ] && return $?
-#  
-#  # Install GRUB also on the second HDD when software RAID is enabled.
-#  if [ "$SWRAID" -eq "1" ]; then
-#    execute_chroot_command "echo -e \"device (hd0) $DRIVE2\nroot (hd0,$PARTNUM)\nsetup (hd0)\nquit\" | grub --batch >> /dev/null 2>&1"
-#  fi
-
-#  return $?
 }
 
 generate_config_lilo() {
   if [ "$1" ]; then
-  BFILE="$FOLD/hdd/etc/lilo.conf"
-  rm -rf "$FOLD/hdd/boot/grub/menu.lst" >>/dev/null 2>&1
-  echo -e "### Hetzner Online GmbH installimage" > $BFILE
-  echo -e "# bootloader config" >> $BFILE
-  if [ "$LILOEXTRABOOT" ]; then
-    echo -e "$LILOEXTRABOOT" >> $BFILE
-  fi
-  echo -e "boot=$SYSTEMDEVICE" >> $BFILE
-  echo -e "root=`cat $FOLD/hdd/etc/fstab |grep " / " |cut -d " " -f 1`" >> $BFILE
-  echo -e "vga=0x317" >> $BFILE
-  echo -e "timeout=40" >> $BFILE
-  echo -e "prompt" >> $BFILE
-  echo -e "default=Linux" >> $BFILE
-  echo -e "large-memory" >> $BFILE
-  echo -e "" >> $BFILE
-  if [ -e "$FOLD/hdd/boot/vmlinuz-$VERSION" ]; then
-    echo -e "image=/boot/vmlinuz-$VERSION" >> $BFILE
-  else
-    return 1
-  fi
-  echo -e "  label=Linux" >> $BFILE
-#  echo -e "  read-only" >> $BFILE
-  if [ -e "$FOLD/hdd/boot/initrd.img-$VERSION" ]; then
-    echo -e "  initrd=/boot/initrd.img-$VERSION" >> $BFILE
-  elif [ -e "$FOLD/hdd/boot/initrd-$VERSION" ]; then
-    echo -e "  initrd=/boot/initrd-$VERSION" >> $BFILE
-  fi
-  echo -e "" >> $BFILE
- 
+    local bfile="$FOLD/hdd/etc/lilo.conf"
+    rm -f "$FOLD/hdd/boot/grub/menu.lst" 2>&1 | debugoutput
+    {
+      echo "### $COMPANY installimage"
+      echo "# bootloader config"
+      if [ "$LILOEXTRABOOT" ]; then
+        echo "$LILOEXTRABOOT"
+      fi
+      echo "boot=$SYSTEMDEVICE"
+      echo "root=$(grep " / " "$FOLD/hdd/etc/fstab" |cut -d " " -f 1)"
+      echo "vga=0x317"
+      echo "timeout=40"
+      echo "prompt"
+      echo "default=Linux"
+      echo "large-memory"
+      echo ""
+    } > "$bfile"
+    if [ -e "$FOLD/hdd/boot/vmlinuz-$VERSION" ]; then
+      echo "image=/boot/vmlinuz-$VERSION" >> $bfile
+    else
+      return 1
+    fi
+    echo "  label=Linux" >> $bfile
+    if [ -e "$FOLD/hdd/boot/initrd.img-$VERSION" ]; then
+      echo "  initrd=/boot/initrd.img-$VERSION" >> $bfile
+    elif [ -e "$FOLD/hdd/boot/initrd-$VERSION" ]; then
+      echo "  initrd=/boot/initrd-$VERSION" >> $bfile
+    fi
+    echo "" >> $bfile
 
     return 0
   fi
@@ -3059,32 +3182,62 @@ generate_ntp_config() {
   local debian_version=0
   local ubuntu_version=0
   local suse_version=0
-  [ "$IAM" == debian ] && debian_version=$(cut -c 1 $FOLD/hdd/etc/debian_version)
+  [ "$IAM" == debian ] && debian_version=$(cut -c 1 "$FOLD/hdd/etc/debian_version")
   [ "$IAM" = 'ubuntu' ] && ubuntu_version="$IMG_VERSION"
   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
 
-  if [ -f "$FOLD/hdd/$CFGNTP" -o -f "$FOLD/hdd/$CFGCHRONY" -o -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
+  if [ -f "$FOLD/hdd/$CFGNTP" ] || [ -f "$FOLD/hdd/$CFGCHRONY" ] || [ -f "$FOLD/hdd/$CFGTIMESYNCD" ] ; then
     if [ -f "$FOLD/hdd/$CFGTIMESYNCD" ]; then
+      debug "# using systemd-timesyncd"
       local cfgdir="$FOLD/hdd/$CFGTIMESYNCD.d"
       local cfgparam='NTP'
-      [ "$IAM" = "debian" ] && cfgparam='Servers'
-      mkdir -p "$cfgdir" | debugoutput
-      CFG="$cfgdir/hetzner.conf"
-      echo -e "[Time]\n$cfgparam=ntp1.hetzner.de ntp2.hetzner.com ntp3.hetzner.net\n" > "$CFG" | debugoutput
+      # jessie systemd does not recognize drop-ins for systemd-timesyncd
+      if [ "$IAM" = "debian" ] && [ "$debian_version" -eq 8 ]; then
+        cfgparam='Servers'
+        CFG="$FOLD/hdd/$CFGTIMESYNCD"
+      else
+        mkdir -p "$cfgdir"
+        CFG="$cfgdir/$C_SHORT.conf"
+      fi
+      {
+        echo "[Time]"
+        echo -n "$cfgparam="
+        for i in "${NTPSERVERS[@]}"; do
+          echo -n "$i "
+        done
+        echo ""
+      } > "$CFG" | debugoutput
     elif [ -f "$FOLD/hdd/$CFGCHRONY" ]; then
-      echo "using chrony" | debugoutput
-      CFG="$CFGCHRONY"
-      execute_chroot_command 'echo -e "\n\n# hetzner ntp servers \nserver ntp1.hetzner.de offline minpoll 8\nserver ntp2.hetzner.com offline minpoll 8\nserver ntp3.hetzner.net offline minpoll 8\n" >> '"$CFG" | debugoutput
+      debug "# using chrony"
+      CFG="$FOLD/hdd/$CFGCHRONY"
+      {
+        echo ""
+        echo "# $C_SHORT ntp servers"
+        for i in "${NTPSERVERS[@]}"; do
+          echo "server $i offline minpoll 8"
+        done
+      } >> "$CFG" | debugoutput
     else
-      CFG="$CFGNTP"
-      echo "using ntp.conf" | debugoutput
-      execute_chroot_command 'sed -e "s/^server \(.*\)$/## server \1   ## see end of file/" -i '"$CFG" | debugoutput
-      execute_chroot_command 'echo -e "\n\n# hetzner ntp servers \nserver ntp1.hetzner.de iburst\nserver ntp2.hetzner.com iburst\nserver ntp3.hetzner.net iburst\n" >> '"$CFG" | debugoutput
-      [ "$IAM" = "suse" ] && execute_chroot_command 'echo -e "\n# local clock\nserver 127.127.1.0" >> '"$CFG" | debugoutput
+      CFG="$FOLD/hdd/$CFGNTP"
+      debug "# using NTP"
+      sed -e "s/^server \(.*\)$/## server \1   ## see end of file/" -i "$CFG"
+      {
+        echo ""
+        echo "# $C_SHORT ntp servers"
+        for i in "${NTPSERVERS[@]}"; do
+          echo "server $i iburst"
+        done
+      } >> "$CFG" | debugoutput
+      if [ "$IAM" = "suse" ]; then
+        {
+          echo ""
+          echo "# local clock"
+          echo "server 127.127.1.0"
+        } >> "$CFG" | debugoutput
+      fi
     fi
   else
-    msg="ntp config '$CFG' not found, ignoring"
-    echo $msg | debugoutput
+    debug "no ntp config found, ignoring"
   fi
   return 0
 }
@@ -3093,7 +3246,7 @@ generate_ntp_config() {
 check_fqdn() {
 
   CHECKFQDN=""
-  CHECKFQDN="$(echo $1 | grep -e "^\([[:alnum:]][[:alnum:]-]*[[:alnum:]]\.\)\{2,\}")"
+  CHECKFQDN="$(echo "$1" | grep -e "^\([[:alnum:]][[:alnum:]-]*[[:alnum:]]\.\)\{2,\}")"
 
   if [ -z "$CHECKFQDN" ]; then
     return 1
@@ -3106,100 +3259,33 @@ check_fqdn() {
 # create_hostname <ip> - creates a generic hostname from ip
 #
 create_hostname() {
+  if [ -n "$1" ]; then
+    local first; first="$(echo "$1" | cut -d '.' -f 1)"
+    local second; second="$(echo "$1" | cut -d '.' -f 2)"
+    local third; third="$(echo "$1" | cut -d '.' -f 3)"
+    local fourth; fourth="$(echo "$1" | cut -d '.' -f 4)"
+    local generatedhostname
 
-  FIRST="$(echo $1 | cut -d '.' -f 1)"
-  SECOND="$(echo $1 | cut -d '.' -f 2)"
-  THIRD="$(echo $1 | cut -d '.' -f 3)"
-  FOURTH="$(echo $1 | cut -d '.' -f 4)"
-  
-  if [ -z "$FIRST" -o -z "$SECOND" -o -z "$THIRD" -o -z "$FOURTH" ]; then
-    return 1
-  fi
-  if [ "$FIRST" -eq "78" -o "$FIRST" -eq "188" -o "$FIRST" -eq "178" -o "$FIRST" -eq "46" -o "$FIRST" -eq "176" -o "$FIRST" -eq "5" -o "$FIRST" -eq "185" -o "$FIRST" -eq "136" -o "$FIRST" -eq "144" -o "$FIRST" -eq "148" -o "$FIRST" -eq "138" ]; then
-    GENERATEDHOSTNAME="static.$FOURTH.$THIRD.$SECOND.$FIRST.clients.your-server.de"
-  else
-    GENERATEDHOSTNAME="static.$FIRST-$SECOND-$THIRD-$FOURTH.clients.your-server.de"
-  fi
-  
-  echo $GENERATEDHOSTNAME
-  return 0
-
-}
-
-
-# check for latest subversion of Plesk
-check_plesk_subversion() {
-  local main_version="$1"
-  local output=""
-  local latest_release=""
-
-  # test if pleskinstaller is already downloaded
-  if [ ! -x "$FOLD/hdd/pleskinstaller" ] ; then
-    wget http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME -O $FOLD/hdd/pleskinstaller 2>&1 | debugoutput
-    chmod a+x $FOLD/hdd/pleskinstaller >> /dev/null
-  fi
-
-  output="$(execute_chroot_command_wo_debug "/pleskinstaller --select-product-id plesk --show-releases" 2>&1)"
-  latest_release="$(echo -e "$output" | grep "PLESK_${main_version}" | head -n1 | awk '{print $2}')"
-
-  [ -n "$latest_release" ] && echo "$latest_release"
-    
-}
-
-#
-# determine image version and install plesk
-#
-install_plesk() {
-  # get Plesk version to install
-  local plesk_version=$1
-
-  # we need the installer first
-  wget http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME -O $FOLD/hdd/pleskinstaller 2>&1 | debugoutput
-  chmod a+x $FOLD/hdd/pleskinstaller >> /dev/null
-  
-  # if there was no version specified, take our standard version
-  if [ "$plesk_version" == "plesk" ]; then
-    debug "install standard version"
-    plesk_version="$PLESK_STD_VERSION"
-  elif [ -n "$(echo "$plesk_version" | egrep "plesk_[0-9]+_[0-9]+_[0-9]+$")" ]; then
-    plesk_version="$(echo "$plesk_version" | tr '[:lower:]' '[:upper:]')"
-  else
-    # check if we want a main version and should detect the latest subversion
-    local main_version="${plesk_version#plesk_}"
-    local latest_sub=""
-    
-    [ -n "$main_version" ] && latest_sub="$(check_plesk_subversion "$main_version")"
-    if [ -z "$latest_sub" ]; then
-      echo "Could not determine latest subversion of Plesk $main_version"
+    if [ -z "$first" -o -z "$second" -o -z "$third" -o -z "$fourth" ]; then
       return 1
     fi
-    plesk_version="$latest_sub"
-  fi
+    #if [ "$first" -eq "78" ] || [ "$first" -eq "188" ] || [ "$first" -eq "178" ] ||
+    #   [ "$first" -eq "46" ] || [ "$first" -eq "176" ] || [ "$first" -eq "5" ] ||
+    #   [ "$first" -eq "185" ] || [ "$first" -eq "136" ] || [ "$first" -eq "144" ] ||
+    #   [ "$first" -eq "148" ] || [ "$first" -eq "138" ]; then
+    #  generatedhostname="static.$fourth.$third.$second.$first.clients.your-server.de"
+    #else
+    #  generatedhostname="static.$first-$second-$third-$fourth.clients.your-server.de"
+    #fi
+    if ((first == 85 || ( first == 88 && second == 198 ) || first == 213)); then
+      generatedhostname="static.$first-$second-$third-$fourth.clients.your-server.de"
+    else
+      generatedhostname="static.$fourth.$third.$second.$first.clients.your-server.de"
+    fi
 
-#  if [ "$IMAGENAME" == "CentOS-57-64-minimal" -o "$IMAGENAME" == "CentOS-58-64-minimal" -o "$IMAGENAME" == "CentOS-60-64-minimal" -o "$IMAGENAME" == "CentOS-62-64-minimal" -o "$IMAGENAME" == "CentOS-63-64-minimal" ]; then
-  if [ "$IAM" == 'centos' ]; then
-    execute_chroot_command "yum -y install mysql mysql-server"
-    # we should install rails here as well, but this is a bit tricky
-    # because there is no package and we would have to install via gem
-    #
-    # centos wants to have a fqdn for pleskinstallation
-    sed -i "s|$IMAGENAME|$IMAGENAME.yourdomain.localdomain $IMAGENAME|" $FOLD/hdd/etc/hosts
+    echo "$generatedhostname"
+    return 0
   fi
-
-  if [ "$IAM" == "debian" -a "$IMG_VERSION" -ge 70 ]; then
-    # create folder /run/lock since it doesn't exist after the installation of debian7 and needed for plesk installation
-    execute_chroot_command "mkdir -p /run/lock"
-  fi
-
-# old  COMPONENTS="base psa-autoinstaller mod-bw mod_python qmail ruby mailman horde psa-firewall spamassassin pmm backup"
-  COMPONENTS="common psa-autoinstaller mod-bw mod_phyton postfix ruby mailman horde psa-firewall spamassassin pmm bind"
-  COMPONENTLIST="$(for component in $COMPONENTS; do echo -n "--install-component $component "; done)"
- 
-  execute_chroot_command "/pleskinstaller  --select-product-id plesk --select-release-id $plesk_version $COMPONENTLIST"; EXITCODE=$?
-  rm -rf $FOLD/hdd/pleskinstaller >/dev/null 2>&1
-  
-  return $EXITCODE
-  
 }
 
 install_omsa() {
@@ -3224,17 +3310,17 @@ install_omsa() {
     execute_chroot_command "mkdir -p /run/lock"
     execute_chroot_command "aptitude update >/dev/null"
     execute_chroot_command "aptitude --without-recommends -y install srvadmin-base srvadmin-idracadm srvadmin-idrac7"; EXITCODE=$?
-    return $EXITCODE  
+    return $EXITCODE
   elif [ "$IAM" = "centos" ]; then
-    execute_chroot_command "yum -y install perl" 
+    execute_chroot_command "yum -y install perl"
     execute_chroot_command "wget -q -O - http://linux.dell.com/repo/hardware/latest/bootstrap.cgi | bash"
-    execute_chroot_command "yum -y install srvadmin-base srvadmin-idrac7" 
-  else 
+    execute_chroot_command "yum -y install srvadmin-base srvadmin-idrac7"
+  else
     debug "no OMSA packages available for this OS"
     return 0
   fi
   /etc/init.d/instsvcdrv start >/dev/null
-  
+
 }
 
 #
@@ -3260,7 +3346,7 @@ translate_unit() {
           factor=1048576
           ;;
       esac
-      echo $(($value * $factor))
+      echo $((value * factor))
       return 0
     fi
   done
@@ -3268,72 +3354,110 @@ translate_unit() {
   echo "$1"
   return 0
 }
- 
 
-#
-# install_robot_script
-#
-# Installs a script in the new system that is used for automatic
-# installations by the Robot. The script removes itself afterwards.
-#
-install_robot_script() {
-  VERSION=$(echo $IMAGENAME | cut -d- -f2)
-  cp $SCRIPTPATH/robot.sh $FOLD/hdd/
-  chmod +x $FOLD/hdd/robot.sh
-  sed -i -e "s#^URL=?#URL=\"$ROBOTURL\"#" $FOLD/hdd/robot.sh
-    case "$IAM" in
-      debian|ubuntu)
-        sed -e 's/^exit 0$//' -i $FOLD/hdd/etc/rc.local
-        echo -e "[ -x /robot.sh ] && /robot.sh\nexit 0" >> $FOLD/hdd/etc/rc.local
-        ;;
-      centos)
-        echo -e "[ -x /robot.sh ] && /robot.sh" >> $FOLD/hdd/etc/rc.local
-        chmod +x $FOLD/hdd/etc/rc.local 1>/dev/null 2>&1
-        ;;
-      suse)
-        # needs suse 12.2 or higher
-        echo "bash /robot.sh" >> $FOLD/hdd/etc/init.d/boot.local
-        ;;
-    esac
-}
+# install_robot_report_script()
+install_robot_report_script() {
+  # create robot report script
+  local robot_report_script='/robot-report.sh'
+  debug '# install robot report script'
+  {
+    echo '#!/usr/bin/env bash'
+    echo "### ${COMPANY} installimage"
+    echo '# report installation to robot'
+    echo "rm '$robot_report_script'"
+    echo '('
+    echo '  sleep 60'
+    echo '  for i in {1..36}; do'
+    echo "    wget --no-check-certificate -O /dev/null --timeout=10 '$ROBOTURL' &> /dev/null && break"
+    echo '    sleep 5'
+    echo '  done'
+    echo ') &'
+  } > "$FOLD/hdd/$robot_report_script"
+  chmod +x "$FOLD/hdd/$robot_report_script"
 
-#report_statistic "SERVER" "IMAGENAME" "SWRAID" "LVM"
-report_statistic() {
-  if [ "$1" -a "$2" -a "$3" -a "$4" -a "$5" ]; then
-    REPORTSRV="$1"
-
-    STANDARDIMAGE="`ls -1 "$IMAGESPATH" |grep "$2"`"
-
-    if [ ! "$STANDARDIMAGE" ]; then
-      REPORTIMG="Custom"
+  if installed_os_uses_systemd; then
+    # create robot report service
+    if [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION >= 1710)); then
+      local robot_report_service='/etc/systemd/system/robot-report.service'
+    elif [[ "$IAM" == 'archlinux' ]]; then
+      local robot_report_service='/etc/systemd/system/robot-report.service'
     else
-      REPORTIMG="`echo $2 |sed 's/\./___/g'`"
+      local robot_report_service='/etc/systemd/system/multi-user.target.wants/robot-report.service'
+    fi
+    debug '# install robot report service'
+    {
+      echo "### ${COMPANY} installimage"
+      echo '# report installation to robot'
+      echo '[Unit]'
+      echo 'After=network.target'
+      echo 'Description=Report installation to Robot'
+      echo '[Service]'
+      echo "ExecStart=$robot_report_script"
+      echo 'KillMode=none'
+      echo 'Type=forking'
+    } > "$FOLD/hdd/$robot_report_service"
+    if [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION >= 1710)); then
+      ln -s ../robot-report.service "$FOLD/hdd/etc/systemd/system/multi-user.target.wants/robot-report.service"
+    elif [[ "$IAM" == 'archlinux' ]]; then
+      ln -s ../robot-report.service "$FOLD/hdd/etc/systemd/system/multi-user.target.wants/robot-report.service"
     fi
 
-    REPORTSWR="$3"
-    REPORTLVM="$4"
-    if [ "$5" = "lilo" -o "$5" = "LILO" ]; then
-      BLCODE="0"
-    elif [ "$5" = "grub" -o "$5" = "GRUB" ]; then
-      BLCODE="1"
-    fi
-    ERROREXITCODE="$6"
-    wget --no-check-certificate --timeout=20 "https://$REPORTSRV/report/image/$REPORTIMG/$REPORTSWR/$REPORTLVM/$BLCODE/$ERROREXITCODE" -O /tmp/wget.tmp >> /dev/null 2>&1; EXITCODE=$?
-    return $EXITCODE
+    # extend robot report script
+    {
+      echo '('
+      if [[ "$IAM" == 'ubuntu' ]] && ((IMG_VERSION >= 1710)); then
+        echo '  unlink /etc/systemd/system/multi-user.target.wants/robot-report.service'
+      elif [[ "$IAM" == 'archlinux' ]]; then
+        echo '  unlink /etc/systemd/system/multi-user.target.wants/robot-report.service'
+      fi
+      echo "  rm '$robot_report_service'"
+      echo '  systemctl daemon-reload'
+      echo ') &'
+    } >> "$FOLD/hdd/$robot_report_script"
+
+    return 0
   fi
+
+  local rc_local_scripts='/etc/rc.d/rc.local /etc/rc.local'
+  for script in $rc_local_scripts; do
+    # check if script exists
+    [[ -e "$FOLD/hdd/$script" ]] || continue
+
+    debug "# append robot report script call to $script"
+
+    # backup and patch script
+    sed -i.bak '/^exit 0\s*$/d' "$FOLD/hdd/$script"
+    {
+      echo "### ${COMPANY} installimage"
+      echo '# report installation to robot'
+      echo "[[ -x $robot_report_script ]] && $robot_report_script"
+      echo 'exit 0'
+    } >> "$FOLD/hdd/$script"
+    chmod +x "$FOLD/hdd/$script"
+
+    # extend robot report script
+    {
+      echo "mv '$script.bak' '$script'"
+      echo "chmod +x '$script'"
+      echo 'exit 0'
+    } >> "$FOLD/hdd/$robot_report_script"
+
+    return 0
+  done
+
+  return 1
 }
 
 report_config() {
   local config_file="$FOLD/install.conf"
-  # currently use new rz-admin to report the install.conf
-  # TODO: change that later to rz-admin
-  local report_ip="213.133.99.103"
+  # use rz-admin IP (not DNS, might break) to report the install.conf
+  local report_ip="$STATSSERVER"
   local report_status=""
 
-  report_status="$(curl -m 10 -s -k -X POST -T $config_file "https://${report_ip}/api/${HWADDR}/image/new")"
+  report_status="$(curl -m 10 -s -k -X POST -T "$config_file" "https://${report_ip}/api/${HWADDR}/image/new")"
   echo "report install.conf to rz-admin: ${report_status}" | debugoutput
 
-  echo "${report_status}" 
+  echo "${report_status}"
 }
 
 report_debuglog() {
@@ -3342,12 +3466,11 @@ report_debuglog() {
     echo "report_debuglog: no log_id given" | debugoutput
     return 1
   fi
-  # currently use new rz-admin to report the install.conf
-  # TODO: change that later to rz-admin
-  local report_ip="213.133.99.103"
+  # use rz-admin IP (not DNS, might break) to report the install.conf
+  local report_ip="$STATSSERVER"
   local report_status=""
 
-  report_status="$(curl -m 10 -s -k -X POST -T $DEBUGFILE "https://${report_ip}/api/${HWADDR}/image/${log_id}/log")"
+  report_status="$(curl -m 10 -s -k -X POST -T "$DEBUGFILE" "https://${report_ip}/api/${HWADDR}/image/${log_id}/log")"
   echo "report debug.txt to rz-admin: ${report_status}" | debugoutput
 
   return 0
@@ -3359,18 +3482,16 @@ report_debuglog() {
 # Unmount filesystems and remove temporary directories.
 #
 cleanup() {
-  debug "# Cleaning up..."
-
-  while read line ; do
-    mount="$(echo $line | grep $FOLD | cut -d' ' -f2)"
-    if [ -n "$mount" ] ; then
-      umount -l $mount >> /dev/null 2>&1
-    fi
-  done < /proc/mounts
-
-  rm -rf $FOLD >> /dev/null 2>&1
-  rm -rf /tmp/install.vars 2>&1
-  rm -rf /tmp/*.tmp 2>&1
+  debug 'cleaning up'
+  mysql_running && stop_mysql
+  systemd_nspawn_booted && poweroff_systemd_nspawn
+  while read entry; do
+    while read subentry; do
+      umount --lazy --verbose "$(echo "${subentry}" | awk '{print $2}')" &> /dev/null # |& debugoutput
+    done < <(echo "${entry}" | grep "${FOLD}/hdd")
+  done < <(tac /proc/mounts)
+  rm --force --recursive --verbose "${FOLD}" &> /dev/null # |& debugoutput
+  resume_swraid_resync
 }
 
 exit_function() {
@@ -3384,7 +3505,7 @@ exit_function() {
   echo
   echo "Please check our wiki for a description of the error:"
   echo
-  echo "http://wiki.hetzner.de/index.php/Betriebssystem_Images_installieren"
+  echo "http://wiki.hetzner.de/index.php/Installimage"
   echo
   echo "If your problem is not described there, try booting into a fresh"
   echo "rescue system and restart the installation. If the installation"
@@ -3393,16 +3514,14 @@ exit_function() {
   echo
   echo "  https://robot.your-server.de"
   echo
-  
-  report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
+
   report_id="$(report_config)"
-  report_debuglog $report_id
-  cleanup
+  report_debuglog "$report_id"
 }
 
 #function to check if it is a intel or amd cpu
 function check_cpu () {
-  if [ "$(cat /proc/cpuinfo | grep GenuineIntel)" ]; then
+  if grep -q GenuineIntel /proc/cpuinfo; then
     MODEL="intel"
   else
     MODEL="amd"
@@ -3415,64 +3534,63 @@ function check_cpu () {
 
 #get the smallest harddrive
 function smallest_hd() {
-  local smallest_drive_space="$(blockdev --getsize64 $DRIVE1 2>/dev/null)"
+  local smallest_drive_space; smallest_drive_space="$(blockdev --getsize64 "$DRIVE1" 2>/dev/null)"
   local smallest_drive=$DRIVE1
   for i in $(seq 1 $COUNT_DRIVES); do
-    if [ "$smallest_drive_space" -gt "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" ]; then
-      smallest_drive_space="$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")"
-      smallest_drive="$(eval echo "\$DRIVE"$i)"
+    if [ "$smallest_drive_space" -gt "$(blockdev --getsize64 "$(eval echo "\$DRIVE$i")")" ]; then
+      smallest_drive_space="$(blockdev --getsize64 "$(eval echo "\$DRIVE$i")")"
+      smallest_drive="$(eval echo "\$DRIVE$i")"
     fi
   done
 
-  echo $smallest_drive
+  echo "$smallest_drive"
 
   return 0
 }
 
 function largest_hd() {
-  LARGEST_DRIVE_SPACE="$(blockdev --getsize64 $DRIVE1)"
+  LARGEST_DRIVE_SPACE="$(blockdev --getsize64 "$DRIVE1")"
   LARGEST_DRIVE=$DRIVE1
   for i in $(seq 1 $COUNT_DRIVES); do
-    if [ "$LARGEST_DRIVE_SPACE" -lt "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" ]; then
-      LARGEST_DRIVE_SPACE="$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")"
-      LARGEST_DRIVE="$(eval echo "\$DRIVE"$i)"
+    if [ "$LARGEST_DRIVE_SPACE" -lt "$(blockdev --getsize64 "$(eval echo "\$DRIVE$i")")" ]; then
+      LARGEST_DRIVE_SPACE="$(blockdev --getsize64 "$(eval echo "\$DRIVE$i")")"
+      LARGEST_DRIVE="$(eval echo "\$DRIVE$i")"
     fi
   done
 
-  echo $LARGEST_DRIVE
+  echo "$LARGEST_DRIVE"
 
   return 0
 }
 
 # get the drives which are connected through an USB port
 function getUSBFlashDrives() {
-  for i in $(seq 1 $COUNT_DRIVES); do
-    DEV=$(eval echo "\$DRIVE"$i)
-    # remove string '/dev/'
-    DEV=$(echo $DEV | sed -e 's/\/dev\///')
-    if [ -n "$(ls -l /sys/block/$DEV/ | grep usb)" ]; then
-      echo "/dev/${DEV}"
-    fi
+  for path in /sys/block/*; do
+    [[ -d "${path}" ]] || continue
+    dev_name="$(basename "${path}")"
+    dev_params="$(udevadm info --name "${dev_name}")"
+    echo "${dev_params}" | grep --quiet 'DEVTYPE=disk' || continue
+    echo "${dev_params}" | grep --quiet 'ID_BUS=usb' || continue
+    echo "${dev_params}" | grep --quiet 'ID_USB_DRIVER=usb-storage' || continue
+    echo "${dev_name}"
   done
-
-  return 0
 }
 
 # get HDDs with size not in tolerance range
 function getHDDsNotInToleranceRange() {
   # RANGE in percent relative to smallest hdd
   local RANGE=135
-  local smallest_hdd="$(smallest_hd)"
-  local smallest_hdd_size="$(blockdev --getsize64 $smallest_hdd)"
-  local max_size=$[ $smallest_hdd_size * $RANGE / 100 ]
+  local smallest_hdd; smallest_hdd="$(smallest_hd)"
+  local smallest_hdd_size; smallest_hdd_size="$(blockdev --getsize64 "$smallest_hdd")"
+  local max_size=$(( smallest_hdd_size * RANGE / 100 ))
   debug "checking if hdd sizes are within tolerance. min: $smallest_hdd_size / max: $max_size"
   for i in $(seq 1 $COUNT_DRIVES); do
-    if [ "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" -gt "$max_size" ]; then
-      echo $(eval echo "\$DRIVE"$i)
+    if [ "$(blockdev --getsize64 "$(eval echo "\$DRIVE$i")")" -gt "$max_size" ]; then
+      eval echo "\$DRIVE$i"
       debug "DRIVE$i not in range"
     else
       debug "DRIVE$i in range"
-      echo "$(blockdev --getsize64 "$(eval echo "\$DRIVE"$i)")" | debugoutput
+      blockdev --getsize64 "$(eval echo "\$DRIVE$i")" | debugoutput
     fi
   done
 
@@ -3482,47 +3600,52 @@ function getHDDsNotInToleranceRange() {
 uuid_bugfix() {
     debug "# change all device names to uuid (e.g. for ide/pata transition)"
     TEMPFILE="$(mktemp)"
-    sed -n 's|^/dev/\([hsv]d[a-z][1-9][0-9]\?\).*|\1|p' < $FOLD/hdd/etc/fstab > "$TEMPFILE"
+    sed -n 's|^/dev/\([hsv]d[a-z][1-9][0-9]\?\).*|\1|p' < "$FOLD/hdd/etc/fstab" > "$TEMPFILE"
     while read LINE; do
-      UUID="$(blkid -o value -s UUID /dev/$LINE)"
+      UUID="$(blkid -o value -s UUID "/dev/$LINE")"
       # not quite perfect. We need to match /dev/sda1 but not /dev/sda10.
       # device name may not always be followed by whitespace
-      [ -e $FOLD/hdd/etc/fstab ] && sed -i "s|^/dev/${LINE} |# /dev/${LINE} during Installation (RescueSystem)\nUUID=${UUID} |" $FOLD/hdd/etc/fstab
-      [ -e $FOLD/hdd/boot/grub/grub.cfg ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" $FOLD/hdd/boot/grub/grub.cfg
-      [ -e $FOLD/hdd/boot/grub/grub.conf ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" $FOLD/hdd/boot/grub/grub.conf
-      [ -e $FOLD/hdd/boot/grub/menu.lst ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" $FOLD/hdd/boot/grub/menu.lst
-      [ -e $FOLD/hdd/etc/lilo.conf ] && sed -i "s|append=\"root=/dev/${LINE}|append=\"root=UUID=${UUID}|" $FOLD/hdd/etc/lilo.conf
-      [ -e $FOLD/hdd/etc/lilo.conf ] && sed -i "s|/dev/${LINE}|\"UUID=${UUID}\"|" $FOLD/hdd/etc/lilo.conf
-    done < $TEMPFILE
+      [ -e "$FOLD/hdd/etc/fstab" ] && sed -i "s|^/dev/${LINE} |# /dev/${LINE} during Installation (RescueSystem)\nUUID=${UUID} |" "$FOLD/hdd/etc/fstab"
+      [ -e "$FOLD/hdd/boot/grub/grub.cfg" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/grub.cfg"
+      [ -e "$FOLD/hdd/boot/grub/grub.conf" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/grub.conf"
+      [ -e "$FOLD/hdd/boot/grub/menu.lst" ] && sed -i "s|/dev/${LINE} |UUID=${UUID} |" "$FOLD/hdd/boot/grub/menu.lst"
+      [ -e "$FOLD/hdd/etc/lilo.conf" ] && sed -i "s|append=\"root=/dev/${LINE}|append=\"root=UUID=${UUID}|" "$FOLD/hdd/etc/lilo.conf"
+      [ -e "$FOLD/hdd/etc/lilo.conf" ] && sed -i "s|/dev/${LINE}|\"UUID=${UUID}\"|" "$FOLD/hdd/etc/lilo.conf"
+    done < "$TEMPFILE"
     rm "$TEMPFILE"
     return 0
 }
 
 # param 1: /dev/sda (e.g)
 function hdinfo() {
-  local withoutdev= vendor= name= logical_nr=
+  local withoutdev;
+  local vendor;
+  local name;
+  local logical_nr;
   withoutdev=${1##*/}
-  vendor="$(cat /sys/block/$withoutdev/device/vendor | tr -d ' ')"
-  
+  if [ -e "/sys/block/$withoutdev/device/vendor" ]; then
+    vendor="$(tr -d ' ' < "/sys/block/$withoutdev/device/vendor")"
+  fi
+
   case "$vendor" in
     LSI)
-      logical_nr="$(ls /sys/block/$withoutdev/device/scsi_device/ | cut -d: -f3)"
-      name="$(megacli -ldinfo -L$logical_nr -aall | grep Name | cut -d: -f2)"
+      logical_nr="$(find "/sys/block/$withoutdev/device/scsi_device/*" -maxdepth 0 -type d | cut -d: -f3)"
+      name="$(megacli -ldinfo -L"$logical_nr" -aall | grep Name | cut -d: -f2)"
       [ -z "$name" ] && name="no name"
       echo "# LSI RAID (LD $logical_nr): $name"
       ;;
     Adaptec)
-      logical_nr="$(cat /sys/block/$withoutdev/device/model 2>&1 | awk '{print $2}')"
-      name="$(arcconf GETCONFIG 1 LD $logical_nr | grep "Logical device name" | sed 's/.*: \(.*\)/\1/g')"
+      logical_nr="$(awk '{print $2}' < "/sys/block/$withoutdev/device/model" 2>&1)"
+      name="$(arcconf GETCONFIG 1 LD "$logical_nr" | grep "Logical device name" | sed 's/.*: \(.*\)/\1/g')"
       [ -z "$name" ] && name="no name"
       echo "# Adaptec RAID (LD $logical_nr): $name"
       ;;
     AMCC)
-      logical_nr="$(ls /sys/block/$withoutdev/device/scsi_device/ | cut -d: -f4)"
+      logical_nr="$(find "/sys/block/$withoutdev/device/scsi_device/*" -maxdepth 0 -type d | cut -d: -f4)"
       echo "# 3ware RAID (LD $logical_nr)"
       ;;
     ATA)
-      name="$(hdparm -i $1 | grep Model | sed 's/ Model=\(.*\), Fw.*/\1/g')"
+      name="$(hdparm -i "$1" | grep Model | sed 's/ Model=\(.*\), Fw.*/\1/g')"
       echo "# Onboard: $name"
       ;;
     *)
@@ -3536,9 +3659,9 @@ function hdinfo() {
 function isNegotiated() {
 # search for first NIC which has an IP
 for i in $(ifconfig -a | grep eth | cut -d " " -f 1); do
-  if [ -n "$(ip a show $i | grep "inet [1-9]")" ]; then
+  if ip a show "$i" | grep -q "inet [1-9]"; then
     #check if we got autonegotiated
-    if [ -n "$(mii-tool 2>/dev/null | grep "negotiated")" ]; then
+    if echo $(mii-tool 2>/dev/null) | grep -q "negotiated"; then
       return 0
     else
       return 1
@@ -3556,7 +3679,7 @@ function isVServer() {
     vServer|Bochs|Xen|KVM|VirtualBox|'VMware,Inc.')
       debug "# Systype: $SYSTYPE"
       return 0;;
-    *) 
+    *)
       debug "# Systype: $SYSTYPE"
       case "$SYSMFC" in
       	QEMU)
@@ -3581,26 +3704,26 @@ function part_test_size() {
   if [ "$FORCE_GPT" = "2" ]; then
     debug "Forcing use of GPT as directed"
     GPT=1
-    PART_COUNT=$[$PART_COUNT+1]
+    PART_COUNT=$((PART_COUNT+1))
     return 0
   fi
 
-  local dev=$(smallest_hd)
+  local dev; dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
     dev=$DRIVE1
   fi
-  local DRIVE_SIZE=$(blockdev --getsize64 $dev)
-  DRIVE_SIZE=$[ $DRIVE_SIZE / 1024 / 1024 ]
+  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$dev")
+  DRIVE_SIZE=$(( DRIVE_SIZE / 1024 / 1024 ))
 
-  if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" = "1" ]; then
+  if [ "$DRIVE_SIZE" -ge $LIMIT ] || [ "$FORCE_GPT" = "1" ]; then
     # use only GPT if not CentOS or OpenSuSE newer than 12.2
     if [ "$IAM" != "centos" ] || [ "$IAM" == "centos" -a "$IMG_VERSION" -ge 70 ]; then
       if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
         echo "SuSE older than 12.2. cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
-      else 
+      else
         echo "using GPT (drive size bigger then 2TB or requested)" | debugoutput
         GPT=1
-        PART_COUNT=$[$PART_COUNT+1]
+        PART_COUNT=$((PART_COUNT+1))
       fi
     else
       echo "cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
@@ -3612,11 +3735,11 @@ function part_test_size() {
 # if first param is "no_output" only correct size of "all" partition
 
 function check_dos_partitions() {
-  
+
   echo "check_dos_partitions" | debugoutput
   if [ "$FORCE_GPT" = "2" ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" -a "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
     if [ "$IAM" = "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
-      echo "SuSE version older than 12.2, no grub2 support" | debugoutput 
+      echo "SuSE version older than 12.2, no grub2 support" | debugoutput
     else
       return 0
     fi
@@ -3630,25 +3753,25 @@ function check_dos_partitions() {
   local temp_size=0
   local result=''
   local found_all_part=''
-  local dev=$(smallest_hd)
+  local dev; dev=$(smallest_hd)
   if [ "$SWRAID" -eq 0 ]; then
     dev=$DRIVE1
   fi
 
-  local DRIVE_SIZE=$(blockdev --getsize64 $dev)
-  DRIVE_SIZE=$[ $DRIVE_SIZE / 1024 / 1024 ]
+  local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$dev")
+  DRIVE_SIZE=$(( DRIVE_SIZE / 1024 / 1024 ))
 
-  if [ $DRIVE_SIZE -lt $LIMIT ]; then
+  if [ "$DRIVE_SIZE" -lt $LIMIT ]; then
     return 0
   fi
 
-  echo "DRIVE size is: $DRIVE_SIZE" | debugoutput
-  
+  debug "DRIVE size is: $DRIVE_SIZE"
+
   # check if all primary partitions (without "all") are within the 2TB Limit
   for i in $(seq 1 $PART_COUNT); do
     #check only primary partitions
     if [ "${PART_SIZE[$i]}" != "all" ]; then
-       if [ $i -lt 4 ]; then
+       if [ "$i" -lt 4 ]; then
          PART_WO_ALL_SIZE_PRIM="$(echo ${PART_SIZE[$i]} + $PART_WO_ALL_SIZE_PRIM | bc)"
        fi
        # MS-DOS partitions may not start above 2TiB either
@@ -3664,12 +3787,12 @@ function check_dos_partitions() {
     fi
   done
 
-  echo "partitions without \"all\" sum up to $PART_WO_ALL_SIZE" | debugoutput
-  echo "primary partitions without \"all\" sum up to $PART_WO_ALL_SIZE_PRIM" | debugoutput
+  debug "partitions without 'all' sum up to $PART_WO_ALL_SIZE"
+  debug "primary partitions without 'all' sum up to $PART_WO_ALL_SIZE_PRIM"
 
   # now check how big an "all" partition is
   # MS-DOS partitions may not start above 2TiB either
-  if [ $PART_WO_ALL_SIZE -gt $LIMIT ]; then
+  if [ "$PART_WO_ALL_SIZE" -gt $LIMIT ]; then
     if [ "$found_all_part" = "yes" ] ; then
       [ -z $result ] && result="PART_ALL_BEGIN_OVER_LIMIT"
     fi
@@ -3679,25 +3802,26 @@ function check_dos_partitions() {
   if [ $PART_COUNT -gt 3 ]; then
     for i in $(seq 4 $PART_COUNT); do
       if [ "${PART_SIZE[$i]}" != "all" ]; then
-        temp_size="$(echo "$temp_size + ${PART_SIZE[$i]}" | bc)"
+        # add 1 MiB for every logical partition to account for EBR
+        temp_size="$(echo "1 + $temp_size + ${PART_SIZE[$i]}" | bc)"
       fi
     done
 
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE_PRIM - $temp_size" | bc)
     echo "Part_all_size is: $PART_ALL_SIZE" | debugoutput
-    if [ $PART_ALL_SIZE -gt $LIMIT ]; then
+    if [ "$PART_ALL_SIZE" -gt $LIMIT ]; then
       PART_ALL_SIZE=$(echo "$LIMIT - $temp_size" | bc)
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
   # if we have no more than 3 partitions
   else
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE" | bc)
-    if [ $PART_ALL_SIZE -gt $LIMIT ]; then
+    if [ "$PART_ALL_SIZE" -gt $LIMIT ]; then
       PART_ALL_SIZE=$LIMIT
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
   fi
-   
+
   for i in $(seq 1 $PART_COUNT); do
     if [ "${PART_SIZE[$i]}" == "all" ]; then
         PART_SIZE[$i]=$PART_ALL_SIZE
@@ -3711,54 +3835,75 @@ function check_dos_partitions() {
 # Set udev rules
 #
 set_udev_rules() {
- # at this point we have configured networking for one and only one
- # active interface and written a udev rule for this device.
- # Normally, we could just rename that single interface.
- # But when the system boots, the other interface are found and numbered.
- # The system then tries to rename the interface to match the udev rules.
- # Under certain situations with more than two NICs, this may not end as
- # expected leaving some interfaces half-renamed (e.g. eth3-eth0)
- # So we copy the already generated udev rules from the rescue system in order
- # to have rules for all devices, no matter in which order they are found
- # during boot.
- UDEVPFAD="/etc/udev/rules.d"
+  # at this point we have configured networking for one and only one
+  # active interface and written a udev rule for this device.
+  # Normally, we could just rename that single interface.
+  # But when the system boots, the other interface are found and numbered.
+  # The system then tries to rename the interface to match the udev rules.
+  # Under certain situations with more than two NICs, this may not end as
+  # expected leaving some interfaces half-renamed (e.g. eth3-eth0)
+  # So we copy the already generated udev rules from the rescue system in order
+  # to have rules for all devices, no matter in which order they are found
+  # during boot.
+  local udevpath udevsrcfile udevtgtfile
+  udevpath="/etc/udev/rules.d"
+  udevsrcfile="$udevpath/70-persistent-net.rules"
+  if [ -f "$FOLD/hdd$udevsrcfile" ]; then
+    udevtgtfile="$udevsrcfile"
+  elif [ -f "$FOLD/hdd$udevpath/80-net-setup-link.rules" ]; then
+    udevtgtfile="$udevpath/80-net-setup-link.rules"
+  else
+    udevtgtfile=""
+  fi
 
- ETHCOUNT="$(ifconfig -a | grep -c eth)"
- if [ "$ETHCOUNT" -gt "1" ]; then
-    cp $UDEVPFAD/70-persistent-net.rules $FOLD/hdd$UDEVPFAD/
-    #Testeinbau
-   if [ "$IAM" = "centos" ]; then
-     # need to remove these parts of the rule for centos, 
-     # otherwise we get new rules with the old interface name again
-     # plus a new  ifcfg- for the new rule, which duplicates
-     # the config but does not match the MAC of the interface
-     # after renaming. Terrible mess.
-     sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-   fi
-   for NIC in /sys/class/net/*; do
-     INTERFACE=${NIC##*/}
+  local ethcount; ethcount="$(find /sys/class/net/ -name eth* | wc -l)"
+  if [ "$ethcount" -gt 1 ]; then
+    # virtual servers with multiple nics may not have a net.rules files
+    if [ -n "$udevtgtfile" ] && [ -f "$udevsrcfile" ]; then
+      cp "$udevsrcfile" "$FOLD/hdd$udevtgtfile"
+      #Testeinbau
+      if [ "$IAM" = "centos" ]; then
+        # need to remove these parts of the rule for centos,
+        # otherwise we get new rules with the old interface name again
+        # plus a new  ifcfg- for the new rule, which duplicates
+        # the config but does not match the MAC of the interface
+        # after renaming. Terrible mess.
+        sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' "$FOLD/hdd$udevtgtfile"
+      fi
+    fi
+    for nic in /sys/class/net/*; do
+     local interface; interface=${nic##*/}
      #test if the interface has a ipv4 adress
-     iptest=$(ip addr show dev "$INTERFACE" | grep "$INTERFACE"$ | awk '{print $2}' | cut -d "." -f 1,2)
+     iptest=$(ip addr show dev "$interface" | grep "$interface"$ | awk '{print $2}' | cut -d "." -f 1,2)
      #iptest=$(ifconfig $INTERFACE | grep "inet addr" | cut -d ":" -f2 | cut -d " " -f1 | cut -d "." -f1,2)
      #Separate udev-rules for openSUSE 12.3 in function "suse_fix" below !!!
-     if [ -n "$iptest"  ] && [ "iptest" != "192.168" ] && [ "$INTERFACE" != "eth0" ] && [ "$INTERFACE" != "lo" ]; then
-       debug "# renaming active $INTERFACE to eth0 via udev in installed system"
-       sed -i  "s/$INTERFACE/dummy/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       sed -i  "s/eth0/$INTERFACE/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       sed -i  "s/dummy/eth0/" $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
-       fix_eth_naming "$INTERFACE" 
-     fi
-   done
-   [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
-   [ "$suse_version" == "123" ] && suse_netdev_fix
- fi
+
+     # skip eth0, lo and 192.168.x
+     [[ "${interface}" == "eth0" ]] && continue
+     [[ "${interface}" == "idrac" ]] && continue
+     [[ "${interface}" == "lo" ]] && continue
+     [[ -n "${iptest}" ]] || continue
+     [[ "${iptest}" == "192.168" ]] && continue
+     # skip IPMI NICs
+     udev_info="$(udevadm info --path "/sys/class/net/${interface}")"
+     echo "${udev_info}" | grep --quiet 'ID_MODEL=iDRAC_Virtual_NIC_USB_Device' && continue
+
+     debug "# renaming active $interface to eth0 via udev in installed system"
+     sed -i  "s/$interface/dummy/" "$FOLD/hdd$udevtgtfile"
+     sed -i  "s/eth0/$interface/" "$FOLD/hdd$udevtgtfile"
+     sed -i  "s/dummy/eth0/" "$FOLD/hdd$udevtgtfile"
+     fix_eth_naming "$interface"
+    done
+    [ "$IAM" = 'suse' ] && suse_version="$IMG_VERSION"
+    [ "$suse_version" == "123" ] && suse_netdev_fix
+  fi
 }
 
 # Rename eth device (ethX to eth0)
 #
 fix_eth_naming() {
- if [ "$1" ]; then 
-   debug "# fix eth naming" 
+ if [ "$1" ]; then
+   debug "# fix eth naming"
 
    # for Debian and Debian derivatives
    if [ "$IAM" = "debian" ] || [ "$IAM" = "ubuntu" ]; then
@@ -3768,7 +3913,7 @@ fix_eth_naming() {
        execute_chroot_command "sed -i 's/$1/eth0/g' $FILE"
      fi
    fi
- 
+
    # CentOS
    if [ "$IAM" = "centos" ]; then
      FILE="/etc/sysconfig/network-scripts/ifcfg-$1"
@@ -3778,18 +3923,18 @@ fix_eth_naming() {
      if [ -f "$FOLD/hdd/$FILE" ] && [ -f "$FOLD/hdd/$ROUTE" ]; then
        debug "# fix_eth_naming replaces $1 with eth0"
        execute_chroot_command "sed -i 's/$1/eth0/g' $FILE"
-       execute_chroot_command "mv $FILE $NEWFILE"    
-       execute_chroot_command "mv $ROUTE $NEWROUTE"    
+       execute_chroot_command "mv $FILE $NEWFILE"
+       execute_chroot_command "mv $ROUTE $NEWROUTE"
      fi
    fi
 
-   # SUSE 
+   # SUSE
    if [ "$IAM" = "suse" ]; then
      FILE="/etc/sysconfig/network/ifcfg-$1"
      NEWFILE="/etc/sysconfig/network/ifcfg-eth0"
      if [ -f "$FOLD/hdd/$FILE" ]; then
        debug "# fix_eth_naming mv $FILE to $NEWFILE"
-       execute_chroot_command "mv $FILE $NEWFILE"    
+       execute_chroot_command "mv $FILE $NEWFILE"
      fi
    fi
  fi
@@ -3803,19 +3948,19 @@ suse_netdev_fix() {
 # Workaround is to map the NICs to their own namespace (net0 instead of eth0)
 # until the fix is released
 # see https://bugzilla.novell.com/show_bug.cgi?id=809843
-    
+
     FILE_NET="/etc/sysconfig/network/ifcfg-eth0"
     FILE_NET_NEW="/etc/sysconfig/network/ifcfg-net0"
     execute_chroot_command "mv $FILE_NET $FILE_NET_NEW";
     execute_chroot_command "sed -i  's/eth0/net0/g' $FILE_NET_NEW";
-    sed -i  's/eth\([0-9]\)/net\1/g' $FOLD/hdd$UDEVPFAD/70-persistent-net.rules
+    sed -i  's/eth\([0-9]\)/net\1/g' "$FOLD/hdd$UDEVPFAD/70-persistent-net.rules"
 }
 
 is_private_ip() {
- if [ "$1" ]; then
-   local first="$(echo $1 | cut -d '.' -f 1)"
-   local second="$(echo $1 | cut -d '.' -f 2)"
-   local third="$(echo $1 | cut -d '.' -f 3)"
+ if [ -n "$1" ]; then
+   local first; first="$(echo "$1" | cut -d '.' -f 1)"
+   local second; second="$(echo "$1" | cut -d '.' -f 2)"
+
    case "$first" in
      10)
        debug "detected private ip ($first.$second.x)"
@@ -3853,3 +3998,10 @@ is_private_ip() {
   return 1
  fi
 }
+
+wait_for_udev() {
+  udevadm trigger |& debugoutput
+  udevadm settle |& debugoutput
+}
+
+# vim: ai:ts=2:sw=2:et
