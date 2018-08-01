@@ -7,15 +7,15 @@
 ## Contents
 + [Setup](#setup)
     - [Workflow](#workflow)
-    - [installimage.in_screen](#installimage.in_screen)
+    - [installimage.in_screen](#installimagein_screen)
     - [installimage](#installimage)
-    - [config.sh](#config.sh)
-    - [functions.sh](#functions.sh)
-    - [get_options.sh](#get_options.sh)
-    - [autosetup.sh](#autosetup.sh)
-    - [setup.sh](setup.sh)
-    - [install.sh](#install.sh)
-    - [$distro.sh]($distro.sh)
+    - [config.sh](#configsh)
+    - [functions.sh](#functionssh)
+    - [get_options.sh](#get_optionssh)
+    - [autosetup.sh](#autosetupsh)
+    - [setup.sh](#setupsh)
+    - [install.sh](#installsh)
+    - [$distro.sh](#distrosh)
 + [Requirements](#requirements)
 + [Configuration](#configuration)
 + [Usage](#usage)
@@ -36,36 +36,36 @@
 We've got a small diagram showing the workflow during an installation process:
 ![installimage-workflow](https://rawgit.com/virtapi/installimage/master/installimage-workflow.svg)
 
-###installimage.in_screen
+### installimage.in_screen
 This is the initial script that gets called if we automatically start the installimage after a boot process. It adjusts the PATH environment variable because the one provided by the live system may not include all needed paths that the system we install has. The script restarts itself in a new screen session if it isn't already running in one. If it is running in a screen session it starts the actual [installimage](#installimage). It reboots the server after the successful installation or drops you into a bash if the installation failed.
 
-###installimage
-Here gets the [config.sh](#config.sh) executed to get many needed variables. Existing mounted partitions or active LVM/mdadm volumes will be stopped. It is possible to provide a custom file with varibles to overwrite default ones (for example the prefered hostname, the image to install), the installimage script checks if this custom file is present and sources it, than the unattended installation starts ([autosetup.sh](#autosetup.sh)). Otherwise the [setup.sh](setup.sh) will be called.
+### installimage
+Here gets the [config.sh](#configsh) executed to get many needed variables. Existing mounted partitions or active LVM/mdadm volumes will be stopped. It is possible to provide a custom file with varibles to overwrite default ones (for example the prefered hostname, the image to install), the installimage script checks if this custom file is present and sources it, than the unattended installation starts ([autosetup.sh](#autosetupsh)). Otherwise the [setup.sh](setup.sh) will be called.
 
-###config.sh
-The installimage needs a long list of default parameters, most of them are defined in the `config.sh`. They are simple bash variables that get exported. The file also executes the [functions.sh](#functions.sh).
+### config.sh
+The installimage needs a long list of default parameters, most of them are defined in the `config.sh`. They are simple bash variables that get exported. The file also executes the [functions.sh](#functionssh).
 
-###functions.sh
+### functions.sh
 The function is split into three parts:
 * define every variable that needs a function to be determind (IPADDR, HWADDR...)
 * the functions that fill up the variables (gather_network_information())
 * global functions to provision the image (generate_ntp_config())
 
-See also [$distro.sh]($distro.sh)
+See also [$distro.sh](#distrosh)
 
-###get_options.sh
+### get_options.sh
 The installimage provides many CLI command options. They are all specified in this file. They get parsed and validated and have some basic logic checks (it is not possible to provide every combination of params, and some require some others). The `get_options.sh` also holds a help message that you can reach by running `installimage -h`.
 
-###autosetup.sh
-Every needed variable here will be validated, they are provided by the [config.sh](#config.sh) + a custom file. The actual installation will start afterwards via the [install.sh](#install.sh).
+### autosetup.sh
+Every needed variable here will be validated, they are provided by the [config.sh](#configsh) + a custom file. The actual installation will start afterwards via the [install.sh](#installsh).
 
-###setup.sh
-installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, then a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#install.sh).
+### setup.sh
+installimage supports a menu based installation. This happens in the `setup.sh` file. At first you select the operating system you would like to have, then a Midnight Commander pops up with every needed variable for the installation. Some of them are preconfigured because the installimage tries to guess it, for example a working default partitioning scheme. The actual installation will start afterwords via the [install.sh](#installsh).
 
-###install.sh
+### install.sh
 Here the actual installation happens. The script starts with the calculation of every needed step and prints a helpful menu which always shows you the current process, the amount of finished and needed tasks.
 
-###$distro.sh
+### $distro.sh
 Some of the global functions don't work on every distribution, so they are overwritten in a distribution-specific file.
 
 ---
@@ -111,7 +111,6 @@ the installimage ships an example configuration file, `config-example.sh`, you'v
 
 ---
 
-
 ## Usage
 ```bash
 $ installimage ...
@@ -131,7 +130,8 @@ We defined our own styleguide [here](styleguide-bash.md), this is a work-in-prog
 ---
 
 ## Name Origin
-**installimage** installs Linux-distributions with the use of images.
+__installimage__ installs Linux-distributions with the use of images.
+
 ---
 
 ## Issues
