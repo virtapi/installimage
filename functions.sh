@@ -2600,7 +2600,20 @@ generate_resolvconf() {
 #    execute_chroot_command "netconfig update -f"
   fi
 #  else
-    NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
+  NAMESERVERFILE="$FOLD/hdd/etc/resolv.conf"
+  SYSTEMD_RESOLV_CONF="$FOLD/hdd/etc/systemd/resolved.conf"
+  if [ "$IAM" = "ubuntu" ] && [ "$IMG_VERSION" -ge 1604 ] && \
+    [ -L "$NAMESERVERFILE" ] && [ -e "$SYSTEMD_RESOLV_CONF" ]; then
+    if [ "$V6ONLY" -eq 1 ]; then
+      debug "# skipping IPv4 DNS resolvers"
+      sed -i "s/^#DNS=/DNS=${DNSRESOLVER_V6[*]}/g" "$SYSTEMD_RESOLV_CONF"
+    elif [ -n "$DOIPV6" ]; then
+      sed -i "s/^#DNS=/DNS=${NAMESERVER[*]}\ ${DNSRESOLVER_V6[*]}/g" "$SYSTEMD_RESOLV_CONF"
+    else
+      sed -i "s/^#DNS=/DNS=${NAMESERVER[*]}/g" "$SYSTEMD_RESOLV_CONF"
+    fi
+
+  else
     echo "### $COMPANY installimage" > "$NAMESERVERFILE"
     echo "# nameserver config" >> "$NAMESERVERFILE"
 
@@ -2619,7 +2632,7 @@ generate_resolvconf() {
         echo "nameserver ${DNSRESOLVER_V6[$index]}" >> "$NAMESERVERFILE"
       done
     fi
-#  fi
+  fi
 
   return 0
 }
