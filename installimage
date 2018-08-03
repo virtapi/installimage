@@ -44,7 +44,10 @@ cp -a "$REALCONFIG" /tmp/install.vars
 FOLD="$(mktemp -d /installimage.XXXXX)"
 
 # clear debugfile
-echo > "$DEBUGFILE"
+echo -n '' > "$DEBUGFILE"
+
+# cleanup on EXIT
+trap cleanup EXIT
 
 
 # get command line options
@@ -143,9 +146,6 @@ else
     echo -e "${RED}ERROR: Cant find files${NOCOL}"
   fi
 fi
-
-# clean mounts and close debugfile
-cleanup
 
 if [ "$EXITCODE" = "1" ]; then
   exit 1

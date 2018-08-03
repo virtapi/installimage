@@ -404,10 +404,10 @@ create_config() {
       echo "## -> 10GB  /"
       echo "## -> 5GB   /tmp"
       echo "## -> all the rest to /home"
-      echo "#PART swap   swap      4096"
-      echo "#PART /boot  ext2       512"
-      echo "#PART /      reiserfs 10240"
-      echo "#PART /tmp   xfs       5120"
+      echo "#PART swap   swap        4G"
+      echo "#PART /boot  ext2      512M"
+      echo "#PART /      ext4       10G"
+      echo "#PART /tmp   xfs         5G"
       echo "#PART /home  ext3       all"
       echo "#"
       echo "##"
@@ -1227,11 +1227,6 @@ validate_vars() {
       return 1
     fi
 
-#   this seems to be a very old problem. Not a problem for 6.x and later
-#    if [ "$lv_fs" = "xfs" ] && [ "$lv_mountp" = "/" ] && [ "$IAM" = "centos" ]; then
-#      graph_error "ERROR: centos doesn't support xfs on partition /"
-#      return 1
-#    fi
     # shellcheck disable=SC2015
     if [ "$lv_size" != "all" ] && [ ! -z "${lv_size//[0-9]}" ] || [ "$lv_size" = "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
@@ -1583,9 +1578,9 @@ function get_end_of_extended() {
   local startsec; startsec=$(sgdisk --first-aligned-in-largest "$1" | tail -n1)
 
   for i in $(seq 1 3); do
-    sum=$(echo "$sum + ${PART_SIZE[$i]}" | bc)
+    sum=$((sum + ${PART_SIZE[$i]}))
   done
-  rest=$(echo "$drive_size - ($sum * 1024 * 1024)" | bc)
+  rest=$((drive_size - (sum * 1024 * 1024) ))
 
   end=$((drive_size / sectorsize))
 
@@ -1595,7 +1590,7 @@ function get_end_of_extended() {
     if [ "$rest" -gt "$limit" ]; then
       # if the remaining space is more than 2 TiB, the end of the extended
       # partition is the current sector plus 2^32-1 sectors (2TiB-512 Byte)
-      echo "$startsec+$sectorlimit" | bc
+      echo "$((startsec + sectorlimit))"
     else
       # otherwise the end is the number of sectors - 1
       echo "$((end-1))"
@@ -1631,7 +1626,7 @@ function get_end_of_partition {
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
     end=$((last-1048576))
   else
-    end="$(echo "$start+(${PART_SIZE[$nr]}* 1024 * 1024)" | bc)"
+    end="$((start + ( ${PART_SIZE[$nr]} * 1024 * 1024) ))"
     # trough alignment the calculated end could be a little bit over drive size
     # or too close to the end. Always leave 1MiB space
     # (may be needed for mdadm or for later conversion to GPT)
@@ -1645,7 +1640,9 @@ function get_end_of_partition {
     end=$((end_extended-1048576))
   fi
 
-  end=$((end / sectorsize))
+  # subtract one sector as the start sector is included in partition
+  end=$(( (end - sectorsize) / sectorsize))
+
   echo "$end"
 }
 
@@ -1777,8 +1774,13 @@ create_partitions() {
        END=$(get_end_of_partition "$1" "$START" "$i")
      fi
 
-     if [  "$i" -gt "4" ]; then
+     if [ "$i" -gt "4" ]; then
        TYPE="logical"
+       # every logical partition needs one sector for the EBR
+       # since we align partitions to MiB boundaries, the previous one
+       # may just have ended there. Which would leave no space for the EBR.
+       # so we leave 1 MiB between each logical partition
+       START=$((START + (1048576 / sectorsize) ))
      fi
 
      # create partitions as ext3 which results in type 83
@@ -2042,6 +2044,7 @@ make_lvm() {
     for i in $(seq 1 "$LVM_VG_COUNT") ; do
       pv=${dev[${LVM_VG_PART[${i}]}]}
       debug "# Creating PV $pv"
+      wipefs -af "$pv" |& debugoutput
       pvcreate -ff "$pv" 2>&1 | debugoutput
     done
 
@@ -2125,6 +2128,7 @@ format_partitions() {
 
     if [ -b "$DEV" ] ; then
       debug "# formatting  $DEV  with  $FS"
+      wipefs -af "$DEV" |& debugoutput
       if [ "$FS" = "swap" ]; then
         # format swap partition with dd first because mkswap
         # doesnt overwrite sw-raid information!
@@ -2139,7 +2143,6 @@ format_partitions() {
           mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
         fi
       elif [ "$FS" = "btrfs" ]; then
-        wipefs "$DEV" | debugoutput
         mkfs -t "$FS" "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
       else
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
@@ -2633,8 +2636,14 @@ set_hostname() {
     local hostnamefile="$FOLD/hdd/etc/hostname"
     local mailnamefile="$FOLD/hdd/etc/mailname"
     local machinefile="$FOLD/hdd/etc/machine-id"
+    local dbusfile="$FOLD/hdd/var/lib/dbus/machine-id"
     local networkfile="$FOLD/hdd/etc/sysconfig/network"
     local hostsfile="$FOLD/hdd/etc/hosts"
+    local systemd=0
+
+    if [ -x /bin/systemd-notify ]; then
+      systemd-notify --booted && systemd=1
+    fi
 
     [ -f "$FOLD/hdd/etc/HOSTNAME" ] && hostnamefile="$FOLD/hdd/etc/HOSTNAME"
 
@@ -2657,8 +2666,18 @@ set_hostname() {
     fi
 
     if [ -f "$machinefile" ]; then
-      # clear machine-id from install (will be regen upon first boot)
-      echo >  "$machinefile"
+      # clear machine-id from install
+      echo -n '' > "$machinefile"
+      [[ -e "$dbusfile" ]] && rm "$dbusfile"
+      if [ $systemd -eq 1 ]; then
+        # if we have systemd, just generate one (works around odd behaviour
+        # when machine-id is only temporarily generated upon first boot
+        systemd-machine-id-setup --root "$FOLD/hdd" 2>/dev/null
+        cp "$machinefile" "$dbusfile"
+      else
+        execute_chroot_command "dbus-uuidgen --ensure"
+        cp "$dbusfile" "$machinefile"
+      fi
     fi
 
     if [ -f "$networkfile" ]; then
@@ -3278,7 +3297,7 @@ generate_ntp_config() {
         echo ""
         echo "# $C_SHORT ntp servers"
         for i in "${NTPSERVERS[@]}"; do
-          echo "server $i offline iburst"
+          echo "server $i iburst"
         done
       } >> "$CFG" | debugoutput
       if [ "$IAM" = "suse" ]; then
@@ -3677,16 +3696,16 @@ report_debuglog() {
 cleanup() {
   debug "# Cleaning up..."
 
-  while read -r line ; do
-    mount="$(echo "$line" | grep "$FOLD" | cut -d' ' -f2)"
-    if [ -n "$mount" ] ; then
-      umount -l "$mount" >> /dev/null 2>&1
-    fi
-  done < /proc/mounts
+  while read -r entry; do
+    while read -r subentry; do
+      umount --lazy --verbose "$(awk '{print $2}' <<< "${subentry}")" &>/dev/null
+    done < <(grep "${FOLD}/hdd" <<< "${entry}")
+  done < <(tac /proc/mounts)
+  resume_swraid_resync
 
-  rm -rf "$FOLD" >> /dev/null 2>&1
-  rm -rf /tmp/install.vars 2>&1
-  rm -rf /tmp/*.tmp 2>&1
+  rm --verbose -rf "$FOLD" &> /dev/null
+  rm --verbose -rf /tmp/install.vars 2>&1
+  rm --verbose -rf /tmp/*.tmp 2>&1
 }
 
 exit_function() {
@@ -3713,7 +3732,6 @@ exit_function() {
   report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
   report_id="$(report_config "$REPORTSERVER")"
   report_debuglog "$REPORTSERVER" "$report_id"
-  cleanup
 }
 
 #function to check if it is a intel or amd cpu
@@ -3762,19 +3780,14 @@ function largest_hd() {
 
 # get the drives which are connected through an USB port
 function getUSBFlashDrives() {
-  for i in $(seq 1 $COUNT_DRIVES); do
-    DEV=$(eval echo "\$DRIVE$i")
-    # remove string '/dev/'
-    local withoutdev; withoutdev=${DEV##*/}
-    local removable;
-    if [ -e "/sys/block/$withoutdev/removable" ]; then
-      removable=$(cat "/sys/block/$withoutdev/removable")
-    else
-      removable=0
-    fi
-    if [ "$removable" -eq 1 ]; then
-      echo "${DEV}"
-    fi
+  for path in /sys/block/*; do
+    [[ -d "${path}" ]] || continue
+    dev_name="$(basename "${path}")"
+    dev_params="$(udevadm info --name "${dev_name}")"
+    grep --quiet 'DEVTYPE=disk' <<< "${dev_params}" || continue
+    grep --quiet 'ID_BUS=usb' <<< "${dev_params}" || continue
+    grep --quiet 'ID_USB_DRIVER=usb-storage' <<< "${dev_params}" || continue
+    echo "${dev_name}"
   done
 
   return 0
@@ -4006,7 +4019,8 @@ function check_dos_partitions() {
   if [ $PART_COUNT -gt 3 ]; then
     for i in $(seq 4 $PART_COUNT); do
       if [ "${PART_SIZE[$i]}" != "all" ]; then
-        temp_size="$(echo "$temp_size + ${PART_SIZE[$i]}" | bc)"
+        # add 1 MiB for every logical partition to account for EBR
+        temp_size="$((1 + temp_size + ${PART_SIZE[$i]}))"
       fi
     done
 
@@ -4189,4 +4203,19 @@ netmask_cidr_conv() {
   done
   echo $cidr
 }
+
+suspend_swraid_resync() {
+  echo 0 | tee /proc/sys/dev/raid/speed_limit_max > /proc/sys/dev/raid/speed_limit_min
+}
+
+resume_swraid_resync() {
+  echo 200000 > /proc/sys/dev/raid/speed_limit_max
+  echo 1000 > /proc/sys/dev/raid/speed_limit_min
+}
+
+wait_for_udev() {
+  udevadm trigger |& debugoutput
+  udevadm settle |& debugoutput
+}
+
 # vim: ai:ts=2:sw=2:et

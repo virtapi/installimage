@@ -108,6 +108,7 @@ generate_new_ramdisk() {
     echo '### i915 driver blacklisted due to various bugs'
     echo '### especially in combination with nomodeset'
     echo 'blacklist i915'
+    echo 'blacklist sm750fb'
   } > "$blacklist_conf"
 
   if [ "$SUSEVERSION" -eq 132 ] || [ "$SUSEVERSION" -eq 421 ]; then

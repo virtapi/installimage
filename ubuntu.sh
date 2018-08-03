@@ -164,6 +164,7 @@ generate_new_ramdisk() {
         echo "### $COMPANY - installimage"
         echo '### silence any onboard speaker'
         echo 'blacklist pcspkr'
+        echo 'blacklist snd_pcsp'
         echo '### i915 driver blacklisted due to various bugs'
         echo '### especially in combination with nomodeset'
         echo 'blacklist i915'
@@ -172,6 +173,7 @@ generate_new_ramdisk() {
         echo '### mei driver blacklisted due to serious bugs'
         echo 'blacklist mei'
         echo 'blacklist mei_me'
+        echo 'blacklist sm750fb'
       } > "$blacklist_conf"
     fi
     # just make sure that we do not accidentally try to install a bootloader
@@ -203,7 +205,7 @@ setup_cpufreq() {
     else
       {
         echo 'ENABLE="true"'
-        printf 'GOVERNOR="%s"', "$1"
+        printf 'GOVERNOR="%s"' "$1"
         echo 'MAX_SPEED="0"'
         echo 'MIN_SPEED="0"'
       } >> "$cpufreqconf"
@@ -254,6 +256,10 @@ generate_config_grub() {
     grub_linux_default="${grub_linux_default} iommu=noaperture"
   fi
 
+  if [ "$IMG_VERSION" -ge 1604 ]; then
+    grub_linux_default="${grub_linux_default} net.ifnames=0"
+  fi
+
   sed -i "$grubdefconf" -e "s/^GRUB_HIDDEN_TIMEOUT=.*/GRUB_HIDDEN_TIMEOUT=5/" -e "s/^GRUB_HIDDEN_TIMEOUT_QUIET=.*/GRUB_HIDDEN_TIMEOUT_QUIET=false/"
   sed -i "$grubdefconf" -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"${grub_linux_default}\"/"
 
@@ -269,12 +275,20 @@ generate_config_grub() {
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
 
   # only install grub2 in mbr of all other drives if we use swraid
+  local debconf_drives;
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk; disk="$(eval echo "\$DRIVE$i")"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+      if [ "$i" -eq 1 ]; then
+        debconf_drives="$disk"
+      else
+        debconf_drives="$debconf_drives, $disk"
+      fi
     fi
   done
+
+  execute_chroot_command "echo 'set grub-pc/install_devices $debconf_drives' | debconf-communicate"
 
   uuid_bugfix
 
