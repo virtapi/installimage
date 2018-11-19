@@ -70,13 +70,13 @@ MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
 # functions
 # show text in a different color
 echo_red() {
-  echo -e '\033[01;31m$*\033[00m'
+  echo -e "\\033[01;31m${*}\\033[00m"
 }
 echo_green() {
-  echo -e '\033[01;32m$*\033[00m'
+  echo -e "\\033[01;32m${*}\\033[00m"
 }
 echo_bold() {
-  echo -e '\033[0;1m$*\033[00m'
+  echo -e "\\033[0;1m${*}\\033[00m"
 }
 
 
