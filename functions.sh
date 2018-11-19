@@ -96,16 +96,16 @@ generate_menu() {
 #    RAWLIST=$(ls -1 "$IMAGESPATH" | grep -i -e "^$1\|^old_$1\|^suse\|^old_suse")
   if [ "$1" = "Virtualization" ]; then
     RAWLIST=""
-    RAWLIST=$(find "$IMAGESPATH"/ -maxdepth 1 -type f -name "CoreOS*" -a -not -name "*.sig" -printf '%f\n'|sort)
+    RAWLIST=$(find "$IMAGESPATH"/ -maxdepth 1 -type f -name "CoreOS*" -a -not -name "*.sig" -a -not -name "*.metadata" -printf '%f\n'|sort)
     RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Wheezy"
     RAWLIST="$RAWLIST Proxmox-Virtualization-Environment-on-Debian-Jessie"
   elif [ "$1" = "old_images" ]; then
-    # skip CPANEL images and signatures files from list
-    RAWLIST=$(find "$OLDIMAGESPATH"/ -maxdepth 1 -type f -not -name "*.sig" -a -not -name "*cpanel*" -printf '%f\n'|sort)
+    # skip CPANEL images, metadata and signatures files from list
+    RAWLIST=$(find "$OLDIMAGESPATH"/ -maxdepth 1 -type f -not -name "*.sig" -a -not -name "*cpanel*" -a -not -name "*.metadata" -printf '%f\n'|sort)
     FINALIMAGEPATH="$OLDIMAGESPATH"
   else
-    # skip CPANEL images and signatures files from list
-    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\\(old_\\)\\?$1.*" -a -not -regex '.*\.sig$' -printf '%f\n'|sort)
+    # skip CPANEL images, metadata and signatures files from list
+    RAWLIST=$(find "$IMAGESPATH"/* -maxdepth 1 -type f -not -name "*cpanel*" -a -regextype sed -regex ".*/\\(old_\\)\\?$1.*" -a -not -regex '.*\.sig$' -a -not -name "*.metadata" -printf '%f\n'|sort)
   fi
   # check if 32-bit rescue is activated and disable 64-bit images then
   if [ "$(uname -m)" != "x86_64" ]; then
