@@ -819,8 +819,8 @@ fi
 validate_vars() {
  if [ "$1" ]; then
 
-   echo "config file input:" | debugoutput
-   debugoutput <<<"$1"
+   echo "generated config file: ${1}" | debugoutput
+   debugoutput < "${1}"
 
   read_vars "$1"
 
