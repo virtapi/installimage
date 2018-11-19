@@ -62,7 +62,7 @@ ERROREXIT="0"
 FINALIMAGEPATH=""
 
 PLESK_STD_VERSION="PLESK_12_5_30"
-
+FORCE_GPT=0
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
 MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
@@ -4024,6 +4024,7 @@ function check_dos_partitions() {
 
   echo "partitions without \"all\" sum up to $PART_WO_ALL_SIZE" | debugoutput
   echo "primary partitions without \"all\" sum up to $PART_WO_ALL_SIZE_PRIM" | debugoutput
+  echo "FORCE_GPT is ${FORCE_GPT}" | debugoutput
 
   # now check how big an "all" partition is
   # MS-DOS partitions may not start above 2TiB either
@@ -4044,14 +4045,14 @@ function check_dos_partitions() {
 
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE_PRIM - $temp_size" | bc)
     echo "Part_all_size is: $PART_ALL_SIZE" | debugoutput
-    if [ "$PART_ALL_SIZE" -gt $LIMIT ]; then
+    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" == "0" ]]; then
       PART_ALL_SIZE=$(echo "$LIMIT - $temp_size" | bc)
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
   # if we have no more than 3 partitions
   else
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE" | bc)
-    if [ "$PART_ALL_SIZE" -gt "$LIMIT" ]; then
+    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" == "0" ]]; then
       PART_ALL_SIZE="$LIMIT"
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
