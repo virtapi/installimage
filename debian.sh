@@ -140,7 +140,8 @@ generate_new_ramdisk() {
     # when we haven't configured grub yet
     # Debian won't install a boot loader anyway, but display an error message,
     # that needs to be confirmed
-    sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
+    [[ -e "$FOLD/hdd/etc/kernel-img.conf" ]] && \
+      sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
 
     # well, we might just as well update all initramfs and stop findling around
     # to find out which kernel version is the latest
