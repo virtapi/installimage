@@ -124,6 +124,8 @@ generate_menu() {
     TEMPVAR=$(basename "$TEMPVAR" .tar.bz)
     TEMPVAR=$(basename "$TEMPVAR" .tar.bz2)
     TEMPVAR=$(basename "$TEMPVAR" .tar)
+    TEMPVAR=$(basename "$TEMPVAR" .raw.xz)
+    TEMPVAR=$(basename "$TEMPVAR" .raw)
     MENULIST="$MENULIST$TEMPVAR . "
   done
   # add "back to mainmenu" entry
@@ -563,6 +565,10 @@ create_config() {
         echo "IMAGE $FINALIMAGEPATH$1.$IMAGESEXT" >> "$CNF"
       fi
     fi
+    echo "\$1 is ${1}" | debugoutput
+    echo "FINALIMAGEPATH is ${FINALIMAGEPATH}" | debugoutput
+    echo "IMAGESEXT is ${IMAGESEXT}" | debugoutput
+    echo "OPT_IMAGE is ${OPT_IMAGE}" | debugoutput
     echo "" >> "$CNF"
 
   fi
@@ -740,8 +746,10 @@ if [ -n "$1" ]; then
     *.tar.gz|*.tgz) IMAGE_FILE_TYPE="tgz" ;;
     *.tar.bz|*.tbz|*.tbz2|*.tar.bz2) IMAGE_FILE_TYPE="tbz" ;;
     *.tar.xz|*.txz) IMAGE_FILE_TYPE="txz" ;;
-    *.bin) IMAGE_FILE_TYPE="bin" ;;
+    *.bin|*.raw) IMAGE_FILE_TYPE="bin" ;;
     *.bin.bz2|*.bin.bz) IMAGE_FILE_TYPE="bbz" ;;
+    *.raw.xz) IMAGE_FILE_TYPE="rxz" ;;
+
   esac
 
   BOOTLOADER="$(grep -m1 -e ^BOOTLOADER "$1" |awk '{print $2}')"
