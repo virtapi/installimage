@@ -1547,14 +1547,17 @@ stop_lvm_raid() {
     [[ -x /etc/init.d/lvm2 ]] && /etc/init.d/lvm2 stop &>/dev/null
   fi
 
-  dmsetup remove_all &>/dev/null
+  echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
+  mkdir -p /run/lock
+  dmraid -a no |& debugoutput
+  dmsetup remove_all |& debugoutput
 
   if [[ -x "$(command -v mdadm)" ]] && [[ -f /proc/mdstat ]]; then
-    if grep -q 'md' /proc/mdstat; then
-      grep 'md' /proc/mdstat | cut -d ' ' -f1 | while read -r mddev; do
-        [[ -e "/dev/${mddev}" ]] && mdadm -S "/dev/${mddev}" &>/dev/null
-      done
-    fi
+    mapfile -d $'\0' arrays < <(find /dev -maxdepth 1 -regextype sed \
+      -regex '/dev/md[0-9]\{1,3\}' -printf '%f\0')
+    for mddev in "${arrays[@]}"; do
+      [[ -e "/dev/${mddev}" ]] && mdadm --stop "${mddev}" |& debugoutput
+    done
   fi
 }
 
@@ -1565,19 +1568,24 @@ delete_partitions() {
  if [ "$1" ]; then
   # clean RAID information for every partition not only for the blockdevice
   for raidmember in $(sfdisk -l "$1" &>/dev/null | grep -o "$1[0-9]"); do
-    mdadm --zero-superblock "$raidmember" 2>/dev/null
+    echo "mdadm --zero-superblock $raidmember" | debugoutput
+    mdadm --zero-superblock "$raidmember" |& debugoutput
   done
   # clean RAID information in superblock of blockdevice
-  mdadm --zero-superblock "$1" 2>/dev/null
+  echo "mdadm --zero-superblock $1" | debugoutput
+  mdadm --zero-superblock "$1" |& debugoutput
 
   #delete GPT and MBR
   sgdisk -Z "$1" &>/dev/null
 
   # clean mbr boot code
-  dd if=/dev/zero of="$1" bs=512 count=1 &>/dev/null ; EXITCODE=$?
+  dd if=/dev/zero of="${1}" bs=512 count=1 &>/dev/null ; EXITCODE=$?
 
+  debugoutput < /proc/mdstat
+  sleep 5
   # re-read partition table
-  partprobe 2>/dev/null
+  partprobe "${1}" 2>/dev/null
+  stop_lvm_raid
 
   return "$EXITCODE"
  fi
@@ -1688,10 +1696,7 @@ create_partitions() {
   #copy defaults to tempfstab for softwareraid
   ### cp "$FOLD"/fstab $FOLD/fstab.md >>/dev/null 2>&1
 
-  echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
-  dmsetup remove_all |& debugoutput
-  mkdir -p /run/lock
-  dmraid -a no |& debugoutput
+  stop_lvm_raid
 
   dd if=/dev/zero of="$1" bs=1M count=10 &>/dev/null
   hdparm -z "$1" &>/dev/null
@@ -1869,11 +1874,11 @@ create_partitions() {
   echo "reread partition table after 5 seconds" | debugoutput
   sleep 5
   hdparm -z "$1" &>/dev/null
+  partprobe "$1"
+  echo "partition table after re-read" | debugoutput
+  fdisk -l "$1" |& debugoutput
 
-  echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
-  mkdir -p /run/lock
-  dmraid -a no |& debugoutput
-  dmsetup remove_all |& debugoutput
+  stop_lvm_raid
 
  return "$EXITCODE"
  fi
@@ -1933,7 +1938,7 @@ make_swraid() {
   if [ -n "$1" ] ; then
     fstab=$1
 
-    dmsetup remove_all
+    stop_lvm_raid
 
     count=0
     PARTNUM=0
