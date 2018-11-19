@@ -853,7 +853,7 @@ validate_vars() {
   whoami "$IMAGE_FILE"
 
   # test if "$DRIVE1" is a valid block device and is able to create partitions
-  CHECK="$(test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>>/dev/null)"
+  CHECK="$(test -b "$DRIVE1" && sfdisk -l "$DRIVE1" 2>/dev/null)"
   if [ -z "$CHECK" ]; then
     graph_error "ERROR: Value for DRIVE1 is not correct: $DRIVE1 "
     return 1
@@ -903,14 +903,14 @@ validate_vars() {
     fi
     if [ "$SWRAID" = "1" ] || [ "$format" = "1" ] || [ "$i" -eq 1 ] ; then
       # test if drive is a valid block device and is able to create partitions
-      CHECK="$(test -b "$drive" && sfdisk -l "$drive" 2>>/dev/null)"
+      CHECK="$(test -b "$drive" && sfdisk -l "$drive" 2>/dev/null)"
       if [ -z "$CHECK" ]; then
         graph_error "ERROR: Value for DRIVE$i is not correct: $drive"
         return 1
       fi
 
       # test if drive is not busy
-      CHECK="$(hdparm -z "$drive" 2>&1 | grep 'BLKRRPART failed: Device or resource busy')"
+      CHECK="$(hdparm -z "$drive" |& grep 'BLKRRPART failed: Device or resource busy')"
       if [ "$CHECK" ]; then
         graph_error "ERROR: DRIVE$i is busy - cannot access device $drive"
         return 1
@@ -1556,17 +1556,17 @@ stop_lvm_raid() {
 delete_partitions() {
  if [ "$1" ]; then
   # clean RAID information for every partition not only for the blockdevice
-  for raidmember in $(sfdisk -l "$1" 1>/dev/null 2>/dev/null | grep -o "$1[0-9]"); do
-    mdadm --zero-superblock "$raidmember" 2> /dev/null
+  for raidmember in $(sfdisk -l "$1" &>/dev/null | grep -o "$1[0-9]"); do
+    mdadm --zero-superblock "$raidmember" 2>/dev/null
   done
   # clean RAID information in superblock of blockdevice
-  mdadm --zero-superblock "$1" 2> /dev/null
+  mdadm --zero-superblock "$1" 2>/dev/null
 
   #delete GPT and MBR
-  sgdisk -Z "$1" 1>/dev/null 2>/dev/null
+  sgdisk -Z "$1" &>/dev/null
 
   # clean mbr boot code
-  dd if=/dev/zero of="$1" bs=512 count=1 >/dev/null 2>&1 ; EXITCODE=$?
+  dd if=/dev/zero of="$1" bs=512 count=1 &>/dev/null ; EXITCODE=$?
 
   # re-read partition table
   partprobe 2>/dev/null
@@ -1681,22 +1681,22 @@ create_partitions() {
   ### cp "$FOLD"/fstab $FOLD/fstab.md >>/dev/null 2>&1
 
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
-  dmsetup remove_all 2>&1 | debugoutput
+  dmsetup remove_all |& debugoutput
   mkdir -p /run/lock
-  dmraid -a no 2>&1 | debugoutput
+  dmraid -a no |& debugoutput
 
-  dd if=/dev/zero of="$1" bs=1M count=10  1>/dev/null 2>&1
-  hdparm -z "$1" >/dev/null 2>&1
+  dd if=/dev/zero of="$1" bs=1M count=10 &>/dev/null
+  hdparm -z "$1" &>/dev/null
 
   #create GPT
   if [ "$GPT"  -eq '1' ]; then
     #create GPT and randomize disk id (GUID)
-    sgdisk -o "$1" 1>/dev/null 2>/dev/null
-    sgdisk -G "$1" 1>/dev/null 2>/dev/null
+    sgdisk -o "$1" &>/dev/null
+    sgdisk -G "$1" &>/dev/null
 
     # set dummy partition active/bootable in protective MBR to give some too
     # smart BIOS the clue that this disk can be booted in legacy mode
-    sfdisk -A "$1" 1 --force 1>/dev/null 2>/dev/null
+    sfdisk -A "$1" 1 --force &>/dev/null
   else
     parted -s "$1" mklabel msdos 1>/dev/null 2>/tmp/$$.tmp
     debugoutput < /tmp/$$.tmp
@@ -1743,12 +1743,12 @@ create_partitions() {
      if [ "$i" -eq "$PART_COUNT" ]; then
        local bios_grub_start=$((1048576/SECTORSIZE))
        echo "Creating BIOS_GRUB partition" | debugoutput
-       sgdisk --new "$i":"$bios_grub_start":+1M -t "$i":EF02 "$1" 2>&1 | debugoutput
+       sgdisk --new "$i":"$bios_grub_start":+1M -t "$i":EF02 "$1" |& debugoutput
      else
        if [ -z "$SFDISKSIZE" ] && [ "$i" -gt 1 ]; then
-         sgdisk --largest-new "$i" -t "$i":"$gpt_part_type" "$1" | debugoutput
+         sgdisk --largest-new "$i" -t "$i":"$gpt_part_type" "$1" |& debugoutput
        else
-         sgdisk --new "$i":"$START":"$gpt_part_size" -t "$i":"$gpt_part_type" "$1" | debugoutput
+         sgdisk --new "$i":"$START":"$gpt_part_size" -t "$i":"$gpt_part_type" "$1" |& debugoutput
        fi
      fi
 
@@ -1774,9 +1774,9 @@ create_partitions() {
 
        # create the extended partition
        echo "create partition: parted -s $1 mkpart $TYPE ${START}s ${END}s" | debugoutput
-       OUTPUT="$(parted -s "$1" mkpart "$TYPE" "${START}"s "${END}"s)"
+       OUTPUT="$(parted -s "$1" mkpart "$TYPE" "${START}"s "${END}"s 2>&1)"
        if [ -n "$OUTPUT" ]; then
-          echo "$OUTPUT" | debugoutput
+          debugoutput <<<"$OUTPUT"
        fi
 
        PCOUNT=$((PCOUNT+1))
@@ -1803,10 +1803,10 @@ create_partitions() {
      fi
 
      echo "create partition: parted -s $1 mkpart $TYPE $FSTYPE ${START}s ${END}s" | debugoutput
-     OUTPUT="$(parted -s "$1" mkpart "$TYPE" "$FSTYPE" "${START}"s "${END}"s)"
+     OUTPUT="$(parted -s "$1" mkpart "$TYPE" "$FSTYPE" "${START}"s "${END}"s 2>&1)"
 
      if [ -n "$OUTPUT" ]; then
-        echo "$OUTPUT" | debugoutput
+        debugoutput <<<"$OUTPUT"
      fi
 
      if [ "${PART_MOUNT[$i]}" = "lvm" ]; then
@@ -1855,12 +1855,12 @@ create_partitions() {
   #reread partition table after some break
   echo "reread partition table after 5 seconds" | debugoutput
   sleep 5
-  hdparm -z "$1" >/dev/null 2>&1
+  hdparm -z "$1" &>/dev/null
 
   echo "deactivate all dm-devices with dmraid and dmsetup" | debugoutput
   mkdir -p /run/lock
-  dmraid -a no 2>&1 | debugoutput
-  dmsetup remove_all 2>&1 | debugoutput
+  dmraid -a no |& debugoutput
+  dmsetup remove_all |& debugoutput
 
  return "$EXITCODE"
  fi
@@ -2046,15 +2046,15 @@ make_lvm() {
     # remove all Logical Volumes and Volume Groups
     debug "# Removing all Logical Volumes and Volume Groups"
     # shellcheck disable=SC2034
-    vgs --noheadings 2> /dev/null | while read -r vg pvs; do
-      lvremove -f "$vg" 2>&1 | debugoutput
-      vgremove -f "$vg" 2>&1 | debugoutput
+    vgs --noheadings 2>/dev/null | while read -r vg pvs; do
+      lvremove -f "$vg" |& debugoutput
+      vgremove -f "$vg" |& debugoutput
     done
 
     # remove all Physical Volumes
     debug "# Removing all Physical Volumes"
     pvs --noheadings 2>/dev/null | while read -r pv vg; do
-      pvremove -ff "$pv" 2>&1 | debugoutput
+      pvremove -ff "$pv" |& debugoutput
     done
 
     # create PVs
@@ -2062,7 +2062,7 @@ make_lvm() {
       pv=${dev[${LVM_VG_PART[${i}]}]}
       debug "# Creating PV $pv"
       wipefs -af "$pv" |& debugoutput
-      pvcreate -ff "$pv" 2>&1 | debugoutput
+      pvcreate -ff "$pv" |& debugoutput
     done
 
     # create VGs
@@ -2073,11 +2073,11 @@ make_lvm() {
       # extend the VG if a VG with the same name already exists
       if vgs --noheadings 2>/dev/null | grep -q "$vg"; then
         debug "# Extending VG $vg with PV $pv"
-        vgextend "$vg" "$pv" 2>&1 | debugoutput
+        vgextend "$vg" "$pv" |& debugoutput
       else
         debug "# Creating VG $vg with PV $pv"
-        [ "$vg" ] && rm -rf "/dev/${vg:?}" 2>&1 | debugoutput
-        vgcreate "$vg" "$pv" 2>&1 | debugoutput
+        [ "$vg" ] && rm -rf "/dev/${vg:?}" |& debugoutput
+        vgcreate "$vg" "$pv" |& debugoutput
       fi
     done
 
@@ -2112,7 +2112,7 @@ make_lvm() {
       fi
 
       debug "# Creating LV $vg/$lv ($size MiB)"
-      lvcreate --name "$lv" --size "$size" "$vg" 2>&1 | debugoutput
+      lvcreate --name "$lv" --size "$size" "$vg" |& debugoutput
       test $? -eq 0 || return 1
     done
 
@@ -2141,7 +2141,7 @@ format_partitions() {
 
     # reread partition table after some break
     sleep 4
-    hdparm -z "$1" >/dev/null 2>/dev/null
+    hdparm -z "$1" &>/dev/null
 
     if [ -b "$DEV" ] ; then
       debug "# formatting  $DEV  with  $FS"
@@ -2149,22 +2149,22 @@ format_partitions() {
       if [ "$FS" = "swap" ]; then
         # format swap partition with dd first because mkswap
         # doesnt overwrite sw-raid information!
-        mkfs -t xfs -f "$DEV" 2>&1 | debugoutput
-        dd if=/dev/zero of="$DEV" bs=256 count=8 2>&1 | debugoutput
+        mkfs -t xfs -f "$DEV" |& debugoutput
+        dd if=/dev/zero of="$DEV" bs=256 count=8 |& debugoutput
         # then write swap information
-        mkswap "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
+        mkswap "$DEV" |& debugoutput ; EXITCODE=$?
       elif [ "$FS" = "ext2" ] || [ "$FS" = "ext3" ] || [ "$FS" = "ext4" ]; then
         if [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -lt 70 ]; then
-          mkfs -t "$FS" -O '^64bit' -O '^metadata_csum' -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
+          mkfs -t "$FS" -O '^64bit' -O '^metadata_csum' -q "$DEV" |& debugoutput ; EXITCODE=$?
         else
-          mkfs -t "$FS" -q "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
+          mkfs -t "$FS" -q "$DEV" |& debugoutput ; EXITCODE=$?
         fi
       elif [ "$FS" = "btrfs" ]; then
-        mkfs -t "$FS" "$DEV" 2>&1 | debugoutput ; EXITCODE=$?
+        mkfs -t "$FS" "$DEV" |& debugoutput ; EXITCODE=$?
       else
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
         # shellcheck disable=SC2069
-        mkfs -t "$FS" -q -f "$DEV" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
+        mkfs -t "$FS" -q -f "$DEV" |& debugoutput ; EXITCODE=$?
       fi
     else
       debug "! this is no valid block device:  $DEV"
@@ -2183,40 +2183,40 @@ mount_partitions() {
     SYSTEMROOTDEVICE="$ROOTDEVICE"
     SYSTEMBOOTDEVICE="$SYSTEMROOTDEVICE"
 
-    mount "$ROOTDEVICE" "$basedir" 2>&1 | debugoutput ; EXITCODE=$?
+    mount "$ROOTDEVICE" "$basedir" |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    mkdir -p "$basedir"/proc 2>&1 | debugoutput
-    mount -o bind /proc "$basedir"/proc 2>&1 | debugoutput ; EXITCODE=$?
+    mkdir -p "$basedir"/proc |& debugoutput
+    mount -o bind /proc "$basedir"/proc |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    mkdir -p "$basedir"/dev 2>&1 | debugoutput
-    mount -o bind /dev "$basedir"/dev 2>&1 | debugoutput ; EXITCODE=$?
+    mkdir -p "$basedir"/dev |& debugoutput
+    mount -o bind /dev "$basedir"/dev |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
-    mkdir -p "$basedir"/dev/pts 2>&1 | debugoutput
-    mount -o bind /dev/pts "$basedir"/dev/pts 2>&1 | debugoutput ; EXITCODE=$?
+    mkdir -p "$basedir"/dev/pts |& debugoutput
+    mount -o bind /dev/pts "$basedir"/dev/pts |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
     # bind /dev/shm too
     # wheezy rescue: /dev/shm links to /run/shm
     if [ -L "$basedir"/dev/shm ] ; then
       shmlink="$(readlink "$basedir"/dev/shm)"
-      mkdir -p "${basedir}${shmlink}" 2>&1 | debugoutput
+      mkdir -p "${basedir}${shmlink}" |& debugoutput
       if [ -e "$shmlink" ] ; then
-        mount -o bind "$shmlink" "${basedir}${shmlink}" 2>&1 | debugoutput ; EXITCODE=$?
+        mount -o bind "$shmlink" "${basedir}${shmlink}" |& debugoutput ; EXITCODE=$?
       else
-        mount -o bind /dev/shm "${basedir}${shmlink}" 2>&1 | debugoutput ; EXITCODE=$?
+        mount -o bind /dev/shm "${basedir}${shmlink}" |& debugoutput ; EXITCODE=$?
       fi
       [ "$EXITCODE" -ne "0" ] && return 1
     else
-      mkdir -p "$basedir"/dev/shm 2>&1 | debugoutput
-      mount -o bind /dev/shm "$basedir"/dev/shm 2>&1 | debugoutput ; EXITCODE=$?
+      mkdir -p "$basedir"/dev/shm |& debugoutput
+      mount -o bind /dev/shm "$basedir"/dev/shm |& debugoutput ; EXITCODE=$?
       [ "$EXITCODE" -ne "0" ] && return 1
     fi
 
-    mkdir -p "$basedir"/sys 2>&1 | debugoutput
-    mount -o bind /sys "$basedir"/sys 2>&1 | debugoutput ; EXITCODE=$?
+    mkdir -p "$basedir"/sys |& debugoutput
+    mount -o bind /sys "$basedir"/sys |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
     grep -v ' / \|swap' "$fstab" | grep "^/dev/" > "$fstab".tmp
@@ -2224,20 +2224,20 @@ mount_partitions() {
     while read -r line ; do
       DEVICE="$(echo "$line" | cut -d " " -f 1)"
       MOUNTPOINT="$(echo "$line" | cut -d " " -f 2)"
-      mkdir -p "$basedir$MOUNTPOINT" 2>&1 | debugoutput
+      mkdir -p "$basedir$MOUNTPOINT" |& debugoutput
 
       # create lock and run dir for ubuntu if /var has its own filesystem
       # otherwise network does not come up - see ticket 2008012610009793
       if [ "$MOUNTPOINT" = "/var" ] && [ "$IAM" = "ubuntu" ]; then
         # this is expected
         # shellcheck disable=SC2174
-        mkdir -p -m 1777 "$basedir/var/lock" 2>&1 | debugoutput
+        mkdir -p -m 1777 "$basedir/var/lock" |& debugoutput
         # shellcheck disable=SC2174
-        mkdir -p -m 1777 "$basedir/var/run" 2>&1 | debugoutput
+        mkdir -p -m 1777 "$basedir/var/run" |& debugoutput
       fi
 
       # mount it
-      mount "$DEVICE" "$basedir$MOUNTPOINT" 2>&1 | debugoutput || return 1
+      mount "$DEVICE" "$basedir$MOUNTPOINT" |& debugoutput || return 1
       if [ "$MOUNTPOINT" = "/boot" ]; then
         SYSTEMBOOTDEVICE="$DEVICE"
       fi
@@ -2257,7 +2257,7 @@ get_image_info() {
   if [ "$1" ] && [ "$2" ] && [ "$3" ]; then
     case $2 in
       nfs)
-        mount -t "nfs" "$1" "$FOLD/nfs" 2>&1 | debugoutput ; EXITCODE=$?
+        mount -t "nfs" "$1" "$FOLD/nfs" |& debugoutput ; EXITCODE=$?
         if [ "$EXITCODE" -ne "0" ] || [ ! -e "$FOLD/nfs/$3" ]; then
           return 1
         else
@@ -2274,11 +2274,11 @@ get_image_info() {
         mkdir "$FOLD"/keys/ 2>&1
         cd "$FOLD"/keys/ || exit
         # no exitcode, because if not found hetzner-pubkey will be used
-        wget -q --no-check-certificate "${1}public-key.asc" 2>&1 | debugoutput || true
+        wget -q --no-check-certificate "${1}public-key.asc" |& debugoutput || true
         if [ "$EXITCODE" -eq "0" ]; then
           IMAGE_PUBKEY="$FOLD/keys/public-key.asc"
         fi
-        cd - >/dev/null || exit
+        cd - &>/dev/null || exit
         # download image with get_image_url later after mounting hdd
         EXITCODE=0;
        ;;
@@ -2311,11 +2311,11 @@ get_image_info() {
 # download image via http/ftp
 get_image_url() {
   # load image to mounted hdd
-  cd "$FOLD"/hdd/ || exit ; wget -q --no-check-certificate "$1$2" 2>&1 | debugoutput ; EXITCODE=$?; cd - || exit >/dev/null
+  cd "$FOLD"/hdd/ || exit ; wget -q --no-check-certificate "$1$2" |& debugoutput ; EXITCODE=$?; cd - || exit &>/dev/null
   if [ "$EXITCODE" -eq "0" ]; then
     EXTRACTFROM="$FOLD/hdd/$2"
     # search for sign file and download
-    cd "$FOLD"/keys/ || exit ; wget -q --no-check-certificate "$1$2.sig" 2>&1 | debugoutput ; EXITCODE=$?; cd - || exit >/dev/null
+    cd "$FOLD"/keys/ || exit ; wget -q --no-check-certificate "$1$2.sig" |& debugoutput ; EXITCODE=$?; cd - || exit &>/dev/null
     if [ "$EXITCODE" -eq "0" ]; then
       IMAGE_SIGN="$FOLD/keys/$2.sig"
     fi
@@ -2338,7 +2338,7 @@ import_imagekey() {
   fi
   if [ -n "$PUBKEY" ] ; then
     # import public key
-    gpg --batch --import "$PUBKEY" 2>&1 | debugoutput ; EXITCODE=$?
+    gpg --batch --import "$PUBKEY" |& debugoutput ; EXITCODE=$?
 
     if [ "$EXITCODE" -eq "0" ]; then
       IMAGE_PUBKEY_IMPORTED="yes"
@@ -2356,7 +2356,7 @@ validate_image() {
   if [ "$IMAGE_PUBKEY_IMPORTED" = "yes" ] ; then
     if [ -n "$IMAGE_SIGN" ] ; then
       # verify image with given pubkey and signature
-      gpg --batch --verify "$IMAGE_SIGN" "$EXTRACTFROM" 2>&1 | debugoutput ; EXITCODE=$?
+      gpg --batch --verify "$IMAGE_SIGN" "$EXTRACTFROM" |& debugoutput ; EXITCODE=$?
       if [ "$EXITCODE" -eq "0" ]; then
         # image file valid
         return 0
@@ -2396,15 +2396,15 @@ extract_image() {
 
     # extract image with given compression
     if [ "$TAR" = "tar" ] || [ ! -x /usr/bin/bsdtar ]; then
-      tar --anchored --numeric-owner --exclude "sys" --exclude "proc" --exclude "dev" $COMPRESSION -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" 2>&1 | debugoutput ; EXITCODE=$?
+      tar --anchored --numeric-owner --exclude "sys" --exclude "proc" --exclude "dev" $COMPRESSION -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" |& debugoutput ; EXITCODE=$?
     else
-      bsdtar --numeric-owner --exclude '^sys' --exclude '^proc' --exclude '^dev' "$COMPRESSION" -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" 2>&1 | debugoutput ; EXITCODE=$?
+      bsdtar --numeric-owner --exclude '^sys' --exclude '^proc' --exclude '^dev' "$COMPRESSION" -x -f "$EXTRACTFROM" -C "$FOLD/hdd/" |& debugoutput ; EXITCODE=$?
     fi
     # remove image after extraction if we got it via wget (http(s)/ftp)
     [ "$1" = "http" ] && rm -f "$EXTRACTFROM"
 
     if [ "$EXITCODE" -eq "0" ]; then
-      cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" 2>&1 | debugoutput
+      cp -r "$FOLD/fstab" "$FOLD/hdd/etc/fstab" |& debugoutput
       return 0
     else
       return 1
@@ -2780,7 +2780,7 @@ generate_hosts() {
 execute_chroot_command() {
   if [ -n "$1" ]; then
     debug "# chroot_command: $1"
-    chroot "$FOLD/hdd/" /bin/bash -c "$1" 2>&1 | debugoutput ; EXITCODE=$?
+    chroot "$FOLD/hdd/" /bin/bash -c "$1" |& debugoutput ; EXITCODE=$?
     return "$EXITCODE"
   fi
 }
@@ -2811,7 +2811,7 @@ generate_new_sshkeys() {
   if [ "$1" ]; then
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_key" ]; then
-      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_k* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_k* |& debugoutput
       execute_chroot_command "ssh-keygen -t rsa1 -b 1024 -f /etc/ssh/ssh_host_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
        return "$EXITCODE"
@@ -2821,7 +2821,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_dsa_key" ]; then
-      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_dsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_dsa_* |& debugoutput
       execute_chroot_command "ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return "$EXITCODE"
@@ -2831,7 +2831,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_rsa_key" ]; then
-      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_rsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_rsa_* |& debugoutput
       execute_chroot_command "ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return "$EXITCODE"
@@ -2841,7 +2841,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ecdsa_key" ]; then
-      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ecdsa_* |& debugoutput
       execute_chroot_command "ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return "$EXITCODE"
@@ -2851,7 +2851,7 @@ generate_new_sshkeys() {
     fi
 
     if [ -f "$FOLD/hdd/etc/ssh/ssh_host_ed25519_key" ]; then
-      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* 2>&1 | debugoutput
+      rm -f "$FOLD"/hdd/etc/ssh/ssh_host_ed25519_* |& debugoutput
       execute_chroot_command "ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' >/dev/null"; EXITCODE=$?
       if [ "$EXITCODE" -ne "0" ]; then
         return "$EXITCODE"
@@ -2868,7 +2868,7 @@ generate_new_sshkeys() {
         key_json="\"key_type\": \"${key_type}\""
         if [ -f "$FOLD/hdd/$file" ]; then
           # The default key hashing algorithm used when displaying key fingerprints changes from MD5 to SHA256 in OpenSSH 6.8
-          if ! execute_chroot_command "ssh-keygen -l -f ${file} -E md5 > /tmp/${key_type} 2> /dev/null"; then
+          if ! execute_chroot_command "ssh-keygen -l -f ${file} -E md5 >/tmp/${key_type} 2>/dev/null"; then
             execute_chroot_command "ssh-keygen -l -f ${file} > /tmp/${key_type}"
           fi
           # shellcheck disable=SC2034
@@ -2899,17 +2899,17 @@ set_ntp_time() {
 
   # if systemd is running and timesyncd too, then return
   if [ $systemd -eq 1 ]; then
-    systemctl status systemd-timesyncd 1>/dev/null 2>&1 && return 0
+    systemctl status systemd-timesyncd &>/dev/null && return 0
   fi
 
-  service ntp status 1>/dev/null 2>&1 && running=0
+  service ntp status &>/dev/null && running=0
 
   # stop ntp daemon first
-  [ $running -eq 0 ] && service ntp stop 2>&1 | debugoutput
+  [ $running -eq 0 ] && service ntp stop |& debugoutput
 
   # manual time resync via ntp
   # start ntp in background task
-  (ntpd -gq -4 2>&1 | debugoutput) &
+  (ntpd -gq -4 |& debugoutput) &
   ntp_pid=$!
   # disconnect process from bash to hide kill message
   disown "$ntp_pid"
@@ -2927,16 +2927,16 @@ set_ntp_time() {
     debug "ntp still running - kill it"
     # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
     # shellcheck disable=SC2069
-    kill -9 "$ntp_pid" 2>&1 1>/dev/null
+    kill -9 "$ntp_pid" &>/dev/null
   fi
 
   # write time to hwclock
   # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
   # shellcheck disable=SC2069
-  hwclock -w 2>&1 | debugoutput
+  hwclock -w |& debugoutput
 
   # start ntp daemon again
-  [ $running -eq 0 ] && service ntp start 2>&1 | debugoutput
+  [ $running -eq 0 ] && service ntp start |& debugoutput
 
   return 0
 }
@@ -3059,7 +3059,7 @@ clear_logs() {
     find "$FOLD/hdd/var/log" -type f > /tmp/filelist.tmp
     while read -r a; do
       if echo "$a" | grep -q '.gz$\|.[[:digit:]]\{1,3\}$'; then
-        rm -rf "$a" >> /dev/null 2>&1
+        rm -rf "$a" &>/dev/null
       else
         echo -n > "$a"
       fi
@@ -3140,7 +3140,7 @@ fetch_ssh_keys() {
      local key_url="$1"
      case "$key_url" in
        https:*|http:*|ftp:*)
-         curl -s -m 10 "$key_url" > "$FOLD/authorized_keys" 2>&1 | debugoutput
+         curl -s -m 10 "$key_url" > "$FOLD/authorized_keys" |& debugoutput
        ;;
        *)
          cat "$key_url" > "$FOLD/authorized_keys"
@@ -3216,7 +3216,7 @@ write_grub() {
 generate_config_lilo() {
   if [ -n "$1" ]; then
   BFILE="$FOLD/hdd/etc/lilo.conf"
-  rm -rf "$FOLD/hdd/boot/grub/menu.lst" >>/dev/null 2>&1
+  rm -rf "$FOLD/hdd/boot/grub/menu.lst" &>/dev/null
   {
     echo "### Hetzner Online GmbH installimage"
     echo "# bootloader config"
@@ -3445,7 +3445,7 @@ HEREDOC
   while read -r entry; do
     for blacklisted_mount_point in $mount_point_blacklist; do
       while read -r subentry; do
-        umount --verbose "$(echo "$subentry" | awk '{ print $2 }')" 2>&1 | debugoutput || return 1
+        umount --verbose "$(echo "$subentry" | awk '{ print $2 }')" |& debugoutput || return 1
         echo "$subentry" | cat - "$temp_umounted_mount_point_list" | uniq --unique > "$temp_umounted_mount_point_list"2
         mv "$temp_umounted_mount_point_list"2 "$temp_umounted_mount_point_list"
       done < <(echo "$entry" | grep "$container_root_dir$blacklisted_mount_point")
@@ -3454,14 +3454,14 @@ HEREDOC
 
   echo "Starting the systemd nspawn container" | debugoutput
 
-  systemctl daemon-reload 2>&1 | debugoutput || return 1
-  systemctl start "$(basename $temp_container_service_file)" 2>&1 | debugoutput || return 1
+  systemctl daemon-reload |& debugoutput || return 1
+  systemctl start "$(basename $temp_container_service_file)" |& debugoutput || return 1
 
   echo "$command" > "$temp_io_fifo"
   debugoutput < "$temp_io_fifo"
   command_retval="$(cat "$temp_retval_fifo")"
 
-  while systemctl is-active "$(basename $temp_container_service_file)" &> /dev/null; do
+  while systemctl is-active "$(basename $temp_container_service_file)" &>/dev/null; do
     sleep 2
   done
 
@@ -3469,7 +3469,7 @@ HEREDOC
 
   echo "Remounting temporarily umounted mount points" | debugoutput
 
-  mount --all --fstab "$temp_umounted_mount_point_list" --verbose 2>&1 | debugoutput || return 1
+  mount --all --fstab "$temp_umounted_mount_point_list" --verbose |& debugoutput || return 1
 
   rm --force "$temp_files"
 
@@ -3484,8 +3484,8 @@ check_plesk_subversion() {
 
   # test if pleskinstaller is already downloaded
   if [ ! -x "$FOLD/hdd/pleskinstaller" ] ; then
-    wget "http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME" -O "$FOLD/hdd/pleskinstaller" 2>&1 | debugoutput
-    chmod a+x "$FOLD"/hdd/pleskinstaller >> /dev/null
+    wget "http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME" -O "$FOLD/hdd/pleskinstaller" |& debugoutput
+    chmod a+x "$FOLD"/hdd/pleskinstaller &>/dev/null
   fi
 
   output="$(execute_chroot_command_wo_debug "/pleskinstaller --select-product-id plesk --show-releases" 2>&1)"
@@ -3503,8 +3503,8 @@ install_plesk() {
   local plesk_version=$1
 
   # we need the installer first
-  wget "http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME" -O "$FOLD/hdd/pleskinstaller" 2>&1 | debugoutput
-  chmod a+x "$FOLD/hdd/pleskinstaller" >> /dev/null
+  wget "http://mirror.hetzner.de/tools/parallels/plesk/$IMAGENAME" -O "$FOLD/hdd/pleskinstaller" |& debugoutput
+  chmod a+x "$FOLD/hdd/pleskinstaller" &>/dev/null
 
   # if there was no version specified, take our standard version
   if [ "$plesk_version" == "plesk" ]; then
@@ -3548,7 +3548,7 @@ install_plesk() {
   else
     execute_chroot_command "/pleskinstaller --select-product-id plesk --select-release-id $plesk_version --download-retry-count 99 $COMPONENTLIST"; EXITCODE=$?
   fi
-  rm -rf "$FOLD"/hdd/pleskinstaller >/dev/null 2>&1
+  rm -rf "$FOLD"/hdd/pleskinstaller &>/dev/null
   return "$EXITCODE"
 
 }
@@ -3640,7 +3640,7 @@ install_robot_script() {
         ;;
       centos)
         echo "[ -x /robot.sh ] && /robot.sh" >> "$FOLD/hdd/etc/rc.local"
-        chmod +x "$FOLD/hdd/etc/rc.local" 1>/dev/null 2>&1
+        chmod +x "$FOLD/hdd/etc/rc.local" &>/dev/null
         ;;
       suse)
         # needs suse 12.2 or higher
@@ -3671,7 +3671,7 @@ report_statistic() {
       BLCODE="1"
     fi
     ERROREXITCODE="$6"
-    wget --no-check-certificate --timeout=20 "https://$REPORTSRV/report/image/$REPORTIMG/$REPORTSWR/$REPORTLVM/$BLCODE/$ERROREXITCODE" -O /tmp/wget.tmp >> /dev/null 2>&1; EXITCODE=$?
+    wget --no-check-certificate --timeout=20 "https://$REPORTSRV/report/image/$REPORTIMG/$REPORTSWR/$REPORTLVM/$BLCODE/$ERROREXITCODE" -O /tmp/wget.tmp &>/dev/null; EXITCODE=$?
     return "$EXITCODE"
   fi
 }
@@ -3721,7 +3721,7 @@ cleanup() {
   done < <(tac /proc/mounts)
   resume_swraid_resync
 
-  rm --verbose -rf "$FOLD" &> /dev/null
+  rm --verbose -rf "$FOLD" &>/dev/null
   rm --verbose -rf /tmp/install.vars 2>&1
   rm --verbose -rf /tmp/*.tmp 2>&1
 }
