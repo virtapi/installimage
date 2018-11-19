@@ -571,7 +571,7 @@ create_config() {
 
 getdrives() {
   declare -a drives;
-  mapfile -d $'\0' drives < <(find /sys/block/ \( -name  'nvme[0-9]n[0-9]' -o  -name '[hvs]d[a-z]' \) -print0)
+  mapfile -d $'\0' drives < <(find /sys/block/ \( -name  'nvme[0-9]n[0-9]' -o  -name '[hvs]d[a-z]' \) -printf '%f\0')
   local i=1
 
   for drive in ${drives[*]} ; do
@@ -1525,15 +1525,25 @@ unmount_all() {
 # TODO: adopt to systemd
 #
 stop_lvm_raid() {
-  test -x /etc/init.d/lvm && /etc/init.d/lvm stop &>/dev/null
-  test -x /etc/init.d/lvm2 && /etc/init.d/lvm2 stop &>/dev/null
-
-  dmsetup remove_all > /dev/null 2>&1
-
-  if [ -x "$(command -v mdadm)" ] && [ -f /proc/mdstat ]; then
-    grep md /proc/mdstat | cut -d ' ' -f1 | while read -r i; do
-      [ -e "/dev/$i" ] && mdadm -S "/dev/$i" >> /dev/null 2>&1
+  if systemctl --version &>/dev/null; then
+    for unit in 'mdmonitor' 'lvm2-monitor'; do
+      if grep -q "${unit}\\.service" < <(systemctl list-units); then
+        systemctl stop "${unit}.service"
+      fi
     done
+  else
+    [[ -x /etc/init.d/lvm ]] && /etc/init.d/lvm stop &>/dev/null
+    [[ -x /etc/init.d/lvm2 ]] && /etc/init.d/lvm2 stop &>/dev/null
+  fi
+
+  dmsetup remove_all &>/dev/null
+
+  if [[ -x "$(command -v mdadm)" ]] && [[ -f /proc/mdstat ]]; then
+    if grep -q 'md' /proc/mdstat; then
+      grep 'md' /proc/mdstat | cut -d ' ' -f1 | while read -r mddev; do
+        [[ -e "/dev/${mddev}" ]] && mdadm -S "/dev/${mddev}" &>/dev/null
+      done
+    fi
   fi
 }
 
@@ -1960,17 +1970,19 @@ make_swraid() {
       fi
 
       # create raid array
-      if echo "$line" | grep "$LASTDRIVE" >/dev/null ; then
+      if grep -q "$LASTDRIVE" <<<"$line" ; then
 
         local raid_device="/dev/md/$count"
-        local components=""
+        declare -a components
+        components=()
         local n=0
         for n in $(seq 1 $COUNT_DRIVES) ; do
           TARGETDISK="$(eval echo \$DRIVE"${n}")"
           local p; p="$(echo "$TARGETDISK" | grep nvme)"
           [ -n "$p" ] && p='p'
-          components="$components $TARGETDISK$p$PARTNUM"
+          components+=("$TARGETDISK$p$PARTNUM")
         done
+        echo "components: ${components[*]}" | debugoutput
 
         local array_metadata="$metadata"
         local array_raidlevel="$SWRAIDLEVEL"
@@ -1995,7 +2007,9 @@ make_swraid() {
 
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
         # shellcheck disable=SC2069
-        yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "$components" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
+        # yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "${components[@]}" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
+        # shellcheck disable=SC2069
+        yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"${#components[@]}" "$array_metadata" -b internal "${components[@]}" |& debugoutput ; EXITCODE=$?
 
         count="$((count+1))"
        fi
@@ -3580,10 +3594,10 @@ translate_unit() {
     return 1
   fi
   for unit in M MiB G GiB T TiB; do
-    if echo "$1" | grep -q -e "^[[:digit:]]+$unit$"; then
-      value=${1//$unit}
+    if [[ "$1" =~ ^[[:digit:]]+${unit}$ ]]; then
+      value="${1//${unit}}"
 
-      case "$unit" in
+      case "${unit}" in
         M|MiB)
           factor=1
           ;;
@@ -3594,7 +3608,8 @@ translate_unit() {
           factor=1048576
           ;;
       esac
-      echo $((value * factor))
+      echo "$((value * factor))"
+      echo "partition size input: ${1}, output: $((value * factor))" | debugoutput
       return 0
     fi
   done
@@ -4065,8 +4080,8 @@ set_udev_rules() {
   UDEVPFAD="/etc/udev/rules.d"
   # this will probably fail if we ever have predictable networknames
   ETHCOUNT="$(find /sys/class/net/* -type l -name 'eth*' | wc -l)"
-  if [ "$ETHCOUNT" -gt "1" ]; then
-    cp "$UDEVPFAD"/70-persistent-net.rules "$FOLD/hdd$UDEVPFAD/"
+  if [[ "$ETHCOUNT" -gt 1 ]] && [[ -e "$UDEVPFAD"/70-persistent-net.rules ]]; then
+    install -D -m0644 "${FOLD}/hdd${UDEVPFAD}/" "${UDEVPFAD}/70-persistent-net.rules"
     #Testeinbau
     if [ "$IAM" = "centos" ]; then
       # need to remove these parts of the rule for centos,
@@ -4074,7 +4089,7 @@ set_udev_rules() {
       # plus a new  ifcfg- for the new rule, which duplicates
       # the config but does not match the MAC of the interface
       # after renaming. Terrible mess.
-      sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' "$FOLD/hdd$UDEVPFAD/70-persistent-net.rules"
+      sed -i 's/ ATTR{dev_id}=="0x0", ATTR{type}=="1", KERNEL==\"eth\*\"//g' "${FOLD}/hdd${UDEVPFAD}/70-persistent-net.rules"
     fi
     for NIC in /sys/class/net/*; do
       INTERFACE=${NIC##*/}
@@ -4084,9 +4099,9 @@ set_udev_rules() {
       #Separate udev-rules for openSUSE 12.3 in function "suse_fix" below !!!
       if [ -n "$iptest"  ] && [ "$iptest" != "192.168" ] && [ "$INTERFACE" != "eth0" ] && [ "$INTERFACE" != "lo" ]; then
         debug "# renaming active $INTERFACE to eth0 via udev in installed system"
-        sed -i  "s/$INTERFACE/dummy/" "$FOLD/hdd$UDEVPFAD/70-persistent-net.rules"
-        sed -i  "s/eth0/$INTERFACE/" "$FOLD/hdd$UDEVPFAD/70-persistent-net.rules"
-        sed -i  "s/dummy/eth0/" "$FOLD/hdd$UDEVPFAD/70-persistent-net.rules"
+        sed -i  "s/$INTERFACE/dummy/" "${FOLD}/hdd${UDEVPFAD}/70-persistent-net.rules"
+        sed -i  "s/eth0/$INTERFACE/" "${FOLD}/hdd${UDEVPFAD}/70-persistent-net.rules"
+        sed -i  "s/dummy/eth0/" "$FOLD/hdd${UDEVPFAD}/70-persistent-net.rules"
         fix_eth_naming "$INTERFACE"
       fi
     done
@@ -4205,12 +4220,16 @@ netmask_cidr_conv() {
 }
 
 suspend_swraid_resync() {
-  echo 0 | tee /proc/sys/dev/raid/speed_limit_max > /proc/sys/dev/raid/speed_limit_min
+  if [[ -e /proc/sys/dev/raid/speed_limit_max && -e /proc/sys/dev/raid/speed_limit_min ]]; then
+    echo 0 | tee /proc/sys/dev/raid/speed_limit_max > /proc/sys/dev/raid/speed_limit_min
+  fi
 }
 
 resume_swraid_resync() {
-  echo 200000 > /proc/sys/dev/raid/speed_limit_max
-  echo 1000 > /proc/sys/dev/raid/speed_limit_min
+  if [[ -e /proc/sys/dev/raid/speed_limit_max && -e /proc/sys/dev/raid/speed_limit_min ]]; then
+    echo 200000 > /proc/sys/dev/raid/speed_limit_max
+    echo 1000 > /proc/sys/dev/raid/speed_limit_min
+  fi
 }
 
 wait_for_udev() {
