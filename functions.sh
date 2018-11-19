@@ -645,7 +645,7 @@ if [ -n "$1" ]; then
   COUNT_DRIVES=$((used_disks-1))
 
   # is RAID activated?
-  SWRAID="$(grep -m1 -e ^SWRAID "$1" |awk '{print $2}')"
+  SWRAID="$(grep -m1 -e '^SWRAID ' "$1" |awk '{print $2}')"
   [ "$SWRAID" = "" ] && SWRAID="0"
 
   # Software RAID Level
@@ -1724,9 +1724,12 @@ create_partitions() {
      SFDISKTYPE="fd"
    fi
 
+   echo "element ${i} in array PART_SIZE has the value ${PART_SIZE[$i]}" | debugoutput
    if [ "$(echo ${PART_SIZE[$i]} | tr "[:upper:]" "[:lower:]")" = "all" ]; then
+     echo "we set SFDISKSIZE to empty string" | debugoutput
      SFDISKSIZE=""
    else
+     echo "we set FSDISKSIZE to ${PART_SIZE[$i]}" | debugoutput
      SFDISKSIZE="${PART_SIZE[$i]}"
    fi
 
@@ -1754,8 +1757,10 @@ create_partitions() {
        sgdisk --new "$i":"$bios_grub_start":+1M -t "$i":EF02 "$1" |& debugoutput
      else
        if [ -z "$SFDISKSIZE" ] && [ "$i" -gt 1 ]; then
+         echo "sgdisk --largest-new ${i} -t ${i}:${gpt_part_type} ${1}" | debugoutput
          sgdisk --largest-new "$i" -t "$i":"$gpt_part_type" "$1" |& debugoutput
        else
+        echo "sgdisk --new ${i}:${START}:${gpt_part_size} -t ${i}:${gpt_part_type} ${1}" | debugoutput
          sgdisk --new "$i":"$START":"$gpt_part_size" -t "$i":"$gpt_part_type" "$1" |& debugoutput
        fi
      fi
@@ -3724,7 +3729,7 @@ cleanup() {
 
   while read -r entry; do
     while read -r subentry; do
-      umount --lazy --verbose "$(awk '{print $2}' <<< "${subentry}")" &>/dev/null
+      umount --lazy --verbose "$(awk '{print $2}' <<< "${subentry}")" |& debugoutput
     done < <(grep "${FOLD}/hdd" <<< "${entry}")
   done < <(tac /proc/mounts)
   resume_swraid_resync
@@ -3752,12 +3757,12 @@ exit_function() {
   echo "fails again, please contact our support via Hetzner Robot, providing"
   echo "the IP address of the server and a copy of the debug file."
   echo
-  echo "  https://robot.your-server.de"
   echo
 
   report_statistic "$STATSSERVER" "$IMAGE_FILE" "$SWRAID" "$LVM" "$BOOTLOADER" "$ERROREXIT"
   report_id="$(report_config "$REPORTSERVER")"
   report_debuglog "$REPORTSERVER" "$report_id"
+  cleanup
 }
 
 #function to check if it is a intel or amd cpu
