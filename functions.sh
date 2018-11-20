@@ -2681,6 +2681,7 @@ set_hostname() {
     fi
 
     [ -f "$FOLD/hdd/etc/HOSTNAME" ] && hostnamefile="$FOLD/hdd/etc/HOSTNAME"
+    [[ ! -e "$hostnamefile" ]] && touch "$hostnamefile"
 
     hostname "$sethostname"
     execute_chroot_command "hostname $sethostname"
