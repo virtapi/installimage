@@ -76,10 +76,6 @@ setup_network_config() {
       echo "default ${10} - $1" >> "$ROUTEFILE"
     fi
 
-    if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTIONS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
-    fi
-
     return 0
   fi
 }

@@ -94,11 +94,6 @@ setup_network_config() {
       } >> "$CONFIGFILE"
     fi
 
-    # set duplex/speed
-    if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
-    fi
-
     # remove all hardware info from image (CentOS 5)
     if [ -f "$FOLD/hdd/etc/sysconfig/hwconf" ]; then
       echo "" > "$FOLD/hdd/etc/sysconfig/hwconf"
