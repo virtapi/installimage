@@ -2082,7 +2082,7 @@ make_lvm() {
       pv=${dev[${LVM_VG_PART[${i}]}]}
       debug "# Creating PV $pv"
       wipefs -af "$pv" |& debugoutput
-      pvcreate -ff "$pv" |& debugoutput
+      pvcreate --verbose --zero y --yes -ff "$pv" |& debugoutput
     done
 
     # create VGs
@@ -2097,7 +2097,7 @@ make_lvm() {
       else
         debug "# Creating VG $vg with PV $pv"
         [ "$vg" ] && rm -rf "/dev/${vg:?}" |& debugoutput
-        vgcreate "$vg" "$pv" |& debugoutput
+        vgcreate --verbose --zero y --yes "$vg" "$pv" |& debugoutput
       fi
     done
 
@@ -2132,7 +2132,7 @@ make_lvm() {
       fi
 
       debug "# Creating LV $vg/$lv ($size MiB)"
-      lvcreate --name "$lv" --size "$size" "$vg" |& debugoutput
+      lvcreate --name "$lv" --size "$size" --wipesignatures y --zero y --yes --verbose "$vg" |& debugoutput
       test $? -eq 0 || return 1
     done
 
