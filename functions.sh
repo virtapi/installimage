@@ -1518,6 +1518,7 @@ whoami() {
 unmount_all() {
   unmount_errors=0
 
+  local line
   while read -r line ; do
     device="$(echo "$line" | grep -v "^/dev/loop" | grep -v "^/dev/root" | grep "^/" | awk '{ print $1 }')"
     if [ "$device" ] ; then
@@ -1978,6 +1979,7 @@ make_swraid() {
       fi
     fi
     [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 123 ] && metadata="--metadata=0.90"
+    local line
     while read -r line; do
       PARTNUM="$(next_partnum $count)"
       echo "Line is: \"$line\"" | debugoutput
@@ -2142,7 +2144,6 @@ make_lvm() {
         echo    "defaults 0 0"
       } >> "$fstab"
     done
-
   else
     debug "parameters incorrect for make_lvm()"
     echo "params incorrect for make_lvm" ; return 1
@@ -2237,11 +2238,17 @@ mount_partitions() {
     mount -o bind /sys "$basedir"/sys |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
+    # strip / (already mounted) and swap for remaining mounts
     grep -v ' / \|swap' "$fstab" | grep "^/dev/" > "$fstab".tmp
 
-    while read -r line ; do
-      DEVICE="$(echo "$line" | cut -d " " -f 1)"
-      MOUNTPOINT="$(echo "$line" | cut -d " " -f 2)"
+    local _line
+    _line=''
+    local line
+    line=''
+    while read -r _line ; do
+      line="$(tr -d '\n' <<<"${_line}")"
+      DEVICE="$(awk '{print $1}' <<< "$line")"
+      MOUNTPOINT="$(awk '{print $2}' <<< "$line")"
       mkdir -p "$basedir$MOUNTPOINT" |& debugoutput
 
       # create lock and run dir for ubuntu if /var has its own filesystem
@@ -3855,6 +3862,7 @@ uuid_bugfix() {
     debug "# change all device names to uuid (e.g. for ide/pata transition)"
     TEMPFILE="$(mktemp)"
     sed -n 's|^/dev/\([hsv]d[a-z][1-9][0-9]\?\).*|\1|p' < "$FOLD/hdd/etc/fstab" > "$TEMPFILE"
+    local LINE
     while read -r LINE; do
       UUID="$(blkid -o value -s UUID "/dev/$LINE")"
       # not quite perfect. We need to match /dev/sda1 but not /dev/sda10.
