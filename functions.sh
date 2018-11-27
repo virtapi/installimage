@@ -1582,7 +1582,7 @@ delete_partitions() {
   # clean mbr boot code
   dd if=/dev/zero of="${1}" bs=512 count=1 &>/dev/null ; EXITCODE=$?
 
-  debugoutput < /proc/mdstat
+  [[ -r /proc/mdstat ]] && debugoutput < /proc/mdstat
   sleep 5
   # re-read partition table
   partprobe "${1}" 2>/dev/null
