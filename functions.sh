@@ -2198,10 +2198,11 @@ mount_partitions() {
     fstab="$1"
     basedir="$2"
 
-    ROOTDEVICE="$(grep " / " "$fstab" | cut -d " " -f 1)"
+    ROOTDEVICE="$(awk '{if($2=="/"){print $1}}' "$fstab")"
     SYSTEMROOTDEVICE="$ROOTDEVICE"
     SYSTEMBOOTDEVICE="$SYSTEMROOTDEVICE"
 
+    debugoutput <<<"trying to mount ${ROOTDEVICE} to ${basedir}"
     mount "$ROOTDEVICE" "$basedir" |& debugoutput ; EXITCODE=$?
     [ "$EXITCODE" -ne "0" ] && return 1
 
@@ -2262,6 +2263,7 @@ mount_partitions() {
       fi
 
       # mount it
+      debugoutput <<<"trying to mount ${DEVICE} to ${basedir}${MOUNTPOINT}"
       mount "$DEVICE" "$basedir$MOUNTPOINT" |& debugoutput || return 1
       if [ "$MOUNTPOINT" = "/boot" ]; then
         SYSTEMBOOTDEVICE="$DEVICE"
