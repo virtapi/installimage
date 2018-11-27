@@ -2032,7 +2032,7 @@ make_swraid() {
         # shellcheck disable=SC2069
         # yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "${components[@]}" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
         # shellcheck disable=SC2069
-        yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"${#components[@]}" "$array_metadata" -b internal "${components[@]}" |& debugoutput ; EXITCODE=$?
+        yes | mdadm --create --verbose --force "$raid_device" -l"$array_raidlevel" -n"${#components[@]}" "$array_metadata" -b internal "${components[@]}" |& debugoutput ; EXITCODE=$?
 
         count="$((count+1))"
        fi
