@@ -13,7 +13,7 @@ PART_FS=""
 PART_SIZE=""
 PARTS_SUM_SIZE=""
 MOUNT_POINT_SIZE=""
-HASROOT=""
+HASROOT=0
 SWRAID=""
 SWRAIDLEVEL=""
 LVM=""
@@ -682,7 +682,7 @@ if [ -n "$1" ]; then
       PARTS_SUM_SIZE=$(( ${PART_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${PART_MOUNT[$i]}" == "/" ]; then
-      HASROOT="true"
+      (( HASROOT++ ))
     fi
   done < /tmp/part_lines.tmp
 
@@ -721,7 +721,7 @@ if [ -n "$1" ]; then
       PARTS_SUM_SIZE=$(( ${LVM_LV_SIZE[$i]} + PARTS_SUM_SIZE ))
     fi
     if [ "${LVM_LV_MOUNT[$i]}" == "/" ]; then
-      HASROOT="true"
+      (( HASROOT++ ))
     fi
   done
 
@@ -1355,9 +1355,12 @@ validate_vars() {
     return 1
   fi
 
-  if [ "$HASROOT" != "true" ]; then
+  if [ "$HASROOT" -lt 1 ]; then
     graph_error "ERROR: You dont have a partition for /"
     return 1
+  elif [ "$HASROOT" -gt 1 ]; then
+    graph_error "ERROR: You have more than one partition for /"
+    return 2
   fi
 
   if [ "$OPT_INSTALL" ]; then
