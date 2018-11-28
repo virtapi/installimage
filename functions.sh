@@ -2180,6 +2180,12 @@ format_partitions() {
         fi
       elif [ "$FS" = "btrfs" ]; then
         mkfs -t "$FS" "$DEV" |& debugoutput ; EXITCODE=$?
+      elif [ "$FS" == "xfs" ]; then
+        if [ "$IAM" == "debian" ] && [ "$IMG_VERSION" -lt 90 ]; then
+          mkfs.xfs -m crc=0,finobt=0,rmapbt=0,reflink=0 "$DEV" |& debugoutput ; EXITCODE=$?
+        else
+          mkfs.xfs "$DEV" |& debugoutput ; EXITCODE=$?
+        fi
       else
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
         # shellcheck disable=SC2069
