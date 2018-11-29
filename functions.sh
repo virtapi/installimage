@@ -62,7 +62,7 @@ ERROREXIT="0"
 FINALIMAGEPATH=""
 
 PLESK_STD_VERSION="PLESK_12_5_30"
-FORCE_GPT=0
+FORCE_GPT=1
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
 MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
