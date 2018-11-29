@@ -2033,8 +2033,6 @@ make_swraid() {
 
         # workaround: the 2>&1 redirect is valid syntax in shellcheck 0.4.3-3, but not in the older version which is currently used by travis
         # shellcheck disable=SC2069
-        # yes | mdadm -q -C "$raid_device" -l"$array_raidlevel" -n"$n" "$array_metadata" "$can_assume_clean" "${components[@]}" 2>&1 >/dev/null | debugoutput ; EXITCODE=$?
-        # shellcheck disable=SC2069
         yes | mdadm --create --verbose --force "$raid_device" -l"$array_raidlevel" -n"${#components[@]}" "$array_metadata" -b internal "${components[@]}" |& debugoutput ; EXITCODE=$?
 
         count="$((count+1))"
