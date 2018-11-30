@@ -89,15 +89,17 @@ export NOCOL='\033[00m'
 
 # write log entries in debugfile - single line as second argument
 debug() {
-  line="$*"
-  echo "[$(date '+%H:%M:%S')] $line" >> $DEBUGFILE;
+  local ___line
+  ___line="$*"
+  echo "[$(date '+%H:%M:%S')] ${___line}" >> $DEBUGFILE;
 }
 
 
 # write log entries in debugfile - multiple lines at once
 debugoutput() {
-  while read -r line ; do
-    echo "[$(date '+%H:%M:%S')] :   $line" >> $DEBUGFILE;
+  local ___line
+  while read -r ___line ; do
+    echo "[$(date '+%H:%M:%S')] :   ${___line}" >> $DEBUGFILE;
   done
 }
 

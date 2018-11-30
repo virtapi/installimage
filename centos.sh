@@ -94,11 +94,6 @@ setup_network_config() {
       } >> "$CONFIGFILE"
     fi
 
-    # set duplex/speed
-    if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
-    fi
-
     # remove all hardware info from image (CentOS 5)
     if [ -f "$FOLD/hdd/etc/sysconfig/hwconf" ]; then
       echo "" > "$FOLD/hdd/etc/sysconfig/hwconf"
@@ -158,6 +153,7 @@ generate_new_ramdisk() {
         echo "### i915 driver blacklisted due to various bugs"
         echo "### especially in combination with nomodeset"
         echo "blacklist i915"
+        echo 'blacklist sm750fb'
       } > "$blacklist_conf"
     fi
 
@@ -312,19 +308,17 @@ generate_config_grub() {
 
     echo >> "$BFILE"
 
-    uuid_bugfix
   # TODO: add grubby stuff (SYSFONT, LANG, KEYTABLE)
   else
-    if isVServer; then
-      execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"nomodeset rd.auto=1 crashkernel=auto elevator=noop\"/"'
-    else
-      execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"nomodeset rd.auto=1 crashkernel=auto\"/"'
-    fi
+    local grub_cmdline_linux='nomodeset rd.auto=1 crashkernel=auto biosdevname=0 net.ifnames=0'
+    isVServer && grub_cmdline_linux+=' elevator=noop'
+    sed -i "s/GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"$grub_cmdline_linux\"/" "$FOLD/hdd/etc/default/grub"
 
     [ -e "$FOLD/hdd/boot/grub2/grub.cfg" ] && rm "$FOLD/hdd/boot/grub2/grub.cfg"
     execute_chroot_command "grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1"; declare -i EXITCODE="$?"
 
   fi
+  uuid_bugfix
   return "$EXITCODE"
 }
 
@@ -358,6 +352,8 @@ write_grub() {
 run_os_specific_functions() {
 
   execute_chroot_command "chkconfig iptables off"
+  execute_chroot_command "chkconfig ip6tables off"
+  execute_chroot_command "chkconfig postfix off"
 
   #
   # setup env in cpanel image
@@ -372,6 +368,8 @@ run_os_specific_functions() {
   # selinux autorelabel if enabled
   grep -qE "SELINUX=enforcing" "$FOLD/hdd/etc/sysconfig/selinux" &&
     touch "$FOLD/hdd/.autorelabel"
+
+  ((IMG_VERSION >= 70)) && mkdir -p "$FOLD/hdd/var/run/netreport"
 
   return 0
 

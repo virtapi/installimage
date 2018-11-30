@@ -63,7 +63,7 @@ extract_image() {
 
     # extract image with given compression
     if [ -n "$COMPRESSION" ]; then
-      "$COMPRESSION -d --stdout $EXTRACTFROM" > "${DRIVE1}"
+      "$COMPRESSION" -d --stdout "$EXTRACTFROM" > "${DRIVE1}"
       EXITCODE=$?
     else
       # or write binary file directly to disk
@@ -236,11 +236,13 @@ copy_ssh_keys() {
     case "$key_url" in
       https:*|http:*|ftp:*)
         wget "$key_url" -O "$FOLD/authorized_keys"
+        local line
         while read -r line; do
           echo "  - $line" >> "$CLOUDINIT"
         done < "$FOLD/authorized_keys"
       ;;
       *)
+        local line
         while read -r line; do
           echo "  - $line" >> "$CLOUDINIT"
         done < "$key_url"

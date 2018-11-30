@@ -174,6 +174,8 @@ done
 
 status_done
 
+wait_for_udev
+
 #
 # Test partition size
 #
@@ -183,7 +185,6 @@ status_busy "${STEP_DESCRIPTION}"
 part_test_size
 check_dos_partitions "no_output"
 status_done
-
 
 #
 # Create partitions
@@ -202,6 +203,7 @@ done
 
 status_done
 
+wait_for_udev
 
 #
 # Software RAID
@@ -211,9 +213,11 @@ if [ "$SWRAID" = "1" ]; then
   STEP_DESCRIPTION="Creating software RAID level $SWRAIDLEVEL"
   status_busy "${STEP_DESCRIPTION}"
   make_swraid "$FOLD/fstab"
+  suspend_swraid_resync
   status_donefailed $?
 fi
 
+wait_for_udev
 
 #
 # LVM
@@ -231,6 +235,7 @@ if [ "$LVM" = "1" ]; then
   fi
 fi
 
+wait_for_udev
 
 #
 # Format partitions
@@ -249,6 +254,7 @@ while read -r line ; do
 done < /tmp/fstab.tmp
 report_nosteps_completed
 
+wait_for_udev
 
 #
 # Mount filesystems

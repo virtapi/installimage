@@ -76,10 +76,6 @@ setup_network_config() {
       echo "default ${10} - $1" >> "$ROUTEFILE"
     fi
 
-    if ! isNegotiated && ! isVServer; then
-      echo 'ETHTOOL_OPTIONS="speed 100 duplex full autoneg off"' >> "$CONFIGFILE"
-    fi
-
     return 0
   fi
 }
@@ -108,6 +104,7 @@ generate_new_ramdisk() {
     echo '### i915 driver blacklisted due to various bugs'
     echo '### especially in combination with nomodeset'
     echo 'blacklist i915'
+    echo 'blacklist sm750fb'
   } > "$blacklist_conf"
 
   if [ "$SUSEVERSION" -eq 132 ] || [ "$SUSEVERSION" -eq 421 ]; then

@@ -67,16 +67,6 @@ setup_network_config() {
       } >> "$CONFIGFILE"
     fi
 
-    #
-    # set duplex speed
-    #
-    if ! isNegotiated && ! isVServer; then
-      {
-        echo "  # force full-duplex for ports without auto-neg"
-        echo "  post-up mii-tool -F 100baseTx-FD $1"
-      } >> "$CONFIGFILE"
-    fi
-
     return 0
   fi
 }
@@ -122,7 +112,8 @@ generate_new_ramdisk() {
         echo "blacklist i915"
         echo "### mei driver blacklisted due to serious bugs"
         echo "blacklist mei"
-        echo "blacklist mei-me"
+        echo "blacklist mei_me"
+        echo 'blacklist sm750fb'
       } > "$blacklist_conf"
     fi
 
@@ -139,7 +130,8 @@ generate_new_ramdisk() {
     # when we haven't configured grub yet
     # Debian won't install a boot loader anyway, but display an error message,
     # that needs to be confirmed
-    sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
+    [[ -e "$FOLD/hdd/etc/kernel-img.conf" ]] && \
+      sed -i "s/do_bootloader = yes/do_bootloader = no/" "$FOLD/hdd/etc/kernel-img.conf"
 
     # well, we might just as well update all initramfs and stop findling around
     # to find out which kernel version is the latest
@@ -163,7 +155,7 @@ setup_cpufreq() {
     else
       {
         echo 'ENABLE="true"'
-        printf 'GOVERNOR="%s"', "$1"
+        printf 'GOVERNOR="%s"' "$1"
         echo 'MAX_SPEED="0"'
         echo 'MIN_SPEED="0"'
       } >> "$cpufreqconf"
@@ -193,15 +185,22 @@ generate_config_grub() {
   execute_chroot_command 'sed -i /etc/default/grub -e "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"'"${grub_linux_default}"'\"/"'
 
   # only install grub2 in mbr of all other drives if we use swraid
+  local debconf_drives;
   for ((i=1; i<=COUNT_DRIVES; i++)); do
     if [ "$SWRAID" -eq 1 ] || [ "$i" -eq 1 ] ;  then
       local disk; disk="$(eval echo "\$DRIVE"$i)"
       execute_chroot_command "grub-install --no-floppy --recheck $disk 2>&1"
+      if [ "$i" -eq 1 ]; then
+        debconf_drives="$disk"
+      else
+        debconf_drives="$debconf_drives, $disk"
+      fi
     fi
   done
   [ -e "$FOLD/hdd/boot/grub/grub.cfg" ] && rm "$FOLD/hdd/boot/grub/grub.cfg"
 
   execute_chroot_command "grub-mkconfig -o /boot/grub/grub.cfg 2>&1"
+  execute_chroot_command "echo 'set grub-pc/install_devices $debconf_drives' | debconf-communicate"
 
   uuid_bugfix
 
@@ -237,6 +236,8 @@ run_os_specific_functions() {
     fi
   fi
 
+  (( "${IMG_VERSION}" >= 80 )) && (( "${IMG_VERSION}" <= 711 )) && debian_udev_finish_service_fix
+
   return 0
 }
 
@@ -253,6 +254,23 @@ randomize_mdadm_checkarray_cronjob_time() {
   else
     debug "# No /etc/cron.d/mdadm found to randomize cronjob run time"
   fi
+}
+
+debian_udev_finish_service_fix() {
+  local unit_file="${FOLD}/hdd/lib/systemd/system/udev-finish.service"
+  local override_dir="${FOLD}/hdd/etc/systemd/system/udev-finish.service.d"
+  local override_file="${override_dir}/override.conf"
+  if ! [[ -f "${unit_file}" ]]; then
+    debug '# udev-finish.service not found. not installing override'
+    return
+  fi
+  debug '# install udev-finish.service override'
+  mkdir "${override_dir}"
+  {
+    echo "### ${COMPANY} - installimage"
+    echo '[Unit]'
+    echo 'After=basic.target'
+  } > "${override_file}"
 }
 
 #

@@ -96,7 +96,8 @@ generate_new_ramdisk() {
       echo "blacklist i915"
       echo "### mei driver blacklisted due to serious bugs"
       echo "blacklist mei"
-      echo "blacklist mei-me"
+      echo "blacklist mei_me"
+      echo 'blacklist sm750fb'
     } > "$blacklist_conf"
 
     execute_chroot_command 'sed -i /etc/mkinitcpio.conf -e "s/^HOOKS=.*/HOOKS=\"base systemd autodetect keyboard sd-vconsole modconf block mdadm_udev sd-lvm2 filesystems fsck\"/"'
@@ -176,6 +177,7 @@ validate_image() {
 extract_image() {
   mkdir -p "$FOLD/hdd/var/lib/pacman"
   mkdir -p "$FOLD/hdd/var/cache/pacman/pkg"
+  LANG=C pacman-key --refresh-keys |& debugoutput
   LANG=C pacman \
     --noconfirm \
     --root "$FOLD/hdd" \
