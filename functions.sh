@@ -1738,7 +1738,7 @@ create_partitions() {
      echo "we set SFDISKSIZE to empty string" | debugoutput
      SFDISKSIZE=""
    else
-     echo "we set FSDISKSIZE to ${PART_SIZE[$i]}" | debugoutput
+     echo "we set SFDISKSIZE to ${PART_SIZE[$i]}" | debugoutput
      SFDISKSIZE="${PART_SIZE[$i]}"
    fi
 
