@@ -1372,7 +1372,7 @@ validate_vars() {
     fi
   fi
 
-  if [ "$BOOTLOADER" == "grub" ]; then
+  if [ "$BOOTLOADER" == "grub" ] && [ "$FORCE_GPT" -lt 1 ]; then
     # check dos partition sizes for centos
     local result; result="$(check_dos_partitions '')"
 
@@ -1668,7 +1668,7 @@ function get_end_of_partition {
     fi
   fi
   # check if end of logical partition is over the end extended partition
-  if [ "$PCOUNT" -gt 4 ] && [ "$end" -gt "$end_extended" ]; then
+  if [ "$PART_COUNT" -gt 4 ] && [ "$end" -gt "$end_extended" ]; then
     # leave 1MiB space at the end (may be needed for mdadm or for later conversion to GPT)
     end=$((end_extended-1048576))
   fi
@@ -1738,7 +1738,7 @@ create_partitions() {
      echo "we set SFDISKSIZE to empty string" | debugoutput
      SFDISKSIZE=""
    else
-     echo "we set FSDISKSIZE to ${PART_SIZE[$i]}" | debugoutput
+     echo "we set SFDISKSIZE to ${PART_SIZE[$i]}" | debugoutput
      SFDISKSIZE="${PART_SIZE[$i]}"
    fi
 

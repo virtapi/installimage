@@ -135,7 +135,7 @@ status_donefailed $?
 
 
 # change sizes of DOS partitions
-check_dos_partitions "no_output"
+[ "$FORCE_GPT" -lt 1 ] && check_dos_partitions "no_output"
 
 whoami "$IMAGE_FILE"
 STEP_DESCRIPTION="Loading $IAM specific functions "
@@ -183,7 +183,7 @@ inc_step
 STEP_DESCRIPTION="Test partition size"
 status_busy "${STEP_DESCRIPTION}"
 part_test_size
-check_dos_partitions "no_output"
+[ "$FORCE_GPT" -lt 1 ] && check_dos_partitions "no_output"
 status_done
 
 #
