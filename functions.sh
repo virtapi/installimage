@@ -62,7 +62,6 @@ ERROREXIT="0"
 FINALIMAGEPATH=""
 
 PLESK_STD_VERSION="PLESK_12_5_30"
-FORCE_GPT=1
 SYSMFC=$(dmidecode -s system-manufacturer 2>/dev/null | head -n1)
 SYSTYPE=$(dmidecode -s system-product-name 2>/dev/null | head -n1)
 MBTYPE=$(dmidecode -s baseboard-product-name 2>/dev/null | head -n1)
@@ -609,7 +608,11 @@ if [ -n "$1" ]; then
   # special hidden configure option: GPT usage
   # if set to 1, use GPT even on disks smaller than 2TiB
   # if set to 2, always use GPT, even if the OS does not support it
-  FORCE_GPT="$(grep -m1 -e ^FORCE_GPT "$1" |awk '{print $2}')"
+  [ -z "${FORCE_GPT}" ] && FORCE_GPT=1
+  if grep -q -e '^FORCE_GPT' "$1"; then
+    FORCE_GPT="$(grep -m1 -e '^FORCE_GPT' "$1" |awk '{print $2}')"
+  fi
+  export FORCE_GPT
 
   # another special hidden configure option: force image validation
   # if set to 1: force validation
