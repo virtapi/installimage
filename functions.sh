@@ -597,6 +597,8 @@ getdrives() {
 # read_vars "CONFIGFILE"
 read_vars(){
 if [ -n "$1" ]; then
+  # reset counter
+  HASROOT=0
   # count disks again, for setting COUNT_DRIVES correct after restarting installimage
   getdrives
 
