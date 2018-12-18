@@ -2494,7 +2494,8 @@ gather_network_information() {
     export IP6ADDR; IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
     export IP6PREFLEN; IP6PREFLEN=$(echo "$INET6ADDR" | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
-    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route show default |  awk '{print $3}')
+    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route show default dev "${ETHDEV}" | \
+      awk '{if($0 !~ "proto ra"){print $3; exit 0;}}')
   else
     if [ "$V6ONLY" -eq 1 ]; then
       debug "no valid IPv6 adress, but v6 only because of RFC6598 IPv4 address"
