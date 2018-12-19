@@ -1105,7 +1105,7 @@ validate_vars() {
 
       # Check if the partition size is a valid number
       # shellcheck disable=SC2015
-      if [ "${PART_SIZE[$i]}" != "all" ] && [ ! -z "${PART_SIZE[$i]//[0-9]}" ] || [ "${PART_SIZE[$i]}" == "0" ]; then
+      if [ "${PART_SIZE[$i]}" != "all" ] && [ -n "${PART_SIZE[$i]//[0-9]}" ] || [ "${PART_SIZE[$i]}" == "0" ]; then
         graph_error "ERROR: The size of the partiton PART ${PART_MOUNT[$i]} is not a valid number"
         return 1
       fi
@@ -1244,7 +1244,7 @@ validate_vars() {
     fi
 
     # shellcheck disable=SC2015
-    if [ "$lv_size" != "all" ] && [ ! -z "${lv_size//[0-9]}" ] || [ "$lv_size" == "0" ]; then
+    if [ "$lv_size" != "all" ] && [ -n "${lv_size//[0-9]}" ] || [ "$lv_size" == "0" ]; then
       graph_error "ERROR: size of LV '${LVM_LV_NAME[$lv_id]}' is not a valid number"
       return 1
     fi
@@ -2494,7 +2494,8 @@ gather_network_information() {
     export IP6ADDR; IP6ADDR=$(echo "$INET6ADDR" | cut -d"/" -f1)
     export IP6PREFLEN; IP6PREFLEN=$(echo "$INET6ADDR" | cut -d'/' -f2)
     # we can get default route from here, but we could also assume fe80::1 for now
-    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route show default |  awk '{print $3}')
+    export IP6GATEWAY; IP6GATEWAY=$(ip -6 route show default dev "${ETHDEV}" | \
+      awk '{if($0 !~ "proto ra"){print $3; exit 0;}}')
   else
     if [ "$V6ONLY" -eq 1 ]; then
       debug "no valid IPv6 adress, but v6 only because of RFC6598 IPv4 address"
