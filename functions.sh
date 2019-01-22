@@ -4002,14 +4002,14 @@ function part_test_size() {
     # use only GPT if not CentOS or OpenSuSE newer than 12.2
     if [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ]; then
       if [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
-        echo "SuSE older than 12.2. cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
+        echo "SuSE older than 12.2. cannot use GPT (but drive size is bigger than 2TB)" | debugoutput
       else
-        echo "using GPT (drive size bigger then 2TB or requested)" | debugoutput
+        echo "using GPT (drive size bigger than 2TB or requested)" | debugoutput
         GPT=1
         PART_COUNT=$((PART_COUNT+1))
       fi
     else
-      echo "cannot use GPT (but drive size is bigger then 2TB)" | debugoutput
+      echo "cannot use GPT (but drive size is bigger than 2TB)" | debugoutput
     fi
   fi
 }
