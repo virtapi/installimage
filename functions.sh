@@ -627,6 +627,14 @@ if [ -n "$1" ]; then
   FORCE_PASSWORD="$(grep -m1 -e ^FORCE_PASSWORD "$1" |awk '{print $2}')"
   export FORCE_PASSWORD
 
+  # special hidden configure option: activate DWC (drive write cache)
+  # if set to 0, disable DWC for all disks
+  # if set to 1, enable DWC for SSDs but not HDDs
+  # if set to 2, enable DWC for all disks
+  if grep -q -e '^DWC_ENABLE' "$1"; then
+    DWC_ENABLE="$(awk '/^DWC_ENABLE/{printf $2}' "$1" 2>/dev/null)"
+  fi
+
   # get all disks from configfile
   local used_disks=1
   for ((i=1; i<=COUNT_DRIVES; i++)); do
@@ -4152,6 +4160,61 @@ set_udev_rules() {
     done
     [ "$IAM" == 'suse' ] && suse_version="$IMG_VERSION"
     [ "$suse_version" == "123" ] && suse_netdev_fix
+  fi
+
+  # drive write cache (DWC)
+  dwc_current="$(hdparm -W "${DRIVE1}" 2>/dev/null | grep -Po '(?<=write-caching = )(.*?)(?=$)')"
+  dwc_udev_file="${FOLD}/hdd${UDEVPFAD}/65-drive-write-cache.rules"
+  local hdparm_path=''
+  local -i hdparm_path_ret
+  hdparm_path="$(execute_chroot_command_wo_debug "command -v hdparm")"
+  hdparm_path_ret="$?"
+
+  debug "DWC_ENABLE: ${DWC_ENABLE}"
+
+  if [[ "${hdparm_path_ret}" -eq 0 ]]; then
+    local udev_constraint=''
+    local -i udev_dwc_value=0
+    local -i skip_dwc=0
+
+    if [[ -n "${DWC_ENABLE}" && "${DWC_ENABLE}" -ge 1 ]]; then
+      if [[ "${dwc_current}" == "not supported" ]]; then
+        hdparm -W "${DRIVE1}" |& debugoutput
+        debug "DWC is not supported by disk, skipping udev rule generation..."
+        skip_dwc=1
+      else
+        if [[ "${DWC_ENABLE}" -eq 1 ]]; then
+          debug "enabling DWC for SSDs..."
+          udev_constraint=' ATTR{queue/rotational}=="0",'
+          udev_dwc_value=1
+        elif [[ "${DWC_ENABLE}" -eq 2 ]]; then
+          debug "enabling DWC for all disks..."
+          udev_constraint=''
+          udev_dwc_value=1
+        else
+          debug "WARN: disabling DWC due to unknown DWC_ENABLE value: ${DWC_ENABLE}"
+          udev_constraint=''
+          udev_dwc_value=0
+        fi
+      fi
+    else
+      debug "disabling DWC due to DWC_ENABLE == 0"
+      udev_constraint=''
+      udev_dwc_value=0
+    fi
+    install -D -d -m0755 "$(dirname "${dwc_udev_file}")"
+    if [[ "${skip_dwc}" -ne 1 ]]; then
+      printf 'ACTION=="add|change", KERNEL=="sd[a-z]",%s RUN+="%s -W%d /dev/%%k"\n' \
+        "${udev_constraint}" \
+        "${hdparm_path}" \
+        "${udev_dwc_value}" > "${dwc_udev_file}"
+      debug "${dwc_udev_file}:"
+      debugoutput < "${dwc_udev_file}"
+    fi
+  else
+    debug "WARN: hdparm not found in destination, skipping DWC rules generation."
+    debug "hdparm path: ${hdparm_path}"
+    debug "hdparm path ret: ${hdparm_path_ret}"
   fi
 }
 

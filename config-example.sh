@@ -57,8 +57,9 @@ export DEFAULTFOURDRIVESWRAIDLEVEL="6"
 export DEFAULTLVM="0"
 export DEFAULTLOADER="grub"
 export DEFAULTGOVERNOR="ondemand"
-
+export FORCE_GPT=1
 export V6ONLY="0"
+declare -x -i DWC_ENABLE=1
 
 # dialog settings
 export DIATITLE="$COMPANY"

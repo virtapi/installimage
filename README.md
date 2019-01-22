@@ -19,6 +19,7 @@
 + [Requirements](#requirements)
 + [Configuration](#configuration)
 + [Usage](#usage)
+    - [Special settings](#special-settings)
 + [How does it work](#how-does-it-work)
 + [Styleguide](#styleguide)
 + [Name origin](#name-origin)
@@ -115,6 +116,21 @@ the installimage ships an example configuration file, `config-example.sh`, you'v
 ```bash
 $ installimage ...
 ```
+
+### Special settings
+
+There are some settings available within an installimage config which may be desireable for custom setups.
+With ongoing effort we try to document them here but this list is likely incomplete.
+
+#### DWC_ENABLE
+
+DWC in this context refers to the drive-write cache of modern hard disk and solid state drives.
+
+This settings currently supports the following three distinct values:
+  - 0 = disables the DWC for all drives
+  - 1 = enables the DWC for SSDs
+  - 2 = enables the DWC for all drives
+
 
 ---
 
