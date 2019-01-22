@@ -131,6 +131,15 @@ This settings currently supports the following three distinct values:
   - 1 = enables the DWC for SSDs
   - 2 = enables the DWC for all drives
 
+#### FORCE_GPT
+
+GPT in this context refers to the GUID Partition Table, required for partitions larger than 2TiB and for EFI boot.
+
+This settings currently supports the following three distinct values:
+  - 0 = only use GPT for disks larger than 2TiB
+  - 1 = use GPT even on disks smaller than 2TiB
+  - 2 = force GPT, even if the (to-be-installed) OS does not support it
+
 
 ---
 
