@@ -608,13 +608,12 @@ if [ -n "$1" ]; then
   export RAID_ASSUME_CLEAN
 
   # special hidden configure option: GPT usage
+  # if set to 0, use GPT only on disks larger than 2TiB
   # if set to 1, use GPT even on disks smaller than 2TiB
   # if set to 2, always use GPT, even if the OS does not support it
-  [ -z "${FORCE_GPT}" ] && FORCE_GPT=1
   if grep -q -e '^FORCE_GPT' "$1"; then
-    FORCE_GPT="$(grep -m1 -e '^FORCE_GPT' "$1" |awk '{print $2}')"
+    FORCE_GPT="$(awk '/^FORCE_GPT/{printf $2}' "$1" 2>/dev/null)"
   fi
-  export FORCE_GPT
 
   # another special hidden configure option: force image validation
   # if set to 1: force validation
@@ -3985,7 +3984,7 @@ function part_test_size() {
 
   GPT=0
 
-  if [ "$FORCE_GPT" == "2" ]; then
+  if [ "$FORCE_GPT" -eq 2 ]; then
     debug "Forcing use of GPT as directed"
     GPT=1
     PART_COUNT=$((PART_COUNT+1))
@@ -3999,7 +3998,7 @@ function part_test_size() {
   local DRIVE_SIZE; DRIVE_SIZE=$(blockdev --getsize64 "$dev")
   DRIVE_SIZE=$(( DRIVE_SIZE / 1024 / 1024 ))
 
-  if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" == "1" ]; then
+  if [ $DRIVE_SIZE -ge $LIMIT ] || [ "$FORCE_GPT" -eq 1 ]; then
     # use only GPT if not CentOS or OpenSuSE newer than 12.2
     if [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ]; then
       if [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
@@ -4021,7 +4020,7 @@ function part_test_size() {
 function check_dos_partitions() {
   echo "check_dos_partitions" | debugoutput
   # shellcheck disable=SC2015
-  if [ "$FORCE_GPT" == "2" ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
+  if [ "$FORCE_GPT" -eq 2 ] || [ "$IAM" != "centos" ] || [ "$IAM" == "centos" ] && [ "$IMG_VERSION" -ge 70 ] || [ "$BOOTLOADER" == "lilo" ]; then
     if [ "$IAM" == "suse" ] && [ "$IMG_VERSION" -lt 122 ]; then
       echo "SuSE version older than 12.2, no grub2 support" | debugoutput
     else
@@ -4094,14 +4093,14 @@ function check_dos_partitions() {
 
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE_PRIM - $temp_size" | bc)
     echo "Part_all_size is: $PART_ALL_SIZE" | debugoutput
-    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" == "0" ]]; then
+    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" -eq 0 ]]; then
       PART_ALL_SIZE=$(echo "$LIMIT - $temp_size" | bc)
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
   # if we have no more than 3 partitions
   else
     PART_ALL_SIZE=$(echo "$DRIVE_SIZE - $PART_WO_ALL_SIZE" | bc)
-    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" == "0" ]]; then
+    if [[ "$PART_ALL_SIZE" -gt "$LIMIT" ]] && [[ "${FORCE_GPT}" -eq 0 ]]; then
       PART_ALL_SIZE="$LIMIT"
       [ -z $result ] && result="PART_CHANGED_ALL"
     fi
