@@ -128,8 +128,17 @@ DWC in this context refers to the drive-write cache of modern hard disk and soli
 
 This settings currently supports the following three distinct values:
   - 0 = disables the DWC for all drives
-  - 1 = enables the DWC for SSDs
+  - 1 = enables the DWC for SSDs (**default**)
   - 2 = enables the DWC for all drives
+
+#### FORCE_GPT
+
+GPT in this context refers to the GUID Partition Table, required for partitions larger than 2TiB and for EFI boot.
+
+This settings currently supports the following three distinct values:
+  - 0 = only use GPT for disks larger than 2TiB
+  - 1 = use GPT even on disks smaller than 2TiB (**default**)
+  - 2 = force GPT, even if the (to-be-installed) OS does not support it
 
 
 ---
